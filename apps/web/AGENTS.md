@@ -68,7 +68,7 @@ Planned features: `room`, `lobby` (device check, language, consent), `call`
 | ----------------------- | ---------------------------------------- | -------------------------- |
 | Pure logic, API clients | `*.spec.ts` next to the source           | Vitest `server` (node)     |
 | Components              | `*.svelte.spec.ts` next to the component | Vitest `client` (Chromium) |
-| User flows              | `src/routes/**/*.e2e.ts`                 | Playwright                 |
+| User flows              | `tests/e2e/*.e2e.ts`                     | Playwright                 |
 
 Inject `fetch` into API functions so tests pass a fake instead of mocking globals.
 Browser tests need Chromium system libraries:

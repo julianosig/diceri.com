@@ -72,11 +72,16 @@ Do not upgrade a major version in passing. Upgrades get their own commit
 | `just setup` | install JS/Rust dependencies and git hooks |
 | `just dev` | run API (`:8090`) and web (`:5180`, proxies `/api`) |
 | `just fmt` | format Rust and web code |
-| `just check` | **everything CI runs**: fmt, clippy, tests, cargo-deny, svelte-check, eslint, vitest, limits |
-| `just e2e` | Playwright end-to-end tests |
+| `just check` | static layer: fmt, clippy, cargo-deny, svelte-check, eslint, limits |
+| `just test` | unit layer: Rust unit + router tests, web logic tests (no network) |
+| `just verify` | `check` + `test`; **the gate before every push** (~25 s) |
+| `just test-browser` | Svelte component tests in Chromium |
+| `just e2e` | end-to-end smoke: real API + web build + LiveKit, fake microphones |
+| `just ci` | everything CI runs |
 | `just build` | production builds |
 
-**Before declaring any task done, run `just check` and make it pass.** Never
+**Before declaring any task done, run `just verify` and make it pass** (and `just e2e`
+when you touched a user journey or media code). Never
 disable a lint, skip a test or bypass a hook (`--no-verify`) to get green.
 If a rule is wrong, change the rule in its own commit and explain why.
 
@@ -150,8 +155,9 @@ function-length limits but not from file limits.
 - Every use case and adapter has unit tests; every HTTP route has a router-level
   test (`tower::ServiceExt::oneshot`, no network).
 - Web: pure logic in `*.spec.ts` (node), components in `*.svelte.spec.ts`
-  (Vitest browser mode), user flows in `*.e2e.ts` (Playwright, fake media
-  devices).
+  (Vitest browser mode), user journeys in `apps/web/tests/e2e/*.e2e.ts`
+  (Playwright, fake media devices).
+- Layers, commands and rules: [`docs/testing.md`](docs/testing.md).
 - Fix the code, not the test, unless the test is wrong; say which in the commit.
 
 ## 11. Git: micro-commits
