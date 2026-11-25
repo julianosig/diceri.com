@@ -193,3 +193,41 @@ test('previewing in the language you speak explains there is nothing to translat
 		await bob.browser.close();
 	}
 });
+
+test('when the host ends the call everyone gets the transcript', async ({ baseURL }) => {
+	test.setTimeout(180_000);
+	const url = baseURL ?? 'http://127.0.0.1:4180';
+	const ana = await launch('Ana', 'pt-BR', url);
+	const bob = await launch('Bob', 'en', url);
+	try {
+		await ana.page.goto('/');
+		await ana.page.getByRole('button', { name: 'New meeting' }).click();
+		await fillProfile(ana);
+		await ana.page.getByRole('button', { name: 'Join now' }).click();
+		await expect(ana.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
+			timeout: 20_000
+		});
+		await admit(ana.page, bob);
+		await expectCaption(bob, 'Ana', /contract/i);
+
+		await ana.page.getByRole('button', { name: 'Leave call' }).click();
+		await ana.page.getByRole('menuitem', { name: 'End call for everyone' }).click();
+
+		await expect(bob.page.getByRole('heading', { name: 'The host ended the call' })).toBeVisible({
+			timeout: 20_000
+		});
+		const bobTranscript = bob.page.getByRole('region', { name: 'Transcript' });
+		await expect(bobTranscript).toContainText(/contrato/i);
+		await expect(bobTranscript).toContainText(/contract/i);
+		await expect(bobTranscript.getByRole('button', { name: 'Download' })).toBeVisible();
+
+		await expect(
+			ana.page.getByRole('heading', { name: 'You ended the call for everyone' })
+		).toBeVisible();
+		await expect(ana.page.getByRole('region', { name: 'Transcript' })).toContainText(
+			/weather|tempo/i
+		);
+	} finally {
+		await Promise.all([ana.browser.close(), bob.browser.close()]);
+	}
+});
