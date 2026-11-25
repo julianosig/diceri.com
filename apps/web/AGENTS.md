@@ -9,7 +9,7 @@ Tailwind CSS 4 (CSS-first), TypeScript ~6, Vitest 5 (node + browser projects),
 Playwright. Configuration lives in `vite.config.ts`; there is no `svelte.config.js`.
 
 The app talks to the Rust API with same-origin requests to `/api/v1/*`. In dev,
-Vite proxies `/api` to `DICERI_API_URL` (default `http://127.0.0.1:8080`).
+Vite proxies `/api` to `DICERI_API_URL` (default `http://127.0.0.1:8090`).
 
 ## Layout
 

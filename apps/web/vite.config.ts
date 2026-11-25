@@ -20,7 +20,7 @@ export default defineConfig({
 	],
 	server: {
 		// Same-origin API in dev; production serves the SPA from the API host.
-		proxy: { '/api': process.env.DICERI_API_URL ?? 'http://127.0.0.1:8080' }
+		proxy: { '/api': process.env.DICERI_API_URL ?? 'http://127.0.0.1:8090' }
 	},
 	test: {
 		expect: { requireAssertions: true },

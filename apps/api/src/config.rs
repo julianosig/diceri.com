@@ -21,7 +21,7 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> anyhow::Result<Self> {
         let bind_address = env::var("DICERI_BIND_ADDRESS")
-            .unwrap_or_else(|_| "127.0.0.1:8080".to_owned())
+            .unwrap_or_else(|_| "127.0.0.1:8090".to_owned())
             .parse()
             .context("DICERI_BIND_ADDRESS must be a socket address")?;
         let allowed_origins = env::var("DICERI_ALLOWED_ORIGINS")

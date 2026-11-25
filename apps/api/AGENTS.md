@@ -39,7 +39,7 @@ in responses.
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `DICERI_BIND_ADDRESS` | `127.0.0.1:8080` | listen address |
+| `DICERI_BIND_ADDRESS` | `127.0.0.1:8090` | listen address |
 | `DICERI_ALLOWED_ORIGINS` | `http://localhost:5173` | comma-separated CORS allow-list |
 | `DICERI_LOG_FORMAT` | `pretty` | `pretty` or `json` |
 | `RUST_LOG` | `info,tower_http=debug` | tracing filter |

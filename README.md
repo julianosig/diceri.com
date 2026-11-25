@@ -13,6 +13,6 @@ Requirements: Rust 1.100 (via rustup), Node 26 LTS, pnpm 12, [`just`](https://ju
 
 ```sh
 just setup   # dependencies + git hooks
-just dev     # API on :8080, web on :5173
+just dev     # API on :8090, web on :5173
 just check   # everything CI runs
 ```
