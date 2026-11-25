@@ -32,11 +32,12 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
 | --- | --- | --- |
 | `apps/web` | landing, lobby (devices, language, consent), call UI, captions | rooms done |
 | `apps/api` | room lifecycle, join tokens, config for clients, static hosting | rooms done |
-| `apps/media-agent` | joins rooms, runs one translation pipeline per speaker and target language | planned |
-| LiveKit server | SFU, TURN, track routing | planned |
+| `apps/media-agent` | joins rooms, runs one translation pipeline per speaker and target language | done (Rust, LiveKit SDK) |
+| LiveKit Cloud | SFU, TURN, track routing, Krisp noise filter | done |
+| `crates/media` | per-speaker pipeline: segmentation, translation fan-out, ordered speech | done |
 | `crates/domain` | `RoomId`, `LanguageCode`, `Room` | done |
 | `crates/application` | use cases + ports (`RoomRepository`, later `SpeechToText`, `Translator`, `TextToSpeech`) | rooms done |
-| `crates/infra` | adapters (in-memory storage now; Postgres/Redis, Soniox, LLM, ElevenLabs later) | in-memory done |
+| `crates/infra` | adapters: in-memory storage, LiveKit tokens, Soniox, Gemini, ElevenLabs, agent dispatcher | done |
 
 ## Translation pipeline (per speaker, per target language)
 

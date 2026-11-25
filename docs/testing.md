@@ -16,6 +16,11 @@ entry point; CI runs the same commands (`.github/workflows/ci.yml`).
 
 - `rooms.e2e.ts`: create a meeting from the landing page, land on the shareable
   room page; unknown rooms show a not-found message. No LiveKit needed.
+- `translation.e2e.ts`: **the full pipeline with real providers**. Three browsers
+  (pt-BR, en, es), each with a looping spoken WAV as its microphone
+  (`tests/e2e/fixtures`, regenerate with `just fixtures`), join one room; each
+  must see the other two captioned in its own language. The media agent logs
+  `phrase latency` per phrase and target (time to translation and to speech).
 - `call.e2e.ts`: two participants join the same room through LiveKit with fake
   microphones; each sees the other, and audio bitrate is received; the
   round-trip (server) monitor connects. **Skips** when the API returns 503
@@ -40,5 +45,7 @@ just browsers     # downloads Chromium for Playwright (once)
 sudo pnpm --filter @diceri/web exec playwright install-deps chromium
 ```
 
-End-to-end media tests read `DICERI_LIVEKIT_*` from `.env` locally and from
-repository secrets in CI.
+End-to-end tests start the API, the web build and the media agent. They read
+`DICERI_LIVEKIT_*`, `DICERI_AGENT_KEY`, `DICERI_SONIOX_API_KEY`,
+`DICERI_GEMINI_API_KEY` and `DICERI_ELEVENLABS_API_KEY` from `.env` locally and
+from repository secrets in CI. `just test-live` checks each provider alone.
