@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { CaptionsOverlay } from '#lib/features/translation/index.ts';
 	import type { CallPanel } from '../call-layout.ts';
 	import type { AudioSettings } from '../audio-settings.ts';
 	import type { CallSession, MonitorMode } from '../call-session.svelte.ts';
@@ -26,6 +27,8 @@
 	let { session, meetingCode, peopleBadge = 0, peopleExtra, overlay, onleave }: Props = $props();
 	let panel = $state<CallPanel>('none');
 	const grid = $derived(session.participants.length > 1 ? 'sm:grid-cols-2' : 'max-w-4xl');
+	const nameOf = (identity: string) =>
+		session.participants.find((p) => p.identity === identity)?.name ?? 'Guest';
 </script>
 
 <div class="flex h-dvh flex-col bg-stage">
@@ -57,6 +60,7 @@
 				<div class="pointer-events-auto flex flex-col items-start gap-3">
 					{@render overlay?.()}
 				</div>
+				<CaptionsOverlay lines={session.captions.lines} {nameOf} />
 			</div>
 		</main>
 		{#if panel === 'people'}

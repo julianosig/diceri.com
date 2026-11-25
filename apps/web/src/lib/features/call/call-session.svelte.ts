@@ -5,7 +5,9 @@ import {
 	Room,
 	RoomEvent,
 	Track,
-	type RemoteTrack
+	type RemoteParticipant,
+	type RemoteTrack,
+	type RemoteTrackPublication
 } from 'livekit-client';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
@@ -18,6 +20,15 @@ import { LevelMeter } from './level-meter.ts';
 import { LocalMonitor } from './local-monitor.ts';
 import { LoopbackMonitor } from './loopback-monitor.ts';
 import { applyEnhancedFilter, outgoingMediaTrack } from './noise-filter.ts';
+import {
+	AGENT_IDENTITY,
+	CAPTIONS_TOPIC,
+	CaptionFeed,
+	originalVolume,
+	parseCaption,
+	parseTranslatedTrack,
+	sameLanguage
+} from '#lib/features/translation/index.ts';
 import { StatsPoller, type CallMetrics } from './stats-poller.ts';
 
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
@@ -30,10 +41,14 @@ export interface Participant {
 	muted: boolean;
 	quality: ConnectionQuality;
 	isLocal: boolean;
+	/** Language the participant speaks and hears (BCP 47). */
+	language: string | undefined;
 }
 
 export interface CallSessionOptions {
 	credentials: MediaCredentials;
+	/** Language this participant speaks and wants to hear others in. */
+	language: string;
 	deviceId?: string;
 	/** Fetches hidden-listener credentials for the round-trip monitor. */
 	monitorCredentials: () => Promise<MediaCredentials>;
@@ -52,6 +67,7 @@ export class CallSession {
 	participants = $state<Participant[]>([]);
 	audioBlocked = $state(false);
 	metrics = $state<CallMetrics>({});
+	readonly captions: CaptionFeed;
 
 	#room = new Room({ adaptiveStream: true, dynacast: true });
 	// Bookkeeping only, never rendered, so it does not need to be reactive.
@@ -65,6 +81,10 @@ export class CallSession {
 
 	constructor(private readonly options: CallSessionOptions) {
 		this.settings.deviceId = options.deviceId;
+		this.captions = new CaptionFeed(
+			options.language,
+			(identity) => this.#room.remoteParticipants.get(identity)?.attributes.language
+		);
 		this.#bindRoomEvents();
 	}
 
@@ -191,14 +211,18 @@ export class CallSession {
 
 	#refreshParticipants(): void {
 		const local = this.#room.localParticipant;
-		const all = [local, ...this.#room.remoteParticipants.values()];
+		const humans = [...this.#room.remoteParticipants.values()].filter(
+			(participant) => participant.identity !== AGENT_IDENTITY
+		);
+		const all = [local, ...humans];
 		this.participants = all.map((participant) => ({
 			identity: participant.identity,
 			name: participant.name || 'Guest',
 			speaking: participant.isSpeaking,
 			muted: participant === local ? this.muted : !participant.isMicrophoneEnabled,
 			quality: participant.connectionQuality,
-			isLocal: participant === local
+			isLocal: participant === local,
+			language: participant === local ? this.options.language : participant.attributes.language
 		}));
 	}
 
@@ -214,8 +238,21 @@ export class CallSession {
 			.on(RoomEvent.ParticipantDisconnected, refresh)
 			.on(RoomEvent.ActiveSpeakersChanged, refresh)
 			.on(RoomEvent.ConnectionQualityChanged, refresh)
-			.on(RoomEvent.TrackSubscribed, (track: RemoteTrack) => {
-				this.#attachRemote(track);
+			.on(RoomEvent.ParticipantAttributesChanged, refresh)
+			.on(
+				RoomEvent.TrackSubscribed,
+				(
+					track: RemoteTrack,
+					publication: RemoteTrackPublication,
+					participant: RemoteParticipant
+				) => {
+					this.#onTrackSubscribed(track, publication, participant);
+				}
+			)
+			.on(RoomEvent.DataReceived, (payload: Uint8Array, _participant, _kind, topic?: string) => {
+				if (topic !== CAPTIONS_TOPIC) return;
+				const caption = parseCaption(payload);
+				if (caption) this.captions.push(caption);
 			})
 			.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
 				this.#remoteElements.get(track)?.remove();
@@ -226,8 +263,28 @@ export class CallSession {
 			});
 	}
 
-	#attachRemote(track: RemoteTrack): void {
-		if (track.kind !== Track.Kind.Audio) return;
+	/**
+	 * Plays the translation into this listener's language and the original voice
+	 * (ducked when it is another language); other translations are unsubscribed.
+	 */
+	#onTrackSubscribed(
+		track: RemoteTrack,
+		publication: RemoteTrackPublication,
+		participant: RemoteParticipant
+	): void {
+		if (!(track instanceof RemoteAudioTrack)) return;
+		const language = this.options.language;
+		if (participant.identity === AGENT_IDENTITY) {
+			const translated = parseTranslatedTrack(publication.trackName);
+			if (translated && sameLanguage(translated.language, language)) this.#attachRemote(track, 1);
+			else publication.setSubscribed(false);
+			return;
+		}
+		this.#attachRemote(track, originalVolume(participant.attributes.language, language));
+	}
+
+	#attachRemote(track: RemoteAudioTrack, volume: number): void {
+		track.setVolume(volume);
 		const element = track.attach();
 		element.hidden = true;
 		document.body.append(element);

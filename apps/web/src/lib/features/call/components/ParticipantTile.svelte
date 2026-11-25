@@ -28,6 +28,15 @@
 			<MicOff class="size-4 text-white" aria-label="Microphone off" />
 		</span>
 	{/if}
-	<span class="absolute bottom-3 left-4 truncate text-sm font-medium text-white">{label}</span>
+	<span
+		class="absolute bottom-3 left-4 flex items-center gap-2 truncate text-sm font-medium text-white"
+	>
+		{label}
+		{#if participant.language}
+			<span class="rounded bg-white/20 px-1.5 py-0.5 text-xs uppercase" title="Speaks and hears">
+				{participant.language}
+			</span>
+		{/if}
+	</span>
 	{#if participant.speaking && !participant.muted}<span class="sr-only">speaking</span>{/if}
 </article>
