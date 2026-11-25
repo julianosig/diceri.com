@@ -24,13 +24,11 @@ import {
 	AGENT_IDENTITY,
 	CAPTIONS_TOPIC,
 	CaptionFeed,
-	LANGUAGES,
 	OUTPUT_LANGUAGE_ATTRIBUTE,
 	originalVolume,
 	parseCaption,
 	parseTranslatedTrack,
 	PREVIEW_ATTRIBUTE,
-	sameLanguage,
 	wantsTranslatedTrack,
 	type Listener
 } from '#lib/features/translation/index.ts';
@@ -75,6 +73,8 @@ export class CallSession {
 	metrics = $state<CallMetrics>({});
 	/** Language to hear yourself in while the monitor is `translated`. */
 	previewLanguage = $state('en');
+	/** Language your own speech was last detected in. */
+	ownSpokenLanguage = $state<string | undefined>();
 	readonly captions: CaptionFeed;
 
 	#room = new Room({ adaptiveStream: true, dynacast: true });
@@ -89,8 +89,8 @@ export class CallSession {
 
 	constructor(private readonly options: CallSessionOptions) {
 		this.settings.deviceId = options.deviceId;
-		this.previewLanguage =
-			LANGUAGES.find((l) => !sameLanguage(l.code, options.outputLanguage))?.code ?? 'en';
+		// Hear yourself the way you chose to hear everyone.
+		this.previewLanguage = options.outputLanguage;
 		this.captions = new CaptionFeed(
 			() => this.#listener(),
 			(speaker) => {
@@ -286,7 +286,11 @@ export class CallSession {
 			.on(RoomEvent.DataReceived, (payload: Uint8Array, _participant, _kind, topic?: string) => {
 				if (topic !== CAPTIONS_TOPIC) return;
 				const caption = parseCaption(payload);
-				if (caption) this.captions.push(caption);
+				if (!caption) return;
+				if (caption.speaker === this.options.credentials.identity && caption.kind === 'original') {
+					this.ownSpokenLanguage = caption.language;
+				}
+				this.captions.push(caption);
 			})
 			.on(RoomEvent.TrackPublished, (publication: RemoteTrackPublication) => {
 				if (publication.trackName.startsWith('tr:') && !this.#wants(publication)) {

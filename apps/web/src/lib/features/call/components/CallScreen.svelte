@@ -92,6 +92,7 @@
 				<MonitorControls
 					mode={session.monitor}
 					previewLanguage={session.previewLanguage}
+					spokenLanguage={session.ownSpokenLanguage}
 					onchange={(mode: MonitorMode) => session.setMonitor(mode)}
 					onpreviewchange={(language: string) => session.setPreviewLanguage(language)}
 				/>

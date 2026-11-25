@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { matchBrowserLanguage } from './languages.ts';
+import { languageLabel, matchBrowserLanguage } from './languages.ts';
 
 describe('matchBrowserLanguage', () => {
 	it('prefers an exact match, then the base language', () => {
@@ -10,5 +10,13 @@ describe('matchBrowserLanguage', () => {
 
 	it('falls back to English', () => {
 		expect(matchBrowserLanguage('xx')).toBe('en');
+	});
+});
+
+describe('languageLabel', () => {
+	it('labels detected base codes like the agent reports them', () => {
+		expect(languageLabel('pt')).toBe('Português (Brasil)');
+		expect(languageLabel('en')).toBe('English');
+		expect(languageLabel('xx')).toBe('xx');
 	});
 });

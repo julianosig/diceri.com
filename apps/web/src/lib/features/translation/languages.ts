@@ -27,7 +27,9 @@ export function matchBrowserLanguage(tag: string): string {
 	return (exact ?? byPrimary ?? LANGUAGES[1]).code;
 }
 
-/** Human label for a language code, or the code itself when unknown. */
+/** Human label for a language code (exact, then by base language), else the code. */
 export function languageLabel(code: string): string {
-	return LANGUAGES.find((l) => l.code === code)?.label ?? code;
+	const base = code.split('-')[0]?.toLowerCase();
+	const exact = LANGUAGES.find((l) => l.code === code);
+	return (exact ?? LANGUAGES.find((l) => l.code.split('-')[0] === base))?.label ?? code;
 }

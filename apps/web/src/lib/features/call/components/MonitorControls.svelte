@@ -1,15 +1,20 @@
 <script lang="ts">
-	import { LANGUAGES } from '#lib/features/translation/index.ts';
+	import { LANGUAGES, languageLabel, sameLanguage } from '#lib/features/translation/index.ts';
 	import type { MonitorMode } from '../call-session.svelte.ts';
 
 	interface Props {
 		mode: MonitorMode;
 		previewLanguage: string;
+		/** Language your speech was last detected in, if any. */
+		spokenLanguage: string | undefined;
 		onchange: (mode: MonitorMode) => void;
 		onpreviewchange: (language: string) => void;
 	}
 
-	let { mode, previewLanguage, onchange, onpreviewchange }: Props = $props();
+	let { mode, previewLanguage, spokenLanguage, onchange, onpreviewchange }: Props = $props();
+	const sameAsSpoken = $derived(
+		mode === 'translated' && sameLanguage(spokenLanguage, previewLanguage)
+	);
 
 	const modes: { value: MonitorMode; label: string; hint: string }[] = [
 		{ value: 'off', label: 'Off', hint: 'You do not hear yourself.' },
@@ -64,5 +69,11 @@
 				{/each}
 			</select>
 		</label>
+	{/if}
+	{#if sameAsSpoken && spokenLanguage}
+		<p role="status" class="rounded-lg bg-amber-100 px-3 py-2 text-xs text-amber-900">
+			You're speaking {languageLabel(spokenLanguage)}, the language you picked, so there is nothing
+			to translate. Pick another language to hear yourself translated.
+		</p>
 	{/if}
 </fieldset>
