@@ -2,30 +2,54 @@
 export class ApiError extends Error {
 	constructor(
 		readonly status: number,
-		readonly title: string
+		readonly title: string,
+		readonly detail?: string
 	) {
-		super(`${String(status)} ${title}`);
+		super(detail ?? `${String(status)} ${title}`);
 		this.name = 'ApiError';
 	}
 }
 
 type FetchFn = typeof fetch;
 
-/**
- * Sends a JSON request to the Rust API. Requests are same-origin: the Vite dev
- * server proxies `/api` and production serves the SPA from the API host.
- */
-export async function requestJson<T>(
-	path: string,
-	init: RequestInit = {},
-	fetchFn: FetchFn = fetch
-): Promise<T> {
-	const headers = new Headers(init.headers);
-	headers.set('accept', 'application/json');
-	const response = await fetchFn(`/api/v1${path}`, { ...init, headers });
+export interface RequestOptions {
+	method?: 'GET' | 'POST';
+	/** Sent as JSON. */
+	body?: unknown;
+	/** Host key or guest request key, sent as `x-diceri-key`. */
+	accessKey?: string;
+	fetchFn?: FetchFn;
+}
+
+async function send(path: string, options: RequestOptions): Promise<Response> {
+	const headers = new Headers({ accept: 'application/json' });
+	if (options.accessKey) headers.set('x-diceri-key', options.accessKey);
+	if (options.body !== undefined) headers.set('content-type', 'application/json');
+	const fetchFn = options.fetchFn ?? fetch;
+	const response = await fetchFn(`/api/v1${path}`, {
+		method: options.method ?? 'GET',
+		headers,
+		body: options.body === undefined ? undefined : JSON.stringify(options.body)
+	});
 	if (!response.ok) {
-		const problem = (await response.json().catch(() => ({}))) as { title?: string };
-		throw new ApiError(response.status, problem.title ?? response.statusText);
+		const problem = (await response.json().catch(() => ({}))) as {
+			title?: string;
+			detail?: string;
+		};
+		throw new ApiError(response.status, problem.title ?? response.statusText, problem.detail);
 	}
-	return (await response.json()) as T;
+	return response;
+}
+
+/**
+ * Sends a request to the Rust API and parses the JSON body. Requests are
+ * same-origin: the Vite server proxies `/api`, production serves both.
+ */
+export async function requestJson<T>(path: string, options: RequestOptions = {}): Promise<T> {
+	return (await (await send(path, options)).json()) as T;
+}
+
+/** Like `requestJson` for endpoints that answer 204 No Content. */
+export async function requestVoid(path: string, options: RequestOptions = {}): Promise<void> {
+	await send(path, options);
 }
