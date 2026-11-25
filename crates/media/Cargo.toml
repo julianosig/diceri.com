@@ -1,0 +1,20 @@
+[package]
+name = "diceri-media"
+description = "Real-time translation pipeline: transcript segmentation, translation fan-out, speech output."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+diceri-domain.workspace = true
+diceri-application.workspace = true
+async-trait.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+
+[dev-dependencies]
+
+
+[lints]
+workspace = true

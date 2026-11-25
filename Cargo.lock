@@ -357,6 +357,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "diceri-media"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "diceri-application",
+ "diceri-domain",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
 name = "digest"
 version = "0.10.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
