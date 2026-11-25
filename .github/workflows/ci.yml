@@ -21,6 +21,12 @@ jobs:
       - uses: actions/checkout@v7
       - name: Install toolchain from rust-toolchain.toml
         run: rustup show active-toolchain || rustup toolchain install
+      - name: System packages for libwebrtc (media agent)
+        run: >
+          sudo apt-get update && sudo apt-get install -y libglib2.0-dev libdrm-dev
+          libgbm-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libxrandr-dev
+          libxcomposite-dev libva-dev
+      - run: ./scripts/install-webrtc-clang.sh
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@v2
         with:
@@ -56,6 +62,10 @@ jobs:
       DICERI_LIVEKIT_URL: ${{ secrets.DICERI_LIVEKIT_URL }}
       DICERI_LIVEKIT_API_KEY: ${{ secrets.DICERI_LIVEKIT_API_KEY }}
       DICERI_LIVEKIT_API_SECRET: ${{ secrets.DICERI_LIVEKIT_API_SECRET }}
+      DICERI_AGENT_KEY: ${{ secrets.DICERI_AGENT_KEY }}
+      DICERI_SONIOX_API_KEY: ${{ secrets.DICERI_SONIOX_API_KEY }}
+      DICERI_GEMINI_API_KEY: ${{ secrets.DICERI_GEMINI_API_KEY }}
+      DICERI_ELEVENLABS_API_KEY: ${{ secrets.DICERI_ELEVENLABS_API_KEY }}
     steps:
       - uses: actions/checkout@v7
       - name: Install toolchain from rust-toolchain.toml
@@ -66,6 +76,12 @@ jobs:
         with:
           node-version-file: .node-version
           cache: pnpm
+      - name: System packages for libwebrtc (media agent)
+        run: >
+          sudo apt-get update && sudo apt-get install -y libglib2.0-dev libdrm-dev
+          libgbm-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libxrandr-dev
+          libxcomposite-dev libva-dev
+      - run: ./scripts/install-webrtc-clang.sh
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
       - run: pnpm --filter @diceri/web test:e2e
