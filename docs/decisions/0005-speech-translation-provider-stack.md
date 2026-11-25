@@ -30,7 +30,7 @@ source) and the listener's output language (MT target, TTS).
 
 | Stage | Default | Fallback | Route now | Route only if eval confirms |
 | --- | --- | --- | --- | --- |
-| STT | Soniox `stt-rt-v6` with language hints | ElevenLabs Scribe v3 Live | AssemblyAI 3.7 for yue, zu, xh | AssemblyAI 3.7 for sv, fr, de, nl |
+| STT | **ElevenLabs Scribe v3 Live** (VAD commits, language detection) | Soniox `stt-rt-v6` (`DICERI_STT_PROVIDER=soniox`) | AssemblyAI 3.7 for yue, zu, xh | AssemblyAI 3.7 for English-heavy rooms if eval confirms |
 | MT | Gemini 3.5 Flash-Lite, thinking minimal, direct X→Y (never pivot via English) | gpt-6-luna / gpt-5.6-luna | Gemini 3.6 Flash for Tier 2 targets (Baltic, Balkan, kk, be, fa, Arabic dialects, zh-Hant) | Flash for any pair with a clear quality gain |
 | Captions | Soniox built-in two-way translation | LLM MT text | — | — |
 | TTS | ElevenLabs `eleven_v4_turbo` (instant clone) | Inworld TTS-2 | — | Qwen-Audio-3.1-TTS for zh, ja, ko targets |
@@ -42,6 +42,20 @@ pl, cs, uk, ro, el, id, th. Participants choose only their **output language**
 identification detects it per phrase (2026-11-25, after users picked the wrong
 spoken language and got untranslated speech); room output languages are passed
 to STT as hints.
+
+### Revision 2026-11-25: Scribe v3 Live replaces Soniox as default STT
+
+The benchmark published 2026-11-20 with every November model
+([AssemblyAI benchmarks](https://www.assemblyai.com/benchmarks), vendor-run)
+ranks Soniox v6 worst or near-worst of the top four on English (6.52% WER),
+Portuguese (FLEURS 5.8 / Common Voice 6.5) and code-switching (10.1).
+Scribe v3 Live is first or second almost everywhere (EN 4.18, PT 5.5 / 5.2,
+ES 3.9 / 4.0, 18-language mean 6.8 / 7.4, code-switching 8.3), covers 90+
+languages, costs $0.22/h and shares the ElevenLabs account with TTS; Artificial
+Analysis ranks Scribe v3 #2 overall (1.95% AA-WER, non-streaming). Our live
+tests: correct pt-BR transcripts 10/10 once audio waits for `session_started`
+(audio sent earlier was occasionally lost), phrase closed ~1.1–1.3 s after
+speech with a 0.3 s VAD silence.
 
 ### Consequences
 

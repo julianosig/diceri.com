@@ -21,7 +21,7 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
                      │ per speaker: VAD → STT → MT → TTS    │
                      └──┬──────────┬───────────┬────────────┘
                         │ WS       │ HTTP/WS   │ WS
-                   Soniox STT   LLM (MT)   ElevenLabs TTS (cloned voice)
+                   Scribe STT   LLM (MT)   ElevenLabs TTS (cloned voice)
 
    HTTP /api/v1 ──► api (axum): rooms, consent, LiveKit tokens, serves SPA build
 ```
@@ -43,7 +43,8 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
 
 1. **Capture:** speaker publishes an Opus track with echo cancellation on.
 2. **Ingest:** media-agent subscribes, receives 48 kHz PCM, resamples to 16 kHz.
-3. **STT:** streaming to Soniox `stt-rt-v6` with language identification; the
+3. **STT:** streaming to ElevenLabs Scribe v3 Live (VAD commits, language
+   detection; Soniox selectable as fallback); the
    spoken language is **detected per phrase**, never declared (room output
    languages are hints). Finals drive translation; endpointing decides phrase
    boundaries.
