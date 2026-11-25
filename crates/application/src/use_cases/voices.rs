@@ -6,6 +6,9 @@ use crate::ports::{
     RoomRepository, RoomRepositoryError, VoiceCloneError, VoiceCloner, VoiceId, VoiceSample,
 };
 
+/// Every clone is named with this prefix so orphans can be found and deleted.
+pub const CLONE_NAME_PREFIX: &str = "diceri-";
+
 /// Bounds on an uploaded sample: ~5–15 s of compressed speech fits easily.
 const MIN_SAMPLE_BYTES: usize = 8 * 1024;
 const MAX_SAMPLE_BYTES: usize = 5 * 1024 * 1024;
@@ -94,6 +97,10 @@ mod tests {
         }
         async fn delete(&self, _: &VoiceId) -> Result<(), VoiceCloneError> {
             Ok(())
+        }
+
+        async fn delete_all_named(&self, _: &str) -> Result<usize, VoiceCloneError> {
+            Ok(0)
         }
     }
 

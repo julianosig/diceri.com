@@ -25,6 +25,20 @@ struct Created {
     voice_id: String,
 }
 
+#[derive(Deserialize)]
+struct VoiceList {
+    voices: Vec<ListedVoice>,
+}
+
+#[derive(Deserialize)]
+struct ListedVoice {
+    voice_id: String,
+    name: String,
+}
+
+/// Every clone (personal voice) is a name prefix away from being ours.
+const LIST_URL: &str = "https://api.elevenlabs.io/v2/voices?voice_type=personal&page_size=100";
+
 fn extension(content_type: &str) -> &'static str {
     match content_type.split(';').next().unwrap_or_default() {
         "audio/wav" | "audio/x-wav" => "wav",
@@ -87,6 +101,30 @@ impl VoiceCloner for ElevenLabsVoiceCloner {
                 response.status()
             )))
         }
+    }
+
+    async fn delete_all_named(&self, prefix: &str) -> Result<usize, VoiceCloneError> {
+        let failed = |error: &dyn std::fmt::Display| VoiceCloneError::Request(error.to_string());
+        let list: VoiceList = self
+            .http
+            .get(LIST_URL)
+            .header("xi-api-key", self.api_key.expose_secret())
+            .send()
+            .await
+            .map_err(|e| failed(&e))?
+            .json()
+            .await
+            .map_err(|e| failed(&e))?;
+        let mut deleted = 0;
+        for voice in list
+            .voices
+            .into_iter()
+            .filter(|v| v.name.starts_with(prefix))
+        {
+            self.delete(&VoiceId(voice.voice_id)).await?;
+            deleted += 1;
+        }
+        Ok(deleted)
     }
 }
 

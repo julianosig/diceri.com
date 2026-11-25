@@ -57,6 +57,10 @@ impl VoiceCloner for FakeCloner {
     async fn delete(&self, _: &VoiceId) -> Result<(), VoiceCloneError> {
         Ok(())
     }
+
+    async fn delete_all_named(&self, _: &str) -> Result<usize, VoiceCloneError> {
+        Ok(0)
+    }
 }
 
 pub(crate) fn app(media: bool) -> Router {
