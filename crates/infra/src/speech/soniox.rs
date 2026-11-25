@@ -51,7 +51,7 @@ type EventSender = mpsc::Sender<Result<TranscriptEvent, SpeechToTextError>>;
 
 #[async_trait]
 impl SpeechToText for SonioxSpeechToText {
-    async fn open(&self, language: &LanguageCode) -> Result<SpeechStream, SpeechToTextError> {
+    async fn open(&self, hints: &[LanguageCode]) -> Result<SpeechStream, SpeechToTextError> {
         let connection =
             |error: &dyn std::fmt::Display| SpeechToTextError::Connection(error.to_string());
         let mut request = URL.into_client_request().map_err(|e| connection(&e))?;
@@ -66,7 +66,7 @@ impl SpeechToText for SonioxSpeechToText {
         let (mut sink, mut stream) = socket.split();
         let config = soniox_protocol::config_message(
             &self.config.model,
-            language,
+            hints,
             self.config.max_endpoint_delay_ms,
         );
         sink.send(Message::text(config))

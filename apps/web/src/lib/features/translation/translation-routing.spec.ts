@@ -33,7 +33,7 @@ describe('language rules', () => {
 });
 
 describe('wantsTranslatedTrack', () => {
-	const me = { identity: 'me', language: 'pt-BR', preview: undefined };
+	const me = { identity: 'me', outputLanguage: 'pt-BR', preview: undefined };
 
 	it('plays translations of others into my language only', () => {
 		expect(wantsTranslatedTrack({ speaker: 'bob', language: 'pt-BR' }, me)).toBe(true);

@@ -5,7 +5,7 @@ use std::time::{Duration, Instant};
 use anyhow::Context as _;
 use diceri_application::ports::{MediaAccessIssuer as _, MediaParticipant, MediaRole};
 use diceri_domain::{LanguageCode, RoomId};
-use diceri_infra::LANGUAGE_ATTRIBUTE;
+use diceri_infra::OUTPUT_LANGUAGE_ATTRIBUTE;
 use diceri_media::PipelineOutput;
 use livekit::prelude::{
     RemoteParticipant, RemoteTrack, RemoteTrackPublication, Room, RoomEvent, RoomOptions,
@@ -16,7 +16,7 @@ use tokio::sync::{mpsc, watch};
 use crate::output::LiveKitOutput;
 use crate::providers::Providers;
 use crate::speaker_task::{self, Speaker};
-use crate::targets::{Member, has_listeners, targets_for};
+use crate::targets::{Member, has_listeners, speech_hints, targets_for};
 use crate::track_names::AGENT_IDENTITY;
 
 /// Leave a room after it has had no human participants for this long.
@@ -95,10 +95,10 @@ impl Speakers {
         else {
             return;
         };
-        let Some(speaker) = speaker(track, &publication, &participant) else {
+        let snapshot = members(room);
+        let Some(speaker) = speaker(track, &publication, &participant, &snapshot) else {
             return;
         };
-        let snapshot = members(room);
         let initial = targets_for(snapshot.iter().map(Snapshot::member), &speaker.identity);
         let (sender, receiver) = watch::channel(initial);
         self.targets.insert(speaker.identity.clone(), sender);
@@ -158,23 +158,24 @@ fn members(room: &Room) -> Vec<Snapshot> {
         .collect()
 }
 
-/// A human's microphone track with a declared language; anything else is ignored.
+/// A human's microphone track (humans carry an output language); anything else is ignored.
 fn speaker(
     track: livekit::track::RemoteAudioTrack,
     publication: &RemoteTrackPublication,
     participant: &RemoteParticipant,
+    room: &[Snapshot],
 ) -> Option<Speaker> {
     if publication.source() != TrackSource::Microphone {
         return None;
     }
-    let language = participant
-        .attributes()
-        .get(LANGUAGE_ATTRIBUTE)?
-        .parse()
-        .ok()?;
+    let attributes = participant.attributes();
+    let fallback_language = attributes.get(OUTPUT_LANGUAGE_ATTRIBUTE)?.parse().ok()?;
+    let identity = participant.identity().to_string();
+    let hints = speech_hints(room.iter().map(Snapshot::member), &identity);
     Some(Speaker {
-        identity: participant.identity().to_string(),
-        language,
+        identity,
+        hints,
+        fallback_language,
         track,
     })
 }

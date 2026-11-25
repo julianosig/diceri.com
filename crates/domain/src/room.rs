@@ -106,7 +106,7 @@ mod tests {
     fn request(seed: u8) -> JoinRequest {
         let profile = ParticipantProfile {
             name: "Guest".parse().unwrap(),
-            language: "en".parse().unwrap(),
+            output_language: "en".parse().unwrap(),
         };
         JoinRequest::new(RequestId::from_random_bytes([seed; 16]), profile, key(seed))
     }

@@ -32,7 +32,7 @@ fn fixture(with_media: bool) -> Fixture {
 fn name(raw: &str) -> ParticipantProfile {
     ParticipantProfile {
         name: raw.parse().unwrap(),
-        language: "pt-BR".parse().unwrap(),
+        output_language: "pt-BR".parse().unwrap(),
     }
 }
 

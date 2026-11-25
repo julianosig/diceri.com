@@ -20,7 +20,7 @@
 
 	const preview = new MicPreview();
 	let name = $state(loadDisplayName());
-	let language = $state(loadLanguage());
+	let outputLanguage = $state(loadLanguage());
 	const canJoin = $derived(isValidDisplayName(name) && !busy);
 
 	onMount(() => {
@@ -35,7 +35,7 @@
 		if (!canJoin) return;
 		const deviceId = preview.deviceId;
 		await preview.stop();
-		onjoin({ name: name.trim(), language }, deviceId);
+		onjoin({ name: name.trim(), outputLanguage }, deviceId);
 	}
 </script>
 
@@ -87,10 +87,10 @@
 			/>
 		</label>
 		<label class="w-full max-w-xs text-left text-sm">
-			<span class="mb-1 block text-ink-muted">I speak and want to hear</span>
+			<span class="mb-1 block text-ink-muted">Hear everyone in</span>
 			<select
 				class="w-full rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
-				bind:value={language}
+				bind:value={outputLanguage}
 			>
 				{#each LANGUAGES as option (option.code)}
 					<option value={option.code}>{option.label}</option>

@@ -32,10 +32,11 @@ pub(crate) struct CreatedRoomResponse {
 
 /// Body carrying how the participant presents themselves.
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct ProfileRequest {
     pub name: String,
-    /// BCP 47 tag of the language the participant speaks and wants to hear, e.g. `pt-BR`.
-    pub language: String,
+    /// BCP 47 tag of the language the participant wants to hear everyone in, e.g. `pt-BR`.
+    pub output_language: String,
 }
 
 impl ProfileRequest {
@@ -44,11 +45,14 @@ impl ProfileRequest {
             .name
             .parse()
             .map_err(|error| ApiError::Validation(format!("{error}")))?;
-        let language = self
-            .language
+        let output_language = self
+            .output_language
             .parse()
             .map_err(|error| ApiError::Validation(format!("{error}")))?;
-        Ok(ParticipantProfile { name, language })
+        Ok(ParticipantProfile {
+            name,
+            output_language,
+        })
     }
 }
 
@@ -90,10 +94,11 @@ impl From<Knock> for KnockResponse {
 
 /// A guest waiting in the lobby, as shown to the host.
 #[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub(crate) struct PendingRequestResponse {
     pub id: String,
     pub name: String,
-    pub language: String,
+    pub output_language: String,
 }
 
 impl From<JoinRequest> for PendingRequestResponse {
@@ -101,7 +106,7 @@ impl From<JoinRequest> for PendingRequestResponse {
         Self {
             id: request.id.to_string(),
             name: request.profile.name.to_string(),
-            language: request.profile.language.to_string(),
+            output_language: request.profile.output_language.to_string(),
         }
     }
 }

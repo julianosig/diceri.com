@@ -16,14 +16,14 @@ export type KnockOutcome =
 export interface PendingRequest {
 	id: string;
 	name: string;
-	language: string;
+	outputLanguage: string;
 }
 
 /** How a participant presents themselves to the room. */
 export interface Profile {
 	name: string;
-	/** BCP 47 tag of the language they speak and want to hear. */
-	language: string;
+	/** BCP 47 tag of the language they want to hear everyone in (speech is detected). */
+	outputLanguage: string;
 }
 
 export function hostSession(roomId: string, hostKey: string, profile: Profile) {

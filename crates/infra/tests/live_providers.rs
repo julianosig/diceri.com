@@ -100,7 +100,7 @@ async fn gemini_translates_portuguese_to_english() {
 async fn soniox_transcribes_synthesized_portuguese() {
     let audio = to_stt_rate(&synthesize(PHRASE_PT, &lang("pt-BR")).await);
     let stt = SonioxSpeechToText::new(SonioxConfig::new(key("DICERI_SONIOX_API_KEY")));
-    let mut stream = stt.open(&lang("pt-BR")).await.unwrap();
+    let mut stream = stt.open(&[lang("pt-BR")]).await.unwrap();
     let frame = usize::try_from(STT_SAMPLE_RATE / 50).unwrap();
     let sender = stream.audio.clone();
     let feeder = tokio::spawn(async move {

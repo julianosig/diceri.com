@@ -20,7 +20,8 @@ const CONTEXT_PHRASES: usize = 3;
 #[derive(Debug, Clone)]
 pub struct SpeakerConfig {
     pub speaker: String,
-    pub language: LanguageCode,
+    /// Assumed source language when the recognizer reports none for a phrase.
+    pub fallback_language: LanguageCode,
     pub voice: VoiceId,
 }
 
@@ -69,7 +70,7 @@ impl SpeakerPipeline {
     ) -> Self {
         let deps = WorkerDeps {
             speaker: config.speaker,
-            source: config.language,
+            source: config.fallback_language,
             voice: config.voice,
             translator,
             tts,

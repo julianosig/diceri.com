@@ -12,7 +12,7 @@ use serde_json::json;
 use support::{app, create_room, send};
 
 fn name(value: &str) -> serde_json::Value {
-    json!({ "name": value, "language": "pt-BR" })
+    json!({ "name": value, "outputLanguage": "pt-BR" })
 }
 
 #[tokio::test]
@@ -60,7 +60,7 @@ async fn guest_is_admitted_by_host_and_receives_credentials() {
     )
     .await;
     assert_eq!(pending[0]["name"], "Bruno");
-    assert_eq!(pending[0]["language"], "pt-BR");
+    assert_eq!(pending[0]["outputLanguage"], "pt-BR");
 
     let (status, _) = send(
         &app,
@@ -161,7 +161,7 @@ async fn guests_cannot_see_or_decide_requests() {
 async fn invalid_languages_are_rejected() {
     let app = app(true);
     let (id, _) = create_room(&app).await;
-    let body = json!({ "name": "Ana", "language": "portuguese" });
+    let body = json!({ "name": "Ana", "outputLanguage": "portuguese" });
     let (status, _) = send(
         &app,
         "POST",

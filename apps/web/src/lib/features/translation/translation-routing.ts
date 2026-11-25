@@ -7,6 +7,8 @@ export const AGENT_IDENTITY = 'diceri-translator';
 export const CAPTIONS_TOPIC = 'diceri.captions';
 /** Attribute asking the agent to translate this speaker for themselves (apps/media-agent/src/targets.rs). */
 export const PREVIEW_ATTRIBUTE = 'preview_language';
+/** Attribute with the language a participant hears everyone in (set by the API token). */
+export const OUTPUT_LANGUAGE_ATTRIBUTE = 'output_language';
 /** Volume of the original voice under a translation, like an interpreter booth. */
 export const DUCKED_ORIGINAL_VOLUME = 0.15;
 
@@ -28,16 +30,20 @@ export function sameLanguage(a: string | undefined, b: string | undefined): bool
 	return a.split('-')[0]?.toLowerCase() === b.split('-')[0]?.toLowerCase();
 }
 
-/** Full volume when the listener understands the speaker; ducked otherwise. */
-export function originalVolume(speakerLanguage: string | undefined, listener: string): number {
-	return speakerLanguage === undefined || sameLanguage(speakerLanguage, listener)
+/**
+ * Full volume while the speaker is detected speaking the listener's language
+ * (or nothing was detected yet); ducked under the translation otherwise.
+ */
+export function originalVolume(detectedLanguage: string | undefined, listener: string): number {
+	return detectedLanguage === undefined || sameLanguage(detectedLanguage, listener)
 		? 1
 		: DUCKED_ORIGINAL_VOLUME;
 }
 
 export interface Listener {
 	identity: string;
-	language: string;
+	/** Language this listener hears everyone in. */
+	outputLanguage: string;
 	/** Language this listener previews their own voice in, if any. */
 	preview: string | undefined;
 }
@@ -50,5 +56,5 @@ export function wantsTranslatedTrack(track: TranslatedTrack, listener: Listener)
 	if (track.speaker === listener.identity) {
 		return listener.preview !== undefined && sameLanguage(track.language, listener.preview);
 	}
-	return sameLanguage(track.language, listener.language);
+	return sameLanguage(track.language, listener.outputLanguage);
 }

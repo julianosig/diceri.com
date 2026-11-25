@@ -21,7 +21,7 @@
 	<header class="flex items-start justify-between gap-3">
 		<p id="join-request-title">
 			<strong>{request.name}</strong> wants to join this call
-			<span class="text-sm text-ink-muted">({languageLabel(request.language)})</span>
+			<span class="text-sm text-ink-muted">(hears {languageLabel(request.outputLanguage)})</span>
 		</p>
 		<button
 			type="button"

@@ -13,14 +13,24 @@ const MAX_LINES = 3;
 /** The latest captions a listener should see, one line per speaker phrase. */
 export class CaptionFeed {
 	lines = $state<CaptionLine[]>([]);
+	/** Language last detected per speaker, learned from their final captions. */
+	#detected: Record<string, string> = {};
 
 	constructor(
 		private readonly listener: () => Listener,
-		private readonly speakerLanguage: (speaker: string) => string | undefined
+		private readonly onDetected: (speaker: string, language: string) => void
 	) {}
 
+	detectedLanguage(speaker: string): string | undefined {
+		return this.#detected[speaker];
+	}
+
 	push(message: CaptionMessage): void {
-		const speakerLanguage = this.speakerLanguage(message.speaker);
+		if (message.kind === 'original' && this.#detected[message.speaker] !== message.language) {
+			this.#detected[message.speaker] = message.language;
+			this.onDetected(message.speaker, message.language);
+		}
+		const speakerLanguage = this.#detected[message.speaker];
 		if (!isCaptionForListener(message, this.listener(), speakerLanguage)) return;
 		const line: CaptionLine = {
 			speaker: message.speaker,

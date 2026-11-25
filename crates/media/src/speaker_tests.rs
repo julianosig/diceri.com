@@ -83,7 +83,7 @@ impl Harness {
         });
         let config = SpeakerConfig {
             speaker: "ana".to_owned(),
-            language: lang("pt-BR"),
+            fallback_language: lang("pt-BR"),
             voice: VoiceId("voice".to_owned()),
         };
         let pipeline = SpeakerPipeline::new(

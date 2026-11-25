@@ -11,10 +11,13 @@ use tokio::sync::{mpsc, watch};
 use crate::providers::Providers;
 use crate::voices::voice_for;
 
-/// Who is speaking on a subscribed microphone track.
+/// Who is speaking on a subscribed microphone track. Their spoken language is
+/// detected; `hints` are the languages present in the room when they joined.
 pub(crate) struct Speaker {
     pub identity: String,
-    pub language: LanguageCode,
+    pub hints: Vec<LanguageCode>,
+    /// Assumed source when a phrase has no detected language: their output language.
+    pub fallback_language: LanguageCode,
     pub track: RemoteAudioTrack,
 }
 
@@ -25,7 +28,7 @@ pub(crate) async fn run(
     output: Arc<dyn PipelineOutput>,
     targets: watch::Receiver<Vec<LanguageCode>>,
 ) {
-    let stream = match providers.stt.open(&speaker.language).await {
+    let stream = match providers.stt.open(&speaker.hints).await {
         Ok(stream) => stream,
         Err(error) => {
             tracing::error!(%error, speaker = %speaker.identity, "could not open speech-to-text");
@@ -36,7 +39,7 @@ pub(crate) async fn run(
     let config = SpeakerConfig {
         voice: voice_for(&speaker.identity, &providers.voices),
         speaker: speaker.identity,
-        language: speaker.language,
+        fallback_language: speaker.fallback_language,
     };
     log_start(&config);
     SpeakerPipeline::new(
@@ -64,5 +67,5 @@ fn pump_audio(track: &RemoteAudioTrack, audio: mpsc::Sender<Vec<i16>>) {
 }
 
 fn log_start(config: &SpeakerConfig) {
-    tracing::info!(speaker = %config.speaker, language = %config.language, "translating speaker");
+    tracing::info!(speaker = %config.speaker, "translating speaker");
 }

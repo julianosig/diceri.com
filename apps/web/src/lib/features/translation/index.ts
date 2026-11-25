@@ -6,6 +6,7 @@ export {
 	CAPTIONS_TOPIC,
 	DUCKED_ORIGINAL_VOLUME,
 	originalVolume,
+	OUTPUT_LANGUAGE_ATTRIBUTE,
 	parseTranslatedTrack,
 	PREVIEW_ATTRIBUTE,
 	sameLanguage,

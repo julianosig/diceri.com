@@ -23,26 +23,23 @@ describe('parseCaption', () => {
 	});
 });
 
-const listener = (language: string, preview?: string) => ({
+const listener = (outputLanguage: string, preview?: string) => ({
 	identity: 'me',
-	language,
+	outputLanguage,
 	preview
 });
 
 describe('isCaptionForListener', () => {
-	it('shows translations into the listener language from other-language speakers', () => {
-		expect(isCaptionForListener(caption('translation', 'en'), listener('en'), 'pt-BR')).toBe(true);
-		expect(isCaptionForListener(caption('translation', 'es'), listener('en'), 'pt-BR')).toBe(false);
-		expect(isCaptionForListener(caption('original', 'pt-BR'), listener('en'), 'pt-BR')).toBe(false);
+	it('shows translations into the output language and hides other languages', () => {
+		expect(isCaptionForListener(caption('translation', 'en'), listener('en'), 'pt')).toBe(true);
+		expect(isCaptionForListener(caption('translation', 'es'), listener('en'), 'pt')).toBe(false);
+		expect(isCaptionForListener(caption('original', 'pt'), listener('en'), 'pt')).toBe(false);
 	});
 
-	it('shows originals from same-language speakers', () => {
-		expect(isCaptionForListener(caption('original', 'pt-BR'), listener('pt-BR'), 'pt-BR')).toBe(
-			true
-		);
-		expect(isCaptionForListener(caption('partial', 'pt-BR'), listener('pt-BR'), 'pt-BR')).toBe(
-			true
-		);
+	it('shows speech detected in the output language as said', () => {
+		expect(isCaptionForListener(caption('original', 'pt'), listener('pt-BR'), 'pt')).toBe(true);
+		expect(isCaptionForListener(caption('partial', 'pt-BR'), listener('pt-BR'), 'pt')).toBe(true);
+		expect(isCaptionForListener(caption('partial', 'pt-BR'), listener('pt-BR'), 'en')).toBe(false);
 	});
 
 	it('shows my own voice only when previewing that language', () => {

@@ -9,15 +9,17 @@ use serde_json::json;
 /// Marker token emitted when endpoint detection closes a phrase.
 const ENDPOINT_TOKEN: &str = "<end>";
 
-pub(super) fn config_message(model: &str, language: &LanguageCode, max_endpoint_ms: u32) -> String {
+pub(super) fn config_message(model: &str, hints: &[LanguageCode], max_endpoint_ms: u32) -> String {
+    let mut hints: Vec<&str> = hints.iter().map(LanguageCode::primary).collect();
+    hints.sort_unstable();
+    hints.dedup();
     json!({
         "model": model,
         "audio_format": "pcm_s16le",
         "sample_rate": STT_SAMPLE_RATE,
         "num_channels": 1,
-        "language_hints": [language.primary()],
-        // The declared language is only a hint: people often pick the wrong one,
-        // so every token carries the language actually detected.
+        "language_hints": hints,
+        // Nobody declares what they speak: every token carries the detected language.
         "enable_language_identification": true,
         "enable_endpoint_detection": true,
         "max_endpoint_delay_ms": max_endpoint_ms,
@@ -118,10 +120,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn config_uses_primary_language_and_endpointing() {
-        let config = config_message("stt-rt-v6", &"pt-BR".parse().unwrap(), 1500);
+    fn config_uses_deduplicated_primary_hints_and_endpointing() {
+        let hints = [
+            "pt-BR".parse().unwrap(),
+            "pt".parse().unwrap(),
+            "en".parse().unwrap(),
+        ];
+        let config = config_message("stt-rt-v6", &hints, 1500);
         let value: serde_json::Value = serde_json::from_str(&config).unwrap();
-        assert_eq!(value["language_hints"][0], "pt");
+        assert_eq!(value["language_hints"], serde_json::json!(["en", "pt"]));
         assert_eq!(value["enable_endpoint_detection"], true);
         assert_eq!(value["enable_language_identification"], true);
         assert_eq!(value["sample_rate"], 16_000);

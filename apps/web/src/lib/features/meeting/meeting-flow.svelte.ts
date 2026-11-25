@@ -23,7 +23,7 @@ export class MeetingFlow {
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
 	#deviceId: string | undefined;
-	#language = 'en';
+	#outputLanguage = 'en';
 
 	constructor(
 		private readonly roomId: string,
@@ -41,9 +41,9 @@ export class MeetingFlow {
 
 	async join(profile: Profile, deviceId: string | undefined): Promise<void> {
 		saveDisplayName(profile.name);
-		saveLanguage(profile.language);
+		saveLanguage(profile.outputLanguage);
 		this.#deviceId = deviceId;
-		this.#language = profile.language;
+		this.#outputLanguage = profile.outputLanguage;
 		this.error = undefined;
 		if (!this.hostKey) {
 			this.phase = 'waiting';
@@ -76,7 +76,7 @@ export class MeetingFlow {
 		const roomId = this.roomId;
 		this.session = new CallSession({
 			credentials,
-			language: this.#language,
+			outputLanguage: this.#outputLanguage,
 			deviceId: this.#deviceId,
 			monitorCredentials: () => monitorSession(roomId, accessKey)
 		});

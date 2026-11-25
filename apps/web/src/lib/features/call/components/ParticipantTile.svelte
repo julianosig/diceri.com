@@ -32,9 +32,9 @@
 		class="absolute bottom-3 left-4 flex items-center gap-2 truncate text-sm font-medium text-white"
 	>
 		{label}
-		{#if participant.language}
-			<span class="rounded bg-white/20 px-1.5 py-0.5 text-xs uppercase" title="Speaks and hears">
-				{participant.language}
+		{#if participant.outputLanguage}
+			<span class="rounded bg-white/20 px-1.5 py-0.5 text-xs" title="Hears everyone in">
+				hears {participant.outputLanguage}
 			</span>
 		{/if}
 	</span>

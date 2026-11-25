@@ -36,8 +36,9 @@ pub struct SpeechStream {
     pub events: mpsc::Receiver<Result<TranscriptEvent, SpeechToTextError>>,
 }
 
-/// Streaming speech recognition (e.g. Soniox).
+/// Streaming speech recognition (e.g. Soniox). The spoken language is detected;
+/// `hints` are languages the speaker is likely to use (may be empty).
 #[async_trait]
 pub trait SpeechToText: Send + Sync {
-    async fn open(&self, language: &LanguageCode) -> Result<SpeechStream, SpeechToTextError>;
+    async fn open(&self, hints: &[LanguageCode]) -> Result<SpeechStream, SpeechToTextError>;
 }

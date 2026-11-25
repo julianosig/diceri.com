@@ -25,6 +25,7 @@ import {
 	CAPTIONS_TOPIC,
 	CaptionFeed,
 	LANGUAGES,
+	OUTPUT_LANGUAGE_ATTRIBUTE,
 	originalVolume,
 	parseCaption,
 	parseTranslatedTrack,
@@ -46,14 +47,14 @@ export interface Participant {
 	muted: boolean;
 	quality: ConnectionQuality;
 	isLocal: boolean;
-	/** Language the participant speaks and hears (BCP 47). */
-	language: string | undefined;
+	/** Language the participant hears everyone in (BCP 47). */
+	outputLanguage: string | undefined;
 }
 
 export interface CallSessionOptions {
 	credentials: MediaCredentials;
-	/** Language this participant speaks and wants to hear others in. */
-	language: string;
+	/** Language this participant hears everyone in; what they speak is detected. */
+	outputLanguage: string;
 	deviceId?: string;
 	/** Fetches hidden-listener credentials for the round-trip monitor. */
 	monitorCredentials: () => Promise<MediaCredentials>;
@@ -89,10 +90,12 @@ export class CallSession {
 	constructor(private readonly options: CallSessionOptions) {
 		this.settings.deviceId = options.deviceId;
 		this.previewLanguage =
-			LANGUAGES.find((l) => !sameLanguage(l.code, options.language))?.code ?? 'en';
+			LANGUAGES.find((l) => !sameLanguage(l.code, options.outputLanguage))?.code ?? 'en';
 		this.captions = new CaptionFeed(
 			() => this.#listener(),
-			(identity) => this.#room.remoteParticipants.get(identity)?.attributes.language
+			(speaker) => {
+				this.#updateOriginalVolume(speaker);
+			}
 		);
 		this.#bindRoomEvents();
 	}
@@ -250,7 +253,10 @@ export class CallSession {
 			muted: participant === local ? this.muted : !participant.isMicrophoneEnabled,
 			quality: participant.connectionQuality,
 			isLocal: participant === local,
-			language: participant === local ? this.options.language : participant.attributes.language
+			outputLanguage:
+				participant === local
+					? this.options.outputLanguage
+					: participant.attributes[OUTPUT_LANGUAGE_ATTRIBUTE]
 		}));
 	}
 
@@ -313,7 +319,10 @@ export class CallSession {
 		}
 		this.#attachRemote(
 			track,
-			originalVolume(participant.attributes.language, this.options.language)
+			originalVolume(
+				this.captions.detectedLanguage(participant.identity),
+				this.options.outputLanguage
+			)
 		);
 	}
 
@@ -325,7 +334,7 @@ export class CallSession {
 	#listener(): Listener {
 		return {
 			identity: this.options.credentials.identity,
-			language: this.options.language,
+			outputLanguage: this.options.outputLanguage,
 			preview: this.monitor === 'translated' ? this.previewLanguage : undefined
 		};
 	}
@@ -337,6 +346,16 @@ export class CallSession {
 			const wanted = this.#wants(publication);
 			if (wanted !== publication.isSubscribed) publication.setSubscribed(wanted);
 		}
+	}
+
+	/** Re-applies ducking when a speaker is detected in a new language. */
+	#updateOriginalVolume(speaker: string): void {
+		const track = this.#room.remoteParticipants
+			.get(speaker)
+			?.getTrackPublication(Track.Source.Microphone)?.track;
+		if (!(track instanceof RemoteAudioTrack)) return;
+		const detected = this.captions.detectedLanguage(speaker);
+		track.setVolume(originalVolume(detected, this.options.outputLanguage));
 	}
 
 	#attachRemote(track: RemoteAudioTrack, volume: number): void {

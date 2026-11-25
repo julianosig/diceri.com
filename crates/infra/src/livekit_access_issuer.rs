@@ -29,8 +29,8 @@ impl LiveKitAccessIssuer {
     }
 }
 
-/// Participant attribute carrying the language a participant speaks and hears.
-pub const LANGUAGE_ATTRIBUTE: &str = "language";
+/// Participant attribute carrying the language a participant wants to hear everyone in.
+pub const OUTPUT_LANGUAGE_ATTRIBUTE: &str = "output_language";
 
 fn grants_for(room: &RoomId, role: MediaRole) -> VideoGrants {
     let base = VideoGrants {
@@ -79,7 +79,7 @@ impl MediaAccessIssuer for LiveKitAccessIssuer {
         if let Some(profile) = participant.profile {
             token = token
                 .with_name(profile.name.as_str())
-                .with_attributes([(LANGUAGE_ATTRIBUTE, profile.language.as_str())]);
+                .with_attributes([(OUTPUT_LANGUAGE_ATTRIBUTE, profile.output_language.as_str())]);
         }
         let token = token
             .to_jwt()
@@ -134,7 +134,7 @@ mod tests {
         );
         let profile = ParticipantProfile {
             name: "Ana".parse().unwrap(),
-            language: "pt-BR".parse().unwrap(),
+            output_language: "pt-BR".parse().unwrap(),
         };
         let participant = MediaParticipant {
             identity: "p-test",
