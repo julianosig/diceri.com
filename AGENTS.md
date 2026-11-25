@@ -70,7 +70,7 @@ Do not upgrade a major version in passing. Upgrades get their own commit
 | Command | What it does |
 | --- | --- |
 | `just setup` | install JS/Rust dependencies and git hooks |
-| `just dev` | run API (`:8090`) and web (`:5173`, proxies `/api`) |
+| `just dev` | run API (`:8090`) and web (`:5180`, proxies `/api`) |
 | `just fmt` | format Rust and web code |
 | `just check` | **everything CI runs**: fmt, clippy, tests, cargo-deny, svelte-check, eslint, vitest, limits |
 | `just e2e` | Playwright end-to-end tests |

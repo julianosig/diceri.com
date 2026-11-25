@@ -40,7 +40,7 @@ in responses.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `DICERI_BIND_ADDRESS` | `127.0.0.1:8090` | listen address |
-| `DICERI_ALLOWED_ORIGINS` | `http://localhost:5173` | comma-separated CORS allow-list |
+| `DICERI_ALLOWED_ORIGINS` | `http://localhost:5180` | comma-separated CORS allow-list |
 | `DICERI_LOG_FORMAT` | `pretty` | `pretty` or `json` |
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
 | `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |

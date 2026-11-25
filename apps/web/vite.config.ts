@@ -19,6 +19,8 @@ export default defineConfig({
 		})
 	],
 	server: {
+		port: 5180,
+		strictPort: true,
 		// Same-origin API in dev; production serves the SPA from the API host.
 		proxy: { '/api': process.env.DICERI_API_URL ?? 'http://127.0.0.1:8090' }
 	},

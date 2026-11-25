@@ -36,7 +36,7 @@ impl Config {
             .parse()
             .context("DICERI_BIND_ADDRESS must be a socket address")?;
         let allowed_origins = env::var("DICERI_ALLOWED_ORIGINS")
-            .unwrap_or_else(|_| "http://localhost:5173".to_owned())
+            .unwrap_or_else(|_| "http://localhost:5180".to_owned())
             .split(',')
             .map(str::trim)
             .filter(|origin| !origin.is_empty())
@@ -60,7 +60,7 @@ impl Config {
     pub fn for_tests() -> Self {
         Self {
             bind_address: SocketAddr::from(([127, 0, 0, 1], 0)),
-            allowed_origins: vec!["http://localhost:5173".to_owned()],
+            allowed_origins: vec!["http://localhost:5180".to_owned()],
             log_format: LogFormat::Pretty,
             livekit: None,
         }
