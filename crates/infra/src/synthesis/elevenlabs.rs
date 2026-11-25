@@ -57,6 +57,13 @@ impl TextToSpeech for ElevenLabsTextToSpeech {
             "text": request.text,
             "model_id": self.config.model,
             "language_code": request.language.primary(),
+            // Slightly lower stability sounds more human; high similarity keeps
+            // cloned voices close to the speaker.
+            "voice_settings": {
+                "stability": 0.45,
+                "similarity_boost": 0.85,
+                "use_speaker_boost": true,
+            },
         });
         let response = self
             .http
