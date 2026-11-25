@@ -10,8 +10,12 @@ pub const STT_SAMPLE_RATE: u32 = 16_000;
 pub enum TranscriptEvent {
     /// Provisional text; may still change. Useful for live captions.
     Partial(String),
-    /// Text that will never change.
-    Final(String),
+    /// Text that will never change, with the language the recognizer detected
+    /// for it (when language identification is available).
+    Final {
+        text: String,
+        language: Option<LanguageCode>,
+    },
     /// The speaker finished a phrase: everything final so far is one segment.
     Endpoint,
 }

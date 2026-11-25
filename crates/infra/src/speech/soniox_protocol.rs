@@ -16,6 +16,9 @@ pub(super) fn config_message(model: &str, language: &LanguageCode, max_endpoint_
         "sample_rate": STT_SAMPLE_RATE,
         "num_channels": 1,
         "language_hints": [language.primary()],
+        // The declared language is only a hint: people often pick the wrong one,
+        // so every token carries the language actually detected.
+        "enable_language_identification": true,
         "enable_endpoint_detection": true,
         "max_endpoint_delay_ms": max_endpoint_ms,
     })
@@ -37,6 +40,7 @@ struct Token {
     text: String,
     #[serde(default)]
     is_final: bool,
+    language: Option<String>,
 }
 
 /// A parsed server message.
@@ -59,23 +63,20 @@ pub(super) fn parse(raw: &str) -> Result<ServerMessage, serde_json::Error> {
     Ok(ServerMessage::Events(events(&response.tokens)))
 }
 
-/// Groups tokens into at most one `Final`, one `Partial` and one `Endpoint`, in that order.
+/// Groups tokens into `Final` runs (one per detected language, in order), then
+/// at most one `Partial` and one `Endpoint`.
 fn events(tokens: &[Token]) -> Vec<TranscriptEvent> {
-    let mut finals = String::new();
+    let mut events = Vec::new();
     let mut partial = String::new();
     let mut endpoint = false;
     for token in tokens {
         if token.text == ENDPOINT_TOKEN {
             endpoint = true;
         } else if token.is_final {
-            finals.push_str(&token.text);
+            push_final(&mut events, token);
         } else {
             partial.push_str(&token.text);
         }
-    }
-    let mut events = Vec::new();
-    if !finals.is_empty() {
-        events.push(TranscriptEvent::Final(finals));
     }
     if !partial.is_empty() {
         events.push(TranscriptEvent::Partial(partial));
@@ -84,6 +85,24 @@ fn events(tokens: &[Token]) -> Vec<TranscriptEvent> {
         events.push(TranscriptEvent::Endpoint);
     }
     events
+}
+
+/// Appends a final token, extending the previous run when the language matches.
+fn push_final(events: &mut Vec<TranscriptEvent>, token: &Token) {
+    let language: Option<LanguageCode> = token.language.as_deref().and_then(|l| l.parse().ok());
+    if let Some(TranscriptEvent::Final {
+        text,
+        language: previous,
+    }) = events.last_mut()
+        && *previous == language
+    {
+        text.push_str(&token.text);
+        return;
+    }
+    events.push(TranscriptEvent::Final {
+        text: token.text.clone(),
+        language,
+    });
 }
 
 /// PCM samples as little-endian bytes, the wire format for `pcm_s16le`.
@@ -104,21 +123,46 @@ mod tests {
         let value: serde_json::Value = serde_json::from_str(&config).unwrap();
         assert_eq!(value["language_hints"][0], "pt");
         assert_eq!(value["enable_endpoint_detection"], true);
+        assert_eq!(value["enable_language_identification"], true);
         assert_eq!(value["sample_rate"], 16_000);
     }
 
     #[test]
     fn splits_final_partial_and_endpoint() {
         let raw = r#"{"tokens":[
-            {"text":"Olá","is_final":true},{"text":" mundo","is_final":true},
+            {"text":"Olá","is_final":true,"language":"pt"},{"text":" mundo","is_final":true,"language":"pt"},
             {"text":"<end>","is_final":true},{"text":" tu","is_final":false}]}"#;
         assert_eq!(
             parse(raw).unwrap(),
             ServerMessage::Events(vec![
-                TranscriptEvent::Final("Olá mundo".to_owned()),
+                TranscriptEvent::Final {
+                    text: "Olá mundo".to_owned(),
+                    language: Some("pt".parse().unwrap())
+                },
                 TranscriptEvent::Partial(" tu".to_owned()),
                 TranscriptEvent::Endpoint,
             ])
+        );
+    }
+
+    #[test]
+    fn splits_finals_when_the_detected_language_changes() {
+        let raw = r#"{"tokens":[
+            {"text":"Hello","is_final":true,"language":"en"},
+            {"text":" amigo","is_final":true,"language":"es"}]}"#;
+        let languages: Vec<Option<String>> = match parse(raw).unwrap() {
+            ServerMessage::Events(events) => events
+                .into_iter()
+                .map(|event| match event {
+                    TranscriptEvent::Final { language, .. } => language.map(|l| l.to_string()),
+                    _ => None,
+                })
+                .collect(),
+            _ => Vec::new(),
+        };
+        assert_eq!(
+            languages,
+            vec![Some("en".to_owned()), Some("es".to_owned())]
         );
     }
 

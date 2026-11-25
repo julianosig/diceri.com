@@ -119,7 +119,7 @@ async fn soniox_transcribes_synthesized_portuguese() {
     let mut endpoint = false;
     while let Some(event) = stream.events.recv().await {
         match event.expect("speech-to-text stream error") {
-            TranscriptEvent::Final(text) => transcript.push_str(&text),
+            TranscriptEvent::Final { text, .. } => transcript.push_str(&text),
             TranscriptEvent::Endpoint => endpoint = true,
             TranscriptEvent::Partial(_) => {}
         }
