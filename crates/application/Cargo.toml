@@ -1,0 +1,18 @@
+[package]
+name = "diceri-application"
+description = "Use cases and ports (traits) for Diceri. Adapters live in diceri-infra."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+
+[dependencies]
+diceri-domain.workspace = true
+async-trait.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+tokio.workspace = true
+
+[lints]
+workspace = true
