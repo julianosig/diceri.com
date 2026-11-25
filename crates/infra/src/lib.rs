@@ -5,8 +5,8 @@
 
 mod livekit_access_issuer;
 mod memory_room_repository;
-mod random_room_id_generator;
+mod os_random;
 
 pub use livekit_access_issuer::LiveKitAccessIssuer;
 pub use memory_room_repository::MemoryRoomRepository;
-pub use random_room_id_generator::RandomRoomIdGenerator;
+pub use os_random::OsRandom;

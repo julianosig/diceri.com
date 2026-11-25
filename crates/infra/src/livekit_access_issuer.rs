@@ -1,6 +1,8 @@
 use std::time::Duration;
 
-use diceri_application::ports::{MediaAccessError, MediaAccessIssuer, MediaGrant, MediaRole};
+use diceri_application::ports::{
+    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
+};
 use diceri_domain::RoomId;
 use livekit_api::access_token::{AccessToken, VideoGrants};
 use secrecy::{ExposeSecret as _, SecretString};
@@ -49,13 +51,16 @@ impl MediaAccessIssuer for LiveKitAccessIssuer {
     fn issue(
         &self,
         room: &RoomId,
-        identity: &str,
-        role: MediaRole,
+        participant: MediaParticipant<'_>,
     ) -> Result<MediaGrant, MediaAccessError> {
-        let token = AccessToken::with_api_key(&self.api_key, self.api_secret.expose_secret())
-            .with_identity(identity)
+        let mut token = AccessToken::with_api_key(&self.api_key, self.api_secret.expose_secret())
+            .with_identity(participant.identity)
             .with_ttl(TOKEN_TTL)
-            .with_grants(grants_for(room, role))
+            .with_grants(grants_for(room, participant.role));
+        if let Some(name) = participant.name {
+            token = token.with_name(name.as_str());
+        }
+        let token = token
             .to_jwt()
             .map_err(|error| MediaAccessError(error.to_string()))?;
         Ok(MediaGrant {
@@ -95,7 +100,13 @@ mod tests {
             "key".to_owned(),
             SecretString::from("secret-that-is-long-enough-for-hs256"),
         );
-        let grant = issuer.issue(&room(), "p-test", MediaRole::Speaker).unwrap();
+        let name = "Ana".parse().unwrap();
+        let participant = MediaParticipant {
+            identity: "p-test",
+            name: Some(&name),
+            role: MediaRole::Speaker,
+        };
+        let grant = issuer.issue(&room(), participant).unwrap();
         assert_eq!(grant.server_url, "wss://example.livekit.cloud");
         assert_eq!(grant.token.split('.').count(), 3);
     }

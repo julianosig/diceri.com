@@ -5,6 +5,8 @@ mod rooms;
 
 use axum::Router;
 
+pub(crate) use rooms::ACCESS_KEY_HEADER;
+
 use crate::AppState;
 
 /// Versioned API routes mounted under `/api/v1`.

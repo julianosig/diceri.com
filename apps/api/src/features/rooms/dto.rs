@@ -1,7 +1,8 @@
-use diceri_application::ports::MediaRole;
-use diceri_application::use_cases::JoinTicket;
-use diceri_domain::Room;
+use diceri_application::use_cases::{JoinTicket, Knock, KnockOutcome};
+use diceri_domain::{DisplayName, JoinRequest, Room};
 use serde::{Deserialize, Serialize};
+
+use crate::ApiError;
 
 /// Public representation of a room.
 #[derive(Debug, Serialize)]
@@ -11,8 +12,8 @@ pub(crate) struct RoomResponse {
     pub max_participants: u8,
 }
 
-impl From<Room> for RoomResponse {
-    fn from(room: Room) -> Self {
+impl From<&Room> for RoomResponse {
+    fn from(room: &Room) -> Self {
         Self {
             id: room.id.to_string(),
             max_participants: room.max_participants,
@@ -20,28 +21,26 @@ impl From<Room> for RoomResponse {
     }
 }
 
-/// Body of `POST /rooms/{id}/join`. Defaults to joining as a speaker.
-#[derive(Debug, Default, Deserialize)]
+/// Returned once to the creator: includes the secret host key.
+#[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct JoinRequest {
-    #[serde(default)]
-    pub role: JoinRole,
+pub(crate) struct CreatedRoomResponse {
+    #[serde(flatten)]
+    pub room: RoomResponse,
+    pub host_key: String,
 }
 
-#[derive(Debug, Default, Clone, Copy, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub(crate) enum JoinRole {
-    #[default]
-    Speaker,
-    Monitor,
+/// Body carrying the participant's display name.
+#[derive(Debug, Deserialize)]
+pub(crate) struct NameRequest {
+    pub name: String,
 }
 
-impl From<JoinRole> for MediaRole {
-    fn from(role: JoinRole) -> Self {
-        match role {
-            JoinRole::Speaker => Self::Speaker,
-            JoinRole::Monitor => Self::Monitor,
-        }
+impl NameRequest {
+    pub(crate) fn display_name(&self) -> Result<DisplayName, ApiError> {
+        self.name
+            .parse()
+            .map_err(|error| ApiError::Validation(format!("{error}")))
     }
 }
 
@@ -60,6 +59,60 @@ impl From<JoinTicket> for JoinResponse {
             identity: ticket.identity,
             server_url: ticket.grant.server_url,
             token: ticket.grant.token,
+        }
+    }
+}
+
+/// Returned to a guest who asks to join.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct KnockResponse {
+    pub request_id: String,
+    pub request_key: String,
+}
+
+impl From<Knock> for KnockResponse {
+    fn from(knock: Knock) -> Self {
+        Self {
+            request_id: knock.request_id.to_string(),
+            request_key: knock.key.expose().to_owned(),
+        }
+    }
+}
+
+/// A guest waiting in the lobby, as shown to the host.
+#[derive(Debug, Serialize)]
+pub(crate) struct PendingRequestResponse {
+    pub id: String,
+    pub name: String,
+}
+
+impl From<JoinRequest> for PendingRequestResponse {
+    fn from(request: JoinRequest) -> Self {
+        Self {
+            id: request.id.to_string(),
+            name: request.name.to_string(),
+        }
+    }
+}
+
+/// Polled by the waiting guest.
+#[derive(Debug, Serialize)]
+#[serde(tag = "status", rename_all = "camelCase")]
+pub(crate) enum OutcomeResponse {
+    Pending,
+    Denied,
+    Admitted { credentials: JoinResponse },
+}
+
+impl From<KnockOutcome> for OutcomeResponse {
+    fn from(outcome: KnockOutcome) -> Self {
+        match outcome {
+            KnockOutcome::Pending => Self::Pending,
+            KnockOutcome::Denied => Self::Denied,
+            KnockOutcome::Admitted(ticket) => Self::Admitted {
+                credentials: ticket.into(),
+            },
         }
     }
 }

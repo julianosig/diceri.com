@@ -1,7 +1,7 @@
 //! Application use cases, one per file.
 
-mod join_room;
+mod admission;
 mod rooms;
 
-pub use join_room::{JoinRoomError, JoinRoomService, JoinTicket};
+pub use admission::{AdmissionError, AdmissionService, JoinTicket, Knock, KnockOutcome};
 pub use rooms::{RoomError, RoomService};

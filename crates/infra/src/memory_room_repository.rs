@@ -29,16 +29,45 @@ impl RoomRepository for MemoryRoomRepository {
     async fn find(&self, id: &RoomId) -> Result<Option<Room>, RoomRepositoryError> {
         Ok(self.rooms.read().map_err(poisoned)?.get(id).cloned())
     }
+
+    async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {
+        let mut rooms = self.rooms.write().map_err(poisoned)?;
+        let slot = rooms
+            .get_mut(&room.id)
+            .ok_or_else(|| RoomRepositoryError::Missing(room.id.clone()))?;
+        *slot = room;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use diceri_domain::AccessKey;
+
     use super::*;
+
+    fn room() -> Room {
+        Room::new(
+            RoomId::from_random_bytes([1; 16]),
+            AccessKey::from_random_bytes([2; 16]),
+        )
+    }
+
+    #[tokio::test]
+    async fn update_requires_existing_room() {
+        let repository = MemoryRoomRepository::default();
+        assert!(matches!(
+            repository.update(room()).await,
+            Err(RoomRepositoryError::Missing(_))
+        ));
+        repository.insert(room()).await.unwrap();
+        assert!(repository.update(room()).await.is_ok());
+    }
 
     #[tokio::test]
     async fn rejects_duplicate_ids() {
         let repository = MemoryRoomRepository::default();
-        let room = Room::new(RoomId::from_random_bytes([1; 16]));
+        let room = room();
         repository.insert(room.clone()).await.unwrap();
         assert!(matches!(
             repository.insert(room).await,

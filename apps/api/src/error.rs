@@ -1,7 +1,8 @@
 use axum::Json;
-use axum::http::StatusCode;
+use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use diceri_application::use_cases::{JoinRoomError, RoomError};
+use diceri_application::use_cases::{AdmissionError, RoomError};
+use diceri_domain::RoomRuleError;
 use serde::Serialize;
 
 /// Errors returned by HTTP handlers, rendered as RFC 9457 problem details.
@@ -11,6 +12,14 @@ pub enum ApiError {
     NotFound,
     #[error("invalid request: {0}")]
     Validation(String),
+    #[error("missing or malformed access key")]
+    Unauthorized,
+    #[error("access key does not allow this action")]
+    Forbidden,
+    #[error("conflict: {0}")]
+    Conflict(String),
+    #[error("too many requests: {0}")]
+    TooManyRequests(String),
     #[error("service unavailable: {0}")]
     Unavailable(&'static str),
     #[error(transparent)]
@@ -25,11 +34,19 @@ struct ProblemDetails {
     detail: Option<String>,
 }
 
-impl IntoResponse for ApiError {
-    fn into_response(self) -> Response {
-        let (status, title, detail) = match self {
+impl ApiError {
+    fn parts(self) -> (StatusCode, &'static str, Option<String>) {
+        match self {
             Self::NotFound => (StatusCode::NOT_FOUND, "Not Found", None),
             Self::Validation(detail) => (StatusCode::BAD_REQUEST, "Bad Request", Some(detail)),
+            Self::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized", None),
+            Self::Forbidden => (StatusCode::FORBIDDEN, "Forbidden", None),
+            Self::Conflict(detail) => (StatusCode::CONFLICT, "Conflict", Some(detail)),
+            Self::TooManyRequests(detail) => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "Too Many Requests",
+                Some(detail),
+            ),
             Self::Unavailable(detail) => (
                 StatusCode::SERVICE_UNAVAILABLE,
                 "Service Unavailable",
@@ -43,7 +60,13 @@ impl IntoResponse for ApiError {
                     None,
                 )
             }
-        };
+        }
+    }
+}
+
+impl IntoResponse for ApiError {
+    fn into_response(self) -> Response {
+        let (status, title, detail) = self.parts();
         let body = ProblemDetails {
             title,
             status: status.as_u16(),
@@ -51,8 +74,8 @@ impl IntoResponse for ApiError {
         };
         let mut response = (status, Json(body)).into_response();
         response.headers_mut().insert(
-            axum::http::header::CONTENT_TYPE,
-            axum::http::HeaderValue::from_static("application/problem+json"),
+            header::CONTENT_TYPE,
+            HeaderValue::from_static("application/problem+json"),
         );
         response
     }
@@ -67,12 +90,22 @@ impl From<RoomError> for ApiError {
     }
 }
 
-impl From<JoinRoomError> for ApiError {
-    fn from(error: JoinRoomError) -> Self {
+impl From<AdmissionError> for ApiError {
+    fn from(error: AdmissionError) -> Self {
         match error {
-            JoinRoomError::NotFound => Self::NotFound,
-            JoinRoomError::Repository(source) => Self::Internal(source.into()),
-            JoinRoomError::MediaAccess(source) => Self::Internal(source.into()),
+            AdmissionError::NotFound | AdmissionError::Rule(RoomRuleError::UnknownRequest) => {
+                Self::NotFound
+            }
+            AdmissionError::Forbidden => Self::Forbidden,
+            AdmissionError::Rule(rule @ RoomRuleError::AlreadyDecided) => {
+                Self::Conflict(rule.to_string())
+            }
+            AdmissionError::Rule(rule @ RoomRuleError::TooManyPending) => {
+                Self::TooManyRequests(rule.to_string())
+            }
+            AdmissionError::MediaUnavailable => Self::Unavailable("media server not configured"),
+            AdmissionError::Repository(source) => Self::Internal(source.into()),
+            AdmissionError::MediaAccess(source) => Self::Internal(source.into()),
         }
     }
 }

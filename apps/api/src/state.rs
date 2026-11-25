@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
-use diceri_application::ports::{MediaAccessIssuer, RoomIdGenerator, RoomRepository};
-use diceri_application::use_cases::{JoinRoomService, RoomService};
-use diceri_infra::{LiveKitAccessIssuer, MemoryRoomRepository, RandomRoomIdGenerator};
+use diceri_application::ports::{MediaAccessIssuer, RandomSource, RoomRepository};
+use diceri_application::use_cases::{AdmissionService, RoomService};
+use diceri_infra::{LiveKitAccessIssuer, MemoryRoomRepository, OsRandom};
 
 use crate::Config;
 
@@ -10,8 +10,7 @@ use crate::Config;
 #[derive(Debug, Clone)]
 pub struct AppState {
     pub rooms: RoomService,
-    /// `None` when no media server is configured.
-    pub join: Option<JoinRoomService>,
+    pub admission: AdmissionService,
 }
 
 impl AppState {
@@ -35,12 +34,10 @@ impl AppState {
     #[must_use]
     pub fn in_memory(media: Option<Arc<dyn MediaAccessIssuer>>) -> Self {
         let repository: Arc<dyn RoomRepository> = Arc::new(MemoryRoomRepository::default());
-        let ids: Arc<dyn RoomIdGenerator> = Arc::new(RandomRoomIdGenerator);
-        let join =
-            media.map(|issuer| JoinRoomService::new(repository.clone(), ids.clone(), issuer));
+        let random: Arc<dyn RandomSource> = Arc::new(OsRandom);
         Self {
-            rooms: RoomService::new(repository, ids),
-            join,
+            rooms: RoomService::new(repository.clone(), random.clone()),
+            admission: AdmissionService::new(repository, random, media),
         }
     }
 }

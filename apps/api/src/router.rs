@@ -32,5 +32,8 @@ fn cors_layer(origins: &[String]) -> CorsLayer {
     CorsLayer::new()
         .allow_origin(origins)
         .allow_methods([Method::GET, Method::POST])
-        .allow_headers([axum::http::header::CONTENT_TYPE])
+        .allow_headers([
+            axum::http::header::CONTENT_TYPE,
+            axum::http::HeaderName::from_static(features::ACCESS_KEY_HEADER),
+        ])
 }
