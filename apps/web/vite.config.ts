@@ -18,7 +18,10 @@ export default defineConfig({
 			adapter: adapter({ fallback: '200.html' })
 		})
 	],
+	preview: { host: '127.0.0.1' },
 	server: {
+		// IPv4 explicitly: `localhost` may bind only ::1, which SSH tunnels to 127.0.0.1 miss.
+		host: '127.0.0.1',
 		port: 5180,
 		strictPort: true,
 		// Same-origin API in dev; production serves the SPA from the API host.
