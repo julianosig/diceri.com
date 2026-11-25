@@ -109,10 +109,13 @@ impl SpeakerPipeline {
             Some(SegmentUpdate::Progress(text)) => {
                 self.caption(CaptionKind::Partial, state.phrase, text).await;
             }
-            Some(SegmentUpdate::Phrase(text)) => {
-                self.caption(CaptionKind::Original, state.phrase, text.clone())
+            Some(SegmentUpdate::Phrase { text, language }) => {
+                // Trust what was detected over what the participant declared.
+                let source = language.unwrap_or_else(|| self.deps.source.clone());
+                self.caption_in(CaptionKind::Original, state.phrase, text.clone(), &source)
                     .await;
-                self.dispatch(state, &text, self.targets(targets));
+                let targets = Self::targets(targets, &source);
+                self.dispatch(state, &text, &source, targets);
                 state.context.push(text);
                 state.phrase += 1;
             }
@@ -121,7 +124,13 @@ impl SpeakerPipeline {
     }
 
     /// Queues the phrase on each target's worker, dropping it if that queue is full.
-    fn dispatch(&self, state: &mut StreamState, text: &str, targets: Vec<LanguageCode>) {
+    fn dispatch(
+        &self,
+        state: &mut StreamState,
+        text: &str,
+        source: &LanguageCode,
+        targets: Vec<LanguageCode>,
+    ) {
         let context = state.context.snapshot();
         let ended_at = Instant::now();
         for target in targets {
@@ -132,6 +141,7 @@ impl SpeakerPipeline {
             let job = PhraseJob {
                 phrase: state.phrase,
                 text: text.to_owned(),
+                source: source.clone(),
                 context: context.clone(),
                 ended_at,
             };
@@ -141,9 +151,12 @@ impl SpeakerPipeline {
         }
     }
 
-    /// Target languages other than the speaker's own (same base language is skipped).
-    fn targets(&self, targets: &watch::Receiver<Vec<LanguageCode>>) -> Vec<LanguageCode> {
-        let source = self.deps.source.primary();
+    /// Target languages other than the phrase's own (same base language is skipped).
+    fn targets(
+        targets: &watch::Receiver<Vec<LanguageCode>>,
+        source: &LanguageCode,
+    ) -> Vec<LanguageCode> {
+        let source = source.primary();
         targets
             .borrow()
             .iter()
@@ -153,9 +166,20 @@ impl SpeakerPipeline {
     }
 
     async fn caption(&self, kind: CaptionKind, phrase: u64, text: String) {
+        let language = self.deps.source.clone();
+        self.caption_in(kind, phrase, text, &language).await;
+    }
+
+    async fn caption_in(
+        &self,
+        kind: CaptionKind,
+        phrase: u64,
+        text: String,
+        language: &LanguageCode,
+    ) {
         let caption = Caption {
             speaker: self.deps.speaker.clone(),
-            language: self.deps.source.clone(),
+            language: language.clone(),
             kind,
             phrase,
             text,

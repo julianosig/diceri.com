@@ -114,7 +114,21 @@ impl Harness {
 
 fn phrase(text: &str) -> Vec<TranscriptEvent> {
     vec![
-        TranscriptEvent::Final(text.to_owned()),
+        TranscriptEvent::Final {
+            text: text.to_owned(),
+            language: None,
+        },
+        TranscriptEvent::Endpoint,
+    ]
+}
+
+fn phrase_in(text: &str, language: &str) -> Vec<TranscriptEvent> {
+    let language = Some(language.parse().unwrap());
+    vec![
+        TranscriptEvent::Final {
+            text: text.to_owned(),
+            language,
+        },
         TranscriptEvent::Endpoint,
     ]
 }
@@ -166,4 +180,17 @@ async fn publishes_live_partial_captions() {
     let events = vec![TranscriptEvent::Partial("Ol".to_owned())];
     let harness = Harness::run(events, &["en"]).await;
     assert_eq!(harness.texts(CaptionKind::Partial), vec!["Ol"]);
+}
+
+#[tokio::test]
+async fn translates_from_the_detected_language_not_the_declared_one() {
+    // Declared pt-BR, but this phrase was detected as English.
+    let harness = Harness::run(phrase_in("Hello", "en"), &["en", "es"]).await;
+    assert_eq!(harness.texts(CaptionKind::Translation), vec!["[es] Hello"]);
+    let captions = harness.output.captions.lock().unwrap();
+    let original = captions
+        .iter()
+        .find(|c| c.kind == CaptionKind::Original)
+        .unwrap();
+    assert_eq!(original.language.as_str(), "en");
 }

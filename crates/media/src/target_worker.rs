@@ -19,6 +19,8 @@ const QUEUE_DEPTH: usize = 4;
 pub(crate) struct PhraseJob {
     pub phrase: u64,
     pub text: String,
+    /// Detected language of this phrase (falls back to the declared one).
+    pub source: LanguageCode,
     pub context: Vec<String>,
     /// When the speaker finished the phrase; the origin of latency metrics.
     pub ended_at: Instant,
@@ -74,7 +76,7 @@ async fn process(deps: &WorkerDeps, target: &LanguageCode, job: PhraseJob) {
 async fn translate(deps: &WorkerDeps, target: &LanguageCode, job: &PhraseJob) -> Option<String> {
     let request = TranslationRequest {
         text: &job.text,
-        source: &deps.source,
+        source: &job.source,
         target,
         context: &job.context,
     };
