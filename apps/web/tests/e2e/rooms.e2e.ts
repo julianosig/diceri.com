@@ -1,12 +1,22 @@
 import { expect, test } from '@playwright/test';
 
-test('creates a meeting and lands on a shareable room page', async ({ page }) => {
+test('creator lands on the pre-join screen as host', async ({ page }) => {
 	await page.goto('/');
 	await page.getByRole('button', { name: 'New meeting' }).click();
 
 	await expect(page).toHaveURL(/\/r\/[0-9A-Za-z]{22}$/);
-	await expect(page.getByRole('heading', { name: 'Your meeting is ready' })).toBeVisible();
-	await expect(page.getByText(page.url())).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Ready to join?' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Join now' })).toBeVisible();
+});
+
+test('someone else opening the link must ask to join', async ({ page, browser }) => {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'New meeting' }).click();
+	await expect(page).toHaveURL(/\/r\//);
+
+	const guest = await (await browser.newContext()).newPage();
+	await guest.goto(page.url());
+	await expect(guest.getByRole('button', { name: 'Ask to join' })).toBeVisible();
 });
 
 test('unknown room shows a not-found error', async ({ page }) => {

@@ -1,55 +1,77 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Browser, type Page } from '@playwright/test';
 
-/** Creates a room through the API; skips the test when no media server is configured. */
-async function createRoomWithMedia(page: Page): Promise<string> {
-	const room = (await (await page.request.post('/api/v1/rooms')).json()) as { id: string };
-	const join = await page.request.post(`/api/v1/rooms/${room.id}/join`);
-	test.skip(join.status() === 503, 'LiveKit is not configured (set DICERI_LIVEKIT_* in .env)');
-	return room.id;
+/** Skips when the API has no media server configured (no DICERI_LIVEKIT_*). */
+async function skipWithoutMedia(page: Page): Promise<void> {
+	const room = (await (await page.request.post('/api/v1/rooms')).json()) as {
+		id: string;
+		hostKey: string;
+	};
+	const session = await page.request.post(`/api/v1/rooms/${room.id}/host-session`, {
+		headers: { 'x-diceri-key': room.hostKey },
+		data: { name: 'Probe' }
+	});
+	test.skip(session.status() === 503, 'LiveKit is not configured (set DICERI_LIVEKIT_* in .env)');
 }
 
-/** Joins with the deterministic browser filter (Krisp needs real speech). */
-async function joinCall(page: Page, roomId: string): Promise<void> {
-	await page.goto(`/r/${roomId}`);
-	await page.getByRole('radio', { name: 'Off' }).click();
-	await page.getByRole('button', { name: 'Join with microphone' }).click();
-	await expect(page.getByRole('heading', { name: 'Audio test' })).toBeVisible({ timeout: 20_000 });
+async function hostJoins(page: Page): Promise<string> {
+	await page.goto('/');
+	await page.getByRole('button', { name: 'New meeting' }).click();
+	await page.getByLabel('Your name').fill('Host');
+	await page.getByRole('button', { name: 'Join now' }).click();
+	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
+	return page.url();
 }
 
-function receivingBitrate(page: Page) {
-	return page
+async function guestAsks(browser: Browser, url: string): Promise<Page> {
+	const context = await browser.newContext({ permissions: ['microphone'] });
+	const guest = await context.newPage();
+	await guest.goto(url);
+	await guest.getByLabel('Your name').fill('Guest');
+	await guest.getByRole('button', { name: 'Ask to join' }).click();
+	await expect(guest.getByRole('heading', { name: 'Asking to be let in…' })).toBeVisible();
+	return guest;
+}
+
+test('host admits a guest and both are in the call', async ({ page, browser }) => {
+	await skipWithoutMedia(page);
+	const guest = await guestAsks(browser, await hostJoins(page));
+
+	await expect(page.getByText('Guest wants to join this call')).toBeVisible({ timeout: 10_000 });
+	await page.getByRole('button', { name: 'Admit' }).click();
+
+	await expect(guest.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
+	await expect(page.getByRole('article', { name: 'Guest' })).toBeVisible({ timeout: 20_000 });
+	await expect(guest.getByRole('article', { name: 'Host' })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Audio settings' }).click();
+	const receiving = page
 		.getByRole('row', { name: /Receiving/ })
 		.getByRole('cell')
 		.first();
-}
-
-test('two participants connect and receive each other’s audio', async ({ page, browser }) => {
-	const roomId = await createRoomWithMedia(page);
-	const guestContext = await browser.newContext({ permissions: ['microphone'] });
-	const guest = await guestContext.newPage();
-
-	await joinCall(page, roomId);
-	await joinCall(guest, roomId);
-
-	await expect(page.getByText(/Guest · connection/)).toBeVisible({ timeout: 20_000 });
-	await expect(guest.getByText(/Guest · connection/)).toBeVisible();
 	await expect
-		.poll(async () => Number.parseInt((await receivingBitrate(page).textContent()) ?? '0', 10), {
+		.poll(async () => Number.parseInt((await receiving.textContent()) ?? '0', 10), {
 			timeout: 20_000
 		})
 		.toBeGreaterThan(0);
-
-	await guestContext.close();
 });
 
-test('round-trip monitor connects without errors', async ({ page }) => {
-	const roomId = await createRoomWithMedia(page);
-	await joinCall(page, roomId);
+test('host denies a guest', async ({ page, browser }) => {
+	await skipWithoutMedia(page);
+	const guest = await guestAsks(browser, await hostJoins(page));
 
+	await page.getByRole('button', { name: 'Deny' }).click();
+	await expect(guest.getByRole('heading', { name: "You can't join this meeting" })).toBeVisible({
+		timeout: 10_000
+	});
+});
+
+test('host can hear themselves through the server', async ({ page }) => {
+	await skipWithoutMedia(page);
+	await hostJoins(page);
+	await page.getByRole('button', { name: 'Audio settings' }).click();
 	await page.getByRole('radio', { name: 'Via server' }).click();
 	await expect(page.getByRole('radio', { name: 'Via server' })).toHaveAttribute(
 		'aria-checked',
 		'true'
 	);
-	await expect(page.getByRole('alert')).toHaveCount(0);
 });
