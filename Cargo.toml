@@ -1,6 +1,6 @@
 [workspace]
 resolver = "3"
-members = ["apps/api", "crates/*"]
+members = ["apps/api", "apps/media-agent", "crates/*"]
 
 [workspace.package]
 version = "0.1.0"
@@ -13,6 +13,7 @@ publish = false
 diceri-domain = { path = "crates/domain" }
 diceri-application = { path = "crates/application" }
 diceri-infra = { path = "crates/infra" }
+diceri-media = { path = "crates/media" }
 
 # Async runtime and HTTP
 tokio = { version = "1.54", features = ["macros", "rt-multi-thread", "signal", "net", "time", "sync"] }
@@ -34,6 +35,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "stream", "rustls", "http2"] }
 tokio-tungstenite = { version = "0.30.0", features = ["rustls-tls-native-roots"] }
 futures-util = "0.3.34"
+# Both ring and aws-lc-rs end up enabled through dependencies; binaries pick one.
+rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs"] }
 
 # Utilities
 rand = "0.10"
