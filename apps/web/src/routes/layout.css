@@ -1,1 +1,29 @@
 @import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Design tokens. Use these instead of raw colors in components. */
+@theme {
+	--color-brand-400: oklch(0.7 0.16 255);
+	--color-brand-500: oklch(0.62 0.19 255);
+	--color-brand-600: oklch(0.54 0.2 255);
+	--color-surface: oklch(0.99 0 0);
+	--color-surface-raised: oklch(0.96 0.005 255);
+	--color-ink: oklch(0.2 0.02 255);
+	--color-ink-muted: oklch(0.45 0.02 255);
+	--radius-tile: 1rem;
+	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+}
+
+@layer base {
+	.dark {
+		--color-surface: oklch(0.17 0.01 255);
+		--color-surface-raised: oklch(0.23 0.015 255);
+		--color-ink: oklch(0.95 0.005 255);
+		--color-ink-muted: oklch(0.72 0.02 255);
+	}
+
+	body {
+		@apply bg-surface font-sans text-ink antialiased;
+	}
+}
