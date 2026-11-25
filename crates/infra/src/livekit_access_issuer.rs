@@ -44,6 +44,8 @@ fn grants_for(room: &RoomId, role: MediaRole) -> VideoGrants {
             can_publish: Some(true),
             can_publish_data: Some(true),
             can_publish_sources: vec!["microphone".to_owned()],
+            // Lets the browser set its translation preview language attribute.
+            can_update_own_metadata: Some(true),
             ..base
         },
         MediaRole::Monitor => VideoGrants {
@@ -104,6 +106,7 @@ mod tests {
         let grants = grants_for(&room(), MediaRole::Speaker);
         assert_eq!(grants.can_publish, Some(true));
         assert_eq!(grants.can_publish_sources, vec!["microphone".to_owned()]);
+        assert_eq!(grants.can_update_own_metadata, Some(true));
         assert!(!grants.hidden);
     }
 
