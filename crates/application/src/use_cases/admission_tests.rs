@@ -221,3 +221,44 @@ async fn a_voice_from_outside_the_room_is_forbidden() {
         Err(AdmissionError::Forbidden)
     ));
 }
+
+fn ended<T>(result: &Result<T, AdmissionError>) -> bool {
+    matches!(result, Err(AdmissionError::Rule(RoomRuleError::Ended)))
+}
+
+#[tokio::test]
+async fn after_the_host_ends_the_call_nobody_can_join() {
+    let f = fixture(true);
+    let room = f.rooms.create().await.unwrap();
+    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    f.admission
+        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .await
+        .unwrap();
+
+    f.admission
+        .end_call(&room.id, room.host_key())
+        .await
+        .unwrap();
+
+    assert!(ended(
+        &f.admission
+            .join_as_host(&room.id, room.host_key(), &name("Ana"))
+            .await
+    ));
+    assert!(ended(&f.admission.knock(&room.id, name("Eve")).await));
+    assert!(ended(
+        &f.admission
+            .outcome(&room.id, &knock.request_id, &knock.key)
+            .await
+            .map(|_| ())
+    ));
+}
+
+#[tokio::test]
+async fn only_the_host_can_end_the_call() {
+    let f = fixture(true);
+    let room = f.rooms.create().await.unwrap();
+    let result = f.admission.end_call(&room.id, &wrong_key()).await;
+    assert!(matches!(result, Err(AdmissionError::Forbidden)));
+}

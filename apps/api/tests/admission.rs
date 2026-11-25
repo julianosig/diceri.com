@@ -218,3 +218,22 @@ async fn joining_without_media_server_is_unavailable() {
     let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(name("Ana"))).await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
 }
+
+#[tokio::test]
+async fn host_ends_the_meeting_and_nobody_can_join_after() {
+    let app = app(true);
+    let (id, host_key) = create_room(&app).await;
+    let end = format!("/api/v1/rooms/{id}/end");
+
+    let (status, _) = send(&app, "POST", &end, None, None).await;
+    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    let (status, _) = send(&app, "POST", &end, Some(&host_key), None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+
+    let join = format!("/api/v1/rooms/{id}/host-session");
+    let (status, _) = send(&app, "POST", &join, Some(&host_key), Some(name("Ana"))).await;
+    assert_eq!(status, StatusCode::GONE);
+    let knock = format!("/api/v1/rooms/{id}/requests");
+    let (status, _) = send(&app, "POST", &knock, None, Some(name("Eve"))).await;
+    assert_eq!(status, StatusCode::GONE);
+}

@@ -10,7 +10,7 @@ mod translator;
 mod voice_cloner;
 
 pub use media_access::{
-    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
+    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
 };
 pub use random_source::RandomSource;
 pub use room_repository::{RoomRepository, RoomRepositoryError};

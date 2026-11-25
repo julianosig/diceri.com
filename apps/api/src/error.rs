@@ -19,6 +19,8 @@ pub enum ApiError {
     Forbidden,
     #[error("conflict: {0}")]
     Conflict(String),
+    #[error("gone: {0}")]
+    Gone(String),
     #[error("too many requests: {0}")]
     TooManyRequests(String),
     #[error("service unavailable: {0}")]
@@ -43,6 +45,7 @@ impl ApiError {
             Self::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized", None),
             Self::Forbidden => (StatusCode::FORBIDDEN, "Forbidden", None),
             Self::Conflict(detail) => (StatusCode::CONFLICT, "Conflict", Some(detail)),
+            Self::Gone(detail) => (StatusCode::GONE, "Gone", Some(detail)),
             Self::TooManyRequests(detail) => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "Too Many Requests",
@@ -98,6 +101,7 @@ impl From<AdmissionError> for ApiError {
                 Self::NotFound
             }
             AdmissionError::Forbidden => Self::Forbidden,
+            AdmissionError::Rule(rule @ RoomRuleError::Ended) => Self::Gone(rule.to_string()),
             AdmissionError::Rule(rule @ RoomRuleError::AlreadyDecided) => {
                 Self::Conflict(rule.to_string())
             }

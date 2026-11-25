@@ -6,8 +6,8 @@ use diceri_domain::{
 };
 
 use crate::ports::{
-    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, RandomSource,
-    RoomRepository, RoomRepositoryError, TranslationDispatcher,
+    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
+    RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -55,6 +55,7 @@ pub struct AdmissionService {
     random: Arc<dyn RandomSource>,
     media: Option<Arc<dyn MediaAccessIssuer>>,
     translation: Option<Arc<dyn TranslationDispatcher>>,
+    closer: Option<Arc<dyn MediaRoomCloser>>,
 }
 
 impl std::fmt::Debug for AdmissionService {
@@ -77,7 +78,33 @@ impl AdmissionService {
             random,
             media,
             translation: None,
+            closer: None,
         }
+    }
+
+    /// Lets the host end the media session for everyone.
+    #[must_use]
+    pub fn with_room_closer(mut self, closer: Arc<dyn MediaRoomCloser>) -> Self {
+        self.closer = Some(closer);
+        self
+    }
+
+    /// Ends the meeting for everyone: nobody can join again and the media room
+    /// is closed, which disconnects every participant.
+    pub async fn end_call(
+        &self,
+        room_id: &RoomId,
+        host_key: &AccessKey,
+    ) -> Result<(), AdmissionError> {
+        let mut room = self.load_as_host(room_id, host_key).await?;
+        room.end();
+        self.rooms.update(room).await?;
+        if let Some(closer) = &self.closer
+            && let Err(error) = closer.close(room_id).await
+        {
+            tracing::warn!(%error, %room_id, "media room not closed");
+        }
+        Ok(())
     }
 
     /// Enables live translation: the media agent is started when people join.
@@ -97,6 +124,7 @@ impl AdmissionService {
         if !room.is_host(host_key) {
             return Err(AdmissionError::Forbidden);
         }
+        room.ensure_open()?;
         ensure_voice_belongs(&room, profile)?;
         let ticket = self.ticket(room_id, Some(profile), MediaRole::Speaker)?;
         self.start_translation(room_id).await;
@@ -109,6 +137,7 @@ impl AdmissionService {
         profile: ParticipantProfile,
     ) -> Result<Knock, AdmissionError> {
         let mut room = self.load(room_id).await?;
+        room.ensure_open()?;
         ensure_voice_belongs(&room, &profile)?;
         let request_id = RequestId::from_random_bytes(self.random.random_128());
         let key = AccessKey::from_random_bytes(self.random.random_128());
@@ -155,6 +184,7 @@ impl AdmissionService {
             RequestStatus::Pending => KnockOutcome::Pending,
             RequestStatus::Denied => KnockOutcome::Denied,
             RequestStatus::Admitted => {
+                room.ensure_open()?;
                 let ticket = self.ticket(room_id, Some(&request.profile), MediaRole::Speaker)?;
                 self.start_translation(room_id).await;
                 KnockOutcome::Admitted(ticket)
@@ -172,6 +202,7 @@ impl AdmissionService {
         if !room.is_member(key) {
             return Err(AdmissionError::Forbidden);
         }
+        room.ensure_open()?;
         self.ticket(room_id, None, MediaRole::Monitor)
     }
 

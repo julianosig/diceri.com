@@ -11,6 +11,8 @@ pub enum RoomRuleError {
     AlreadyDecided,
     #[error("too many voices were recorded in this room")]
     TooManyVoices,
+    #[error("the meeting has ended")]
+    Ended,
 }
 
 /// An anonymous meeting room joined through a shared link. The creator holds
@@ -23,6 +25,8 @@ pub struct Room {
     requests: Vec<JoinRequest>,
     /// Voice clones recorded for this room (provider ids), deleted when people leave.
     voices: Vec<String>,
+    /// Set when the host ends the call for everyone; nobody can join afterwards.
+    ended: bool,
 }
 
 impl Room {
@@ -41,6 +45,7 @@ impl Room {
             host_key,
             requests: Vec::new(),
             voices: Vec::new(),
+            ended: false,
         }
     }
 
@@ -81,6 +86,25 @@ impl Room {
     #[must_use]
     pub fn request(&self, id: &RequestId) -> Option<&JoinRequest> {
         self.requests.iter().find(|r| &r.id == id)
+    }
+
+    #[must_use]
+    pub fn is_ended(&self) -> bool {
+        self.ended
+    }
+
+    /// Ends the meeting for everyone; idempotent.
+    pub fn end(&mut self) {
+        self.ended = true;
+    }
+
+    /// Joining, knocking and admitting are only possible while the meeting runs.
+    pub fn ensure_open(&self) -> Result<(), RoomRuleError> {
+        if self.ended {
+            Err(RoomRuleError::Ended)
+        } else {
+            Ok(())
+        }
     }
 
     #[must_use]
@@ -192,6 +216,15 @@ mod tests {
             room.register_voice("extra".to_owned()),
             Err(RoomRuleError::TooManyVoices)
         );
+    }
+
+    #[test]
+    fn an_ended_room_refuses_everything_new() {
+        let mut room = room();
+        assert_eq!(room.ensure_open(), Ok(()));
+        room.end();
+        assert!(room.is_ended());
+        assert_eq!(room.ensure_open(), Err(RoomRuleError::Ended));
     }
 
     #[test]

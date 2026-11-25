@@ -6,7 +6,8 @@ use diceri_application::ports::{
 use diceri_application::use_cases::{AdmissionService, RoomService, VoiceService};
 use diceri_infra::synthesis::ElevenLabsVoiceCloner;
 use diceri_infra::{
-    HttpTranslationDispatcher, LiveKitAccessIssuer, MemoryRoomRepository, OsRandom,
+    HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitRoomCloser, MemoryRoomRepository,
+    OsRandom,
 };
 
 use crate::Config;
@@ -44,6 +45,15 @@ impl AppState {
                 ))
             });
         let mut state = Self::in_memory_with(media, cloner);
+        if let Some(livekit) = &config.livekit {
+            let room_closer = Arc::new(LiveKitRoomCloser::new(
+                &livekit.url,
+                livekit.api_key.clone(),
+                livekit.api_secret.clone(),
+                reqwest::Client::new(),
+            ));
+            state.admission = state.admission.with_room_closer(room_closer);
+        }
         if let Some(agent) = &config.agent {
             let dispatcher: Arc<dyn TranslationDispatcher> =
                 Arc::new(HttpTranslationDispatcher::new(

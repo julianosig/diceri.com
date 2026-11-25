@@ -31,6 +31,12 @@ pub struct MediaGrant {
 #[error("failed to issue media access: {0}")]
 pub struct MediaAccessError(pub String);
 
+/// Ends a media room for everyone in it.
+#[async_trait::async_trait]
+pub trait MediaRoomCloser: Send + Sync {
+    async fn close(&self, room: &RoomId) -> Result<(), MediaAccessError>;
+}
+
 /// Issues short-lived, room-scoped media credentials (for example LiveKit JWTs).
 pub trait MediaAccessIssuer: Send + Sync {
     fn issue(

@@ -107,3 +107,15 @@ pub(crate) async fn monitor_session(
         .await?;
     Ok(Json(ticket.into()))
 }
+
+/// Host ends the meeting for everyone (`POST /rooms/{room}/end`).
+pub(crate) async fn end_call(
+    State(state): State<AppState>,
+    Path(room_id): Path<String>,
+    CallerKey(key): CallerKey,
+) -> Result<StatusCode, ApiError> {
+    let room_id = parse_room_id(&room_id)?;
+    state.admission.end_call(&room_id, &key).await?;
+    tracing::info!(%room_id, "meeting ended by host");
+    Ok(StatusCode::NO_CONTENT)
+}
