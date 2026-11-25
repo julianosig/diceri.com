@@ -1,0 +1,24 @@
+# Rust
+/target/
+
+# Node / SvelteKit
+node_modules/
+.svelte-kit/
+build/
+.vite/
+coverage/
+playwright-report/
+test-results/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.DS_Store
+*.swp
