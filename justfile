@@ -55,6 +55,10 @@ test-browser:
 e2e:
     pnpm --filter @diceri/web test:e2e
 
+# Live provider tests (real Soniox, Gemini, ElevenLabs; costs cents; needs .env keys).
+test-live:
+    cargo test -p diceri-infra --test live_providers -- --ignored --nocapture --test-threads=1
+
 # Repository size limits (files per folder, Rust file length).
 limits:
     ./scripts/check-limits.sh
