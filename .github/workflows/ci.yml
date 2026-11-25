@@ -4,6 +4,7 @@ on:
   pull_request:
   push:
     branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -53,38 +54,60 @@ jobs:
       - run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
       - run: pnpm --filter @diceri/web test:browser
 
+  # Calls real providers (costs credits): only on main and manual runs, and only
+  # when the provider secrets exist; otherwise it is skipped with a notice.
   e2e:
-    name: e2e (api + web + livekit)
+    name: e2e (api + agent + web + livekit)
     needs: [rust, web]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     env:
-      # Repository secrets; without them the media tests skip.
+      # Repository secrets; see docs/testing.md.
       DICERI_LIVEKIT_URL: ${{ secrets.DICERI_LIVEKIT_URL }}
       DICERI_LIVEKIT_API_KEY: ${{ secrets.DICERI_LIVEKIT_API_KEY }}
       DICERI_LIVEKIT_API_SECRET: ${{ secrets.DICERI_LIVEKIT_API_SECRET }}
       DICERI_AGENT_KEY: ${{ secrets.DICERI_AGENT_KEY }}
-      DICERI_SONIOX_API_KEY: ${{ secrets.DICERI_SONIOX_API_KEY }}
       DICERI_GEMINI_API_KEY: ${{ secrets.DICERI_GEMINI_API_KEY }}
       DICERI_ELEVENLABS_API_KEY: ${{ secrets.DICERI_ELEVENLABS_API_KEY }}
     steps:
-      - uses: actions/checkout@v7
-      - name: Install toolchain from rust-toolchain.toml
-        run: rustup show active-toolchain || rustup toolchain install
-      - uses: Swatinem/rust-cache@v2
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: pnpm
-      - name: System packages for libwebrtc (media agent)
+      - name: Check provider secrets
+        id: secrets
+        run: |
+          if [ -n "$DICERI_LIVEKIT_API_SECRET" ] && [ -n "$DICERI_AGENT_KEY" ] \
+            && [ -n "$DICERI_GEMINI_API_KEY" ] && [ -n "$DICERI_ELEVENLABS_API_KEY" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::End-to-end tests skipped: provider secrets are not configured."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+      - if: steps.secrets.outputs.present == 'true'
+        uses: actions/checkout@v7
+      - if: steps.secrets.outputs.present == 'true'
+        name: System packages for libwebrtc (media agent)
         run: >
           sudo apt-get update && sudo apt-get install -y libglib2.0-dev libdrm-dev
           libgbm-dev libx11-dev libxext-dev libxfixes-dev libxdamage-dev libxrandr-dev
           libxcomposite-dev libva-dev
-      - run: ./scripts/install-webrtc-clang.sh
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
-      - run: pnpm --filter @diceri/web test:e2e
+      - if: steps.secrets.outputs.present == 'true'
+        name: Install toolchains
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          ./scripts/install-webrtc-clang.sh
+      - if: steps.secrets.outputs.present == 'true'
+        uses: Swatinem/rust-cache@v2
+      - if: steps.secrets.outputs.present == 'true'
+        uses: pnpm/action-setup@v6
+      - if: steps.secrets.outputs.present == 'true'
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - if: steps.secrets.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+      - if: steps.secrets.outputs.present == 'true'
+        run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
+      - if: steps.secrets.outputs.present == 'true'
+        run: pnpm --filter @diceri/web test:e2e
       - if: failure()
         uses: actions/upload-artifact@v7
         with:
