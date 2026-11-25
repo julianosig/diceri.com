@@ -167,3 +167,29 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 		await bob.browser.close();
 	}
 });
+
+test('previewing in the language you speak explains there is nothing to translate', async ({
+	baseURL
+}) => {
+	test.setTimeout(120_000);
+	const url = baseURL ?? 'http://127.0.0.1:4180';
+	// Hears English and speaks English; the preview starts in the output language.
+	const bob = await launch('Bob', 'en', url);
+	try {
+		await bob.page.goto('/');
+		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await fillProfile(bob);
+		await bob.page.getByRole('button', { name: 'Join now' }).click();
+		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
+			timeout: 20_000
+		});
+		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
+		await bob.page.getByRole('radio', { name: 'Translated' }).click();
+		await expect(bob.page.getByLabel('Translate me into')).toHaveValue('en');
+		await expect(bob.page.getByRole('status')).toContainText("You're speaking English", {
+			timeout: 30_000
+		});
+	} finally {
+		await bob.browser.close();
+	}
+});
