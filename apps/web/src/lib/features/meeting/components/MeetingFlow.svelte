@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { CallScreen, MeetingInfoCard } from '#lib/features/call/index.ts';
+	import { TranscriptView } from '#lib/features/translation/index.ts';
 	import {
 		JoinRequestList,
 		JoinRequestToast,
@@ -39,6 +40,7 @@
 		meetingCode={roomId}
 		peopleBadge={requests?.pending.length ?? 0}
 		onleave={() => flow.leave()}
+		onendforeveryone={flow.isHost ? () => flow.endForEveryone() : undefined}
 	>
 		{#snippet peopleExtra()}
 			{#if requests}
@@ -74,11 +76,16 @@
 					flow.cancelKnock();
 				}}
 			/>
-		{:else if flow.phase === 'left'}
-			<section class="flex flex-col items-center gap-4 text-center">
-				<h1 class="text-3xl">You left the meeting</h1>
+		{:else if flow.phase === 'left' || flow.phase === 'ended'}
+			<section class="flex w-full flex-col items-center gap-6 px-4 text-center">
+				<h1 class="text-3xl">
+					{#if flow.phase === 'left'}You left the meeting{:else if flow.endedBy === 'me'}You ended
+						the call for everyone{:else}The host ended the call{/if}
+				</h1>
 				<div class="flex gap-3">
-					<Button variant="secondary" onclick={() => (flow.phase = 'prejoin')}>Rejoin</Button>
+					{#if flow.phase === 'left'}
+						<Button variant="secondary" onclick={() => (flow.phase = 'prejoin')}>Rejoin</Button>
+					{/if}
 					<a
 						class="rounded-full px-6 py-2.5 text-brand-600 hover:bg-surface-raised"
 						href={resolve('/')}
@@ -86,6 +93,9 @@
 						Return to home screen
 					</a>
 				</div>
+				{#if flow.transcript}
+					<TranscriptView transcript={flow.transcript} />
+				{/if}
 			</section>
 		{:else}
 			<PreJoin

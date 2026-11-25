@@ -1,4 +1,7 @@
 export { default as CaptionsOverlay } from './components/CaptionsOverlay.svelte';
+export { default as TranscriptView } from './components/TranscriptView.svelte';
+export { TranscriptLog } from './transcript.svelte.ts';
+export type { TranscriptEntry } from './transcript.ts';
 export { CaptionFeed, type CaptionLine } from './captions.svelte.ts';
 export { isCaptionForListener, parseCaption, type CaptionMessage } from './captions.ts';
 export {

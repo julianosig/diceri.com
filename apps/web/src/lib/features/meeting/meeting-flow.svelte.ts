@@ -1,5 +1,7 @@
 import { CallSession } from '#lib/features/call/index.ts';
+import type { TranscriptLog } from '#lib/features/translation/index.ts';
 import {
+	endCall,
 	GuestKnock,
 	HostRequests,
 	hostSession,
@@ -10,7 +12,7 @@ import {
 } from '#lib/features/lobby/index.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 
-export type MeetingPhase = 'prejoin' | 'joining' | 'waiting' | 'call' | 'left';
+export type MeetingPhase = 'prejoin' | 'joining' | 'waiting' | 'call' | 'left' | 'ended';
 
 /**
  * Drives one visit to a meeting: pre-join, then either straight into the call
@@ -20,6 +22,10 @@ export class MeetingFlow {
 	phase = $state<MeetingPhase>('prejoin');
 	error = $state<string | undefined>();
 	session = $state<CallSession | undefined>();
+	/** Transcript of the last call, kept after leaving so it can be read and downloaded. */
+	transcript = $state<TranscriptLog | undefined>();
+	/** Who ended the call, for the end screen. */
+	endedBy = $state<'host' | 'me' | undefined>();
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
 	#deviceId: string | undefined;
@@ -66,10 +72,23 @@ export class MeetingFlow {
 	}
 
 	async leave(): Promise<void> {
+		await this.#close('left');
+	}
+
+	/** Host only: ends the meeting for everyone, then shows the transcript. */
+	async endForEveryone(): Promise<void> {
+		if (!this.hostKey) return;
+		this.endedBy = 'me';
+		await endCall(this.roomId, this.hostKey);
+		await this.#close('ended');
+	}
+
+	async #close(phase: 'left' | 'ended'): Promise<void> {
 		this.hostRequests?.stop();
+		this.transcript = this.session?.transcript ?? this.transcript;
 		await this.session?.disconnect();
 		this.session = undefined;
-		this.phase = 'left';
+		this.phase = phase;
 	}
 
 	async #startCall(credentials: MediaCredentials, accessKey: string): Promise<void> {
@@ -78,7 +97,11 @@ export class MeetingFlow {
 			credentials,
 			outputLanguage: this.#outputLanguage,
 			deviceId: this.#deviceId,
-			monitorCredentials: () => monitorSession(roomId, accessKey)
+			monitorCredentials: () => monitorSession(roomId, accessKey),
+			onEndedByHost: () => {
+				this.endedBy ??= 'host';
+				void this.#close('ended');
+			}
 		});
 		this.phase = 'call';
 		this.hostRequests?.start();

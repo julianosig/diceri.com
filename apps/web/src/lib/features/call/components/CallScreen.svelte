@@ -22,9 +22,19 @@
 		/** Floating content over the stage (host: meeting card, join toasts). */
 		overlay?: Snippet;
 		onleave: () => void;
+		/** Host only: ends the meeting for everyone. */
+		onendforeveryone?: () => void;
 	}
 
-	let { session, meetingCode, peopleBadge = 0, peopleExtra, overlay, onleave }: Props = $props();
+	let {
+		session,
+		meetingCode,
+		peopleBadge = 0,
+		peopleExtra,
+		overlay,
+		onleave,
+		onendforeveryone
+	}: Props = $props();
 	let panel = $state<CallPanel>('none');
 	const grid = $derived(session.participants.length > 1 ? 'sm:grid-cols-2' : 'max-w-4xl');
 	const nameOf = (identity: string) =>
@@ -113,5 +123,6 @@
 		ontogglemute={() => session.toggleMute()}
 		onpanel={(next: CallPanel) => (panel = next)}
 		{onleave}
+		{onendforeveryone}
 	/>
 </div>

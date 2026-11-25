@@ -1,4 +1,5 @@
 import {
+	DisconnectReason,
 	type ConnectionQuality,
 	LocalAudioTrack,
 	RemoteAudioTrack,
@@ -29,6 +30,7 @@ import {
 	parseCaption,
 	parseTranslatedTrack,
 	PREVIEW_ATTRIBUTE,
+	TranscriptLog,
 	wantsTranslatedTrack,
 	type Listener
 } from '#lib/features/translation/index.ts';
@@ -56,6 +58,8 @@ export interface CallSessionOptions {
 	deviceId?: string;
 	/** Fetches hidden-listener credentials for the round-trip monitor. */
 	monitorCredentials: () => Promise<MediaCredentials>;
+	/** Called once when the host ends the meeting for everyone. */
+	onEndedByHost?: () => void;
 }
 
 /** One participant's live media session in a room. Create per call screen. */
@@ -76,6 +80,8 @@ export class CallSession {
 	/** Language your own speech was last detected in. */
 	ownSpokenLanguage = $state<string | undefined>();
 	readonly captions: CaptionFeed;
+	/** Everything said while connected, originals and translations (stays in this browser). */
+	readonly transcript = new TranscriptLog();
 
 	#room = new Room({ adaptiveStream: true, dynacast: true });
 	// Bookkeeping only, never rendered, so it does not need to be reactive.
@@ -291,6 +297,7 @@ export class CallSession {
 					this.ownSpokenLanguage = caption.language;
 				}
 				this.captions.push(caption);
+				this.transcript.record(caption, this.#nameOf(caption.speaker));
 			})
 			.on(RoomEvent.TrackPublished, (publication: RemoteTrackPublication) => {
 				if (publication.trackName.startsWith('tr:') && !this.#wants(publication)) {
@@ -300,6 +307,9 @@ export class CallSession {
 			.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
 				this.#remoteElements.get(track)?.remove();
 				this.#remoteElements.delete(track);
+			})
+			.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
+				if (reason === DisconnectReason.ROOM_DELETED) this.options.onEndedByHost?.();
 			})
 			.on(RoomEvent.AudioPlaybackStatusChanged, () => {
 				this.audioBlocked = !this.#room.canPlaybackAudio;
@@ -350,6 +360,13 @@ export class CallSession {
 			const wanted = this.#wants(publication);
 			if (wanted !== publication.isSubscribed) publication.setSubscribed(wanted);
 		}
+	}
+
+	#nameOf(identity: string): string {
+		if (identity === this.options.credentials.identity) {
+			return this.#room.localParticipant.name || 'You';
+		}
+		return this.#room.remoteParticipants.get(identity)?.name || 'Guest';
 	}
 
 	/** Re-applies ducking when a speaker is detected in a new language. */

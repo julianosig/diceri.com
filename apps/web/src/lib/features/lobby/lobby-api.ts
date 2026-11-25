@@ -59,6 +59,11 @@ export function decideRequest(roomId: string, hostKey: string, requestId: string
 	});
 }
 
+/** Host ends the meeting for everyone. */
+export function endCall(roomId: string, hostKey: string) {
+	return requestVoid(`${room(roomId)}/end`, { method: 'POST', accessKey: hostKey });
+}
+
 /** Hidden listener used to hear yourself through the server. */
 export function monitorSession(roomId: string, accessKey: string) {
 	return requestJson<MediaCredentials>(`${room(roomId)}/monitor-session`, {
