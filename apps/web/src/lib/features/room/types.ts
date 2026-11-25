@@ -4,10 +4,12 @@ export interface Room {
 	maxParticipants: number;
 }
 
-/** `speaker` publishes the microphone; `monitor` is a hidden listener. */
-export type JoinRole = 'speaker' | 'monitor';
+/** Returned once on creation; `hostKey` proves the creator is the host. */
+export interface CreatedRoom extends Room {
+	hostKey: string;
+}
 
-/** Mirrors `JoinResponse` in apps/api/src/features/rooms/dto.rs. */
+/** Mirrors `JoinResponse`: credentials to connect to the media server. */
 export interface MediaCredentials {
 	identity: string;
 	serverUrl: string;

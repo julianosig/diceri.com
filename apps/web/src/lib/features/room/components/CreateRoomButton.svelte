@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/index.ts';
+	import { saveHostKey } from '../host-keys.ts';
 	import { createRoom } from '../room-api.ts';
 
 	let pending = $state(false);
@@ -12,6 +13,7 @@
 		failed = false;
 		try {
 			const room = await createRoom();
+			saveHostKey(room.id, room.hostKey);
 			await goto(resolve('/r/[room]', { room: room.id }));
 		} catch {
 			failed = true;

@@ -9,6 +9,8 @@ export class LevelMeter {
 		this.#analyser.fftSize = this.#samples.length;
 		this.#source = this.#context.createMediaStreamSource(new MediaStream([track]));
 		this.#source.connect(this.#analyser);
+		// Contexts created outside a user gesture start suspended and read silence.
+		void this.#context.resume();
 	}
 
 	/** Current level, scaled so normal speech lands around 0.3–0.8. */

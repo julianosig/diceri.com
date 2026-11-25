@@ -1,5 +1,5 @@
 import {
-	ConnectionQuality,
+	type ConnectionQuality,
 	LocalAudioTrack,
 	RemoteAudioTrack,
 	Room,
@@ -7,7 +7,7 @@ import {
 	Track,
 	type RemoteTrack
 } from 'livekit-client';
-import { joinRoom } from '#lib/features/room/index.ts';
+import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
 	DEFAULT_AUDIO_SETTINGS,
 	toCaptureOptions,
@@ -23,13 +23,23 @@ import { StatsPoller, type CallMetrics } from './stats-poller.ts';
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
 export type MonitorMode = 'off' | 'local' | 'loopback';
 
-export interface RemotePeer {
+export interface Participant {
 	identity: string;
+	name: string;
 	speaking: boolean;
+	muted: boolean;
 	quality: ConnectionQuality;
+	isLocal: boolean;
 }
 
-/** One participant's live media session in a room. Create per room page. */
+export interface CallSessionOptions {
+	credentials: MediaCredentials;
+	deviceId?: string;
+	/** Fetches hidden-listener credentials for the round-trip monitor. */
+	monitorCredentials: () => Promise<MediaCredentials>;
+}
+
+/** One participant's live media session in a room. Create per call screen. */
 export class CallSession {
 	status = $state<CallStatus>('idle');
 	error = $state<string | undefined>();
@@ -39,13 +49,11 @@ export class CallSession {
 	muted = $state(false);
 	level = $state(0);
 	monitor = $state<MonitorMode>('off');
-	peers = $state<RemotePeer[]>([]);
-	ownQuality = $state<ConnectionQuality>(ConnectionQuality.Unknown);
+	participants = $state<Participant[]>([]);
 	audioBlocked = $state(false);
 	metrics = $state<CallMetrics>({});
 
 	#room = new Room({ adaptiveStream: true, dynacast: true });
-	#identity = '';
 	// Bookkeeping only, never rendered, so it does not need to be reactive.
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	#remoteElements = new Map<RemoteTrack, HTMLMediaElement>();
@@ -55,7 +63,8 @@ export class CallSession {
 	#loopback: LoopbackMonitor | undefined;
 	#stats = new StatsPoller();
 
-	constructor(private readonly roomId: string) {
+	constructor(private readonly options: CallSessionOptions) {
+		this.settings.deviceId = options.deviceId;
 		this.#bindRoomEvents();
 	}
 
@@ -67,10 +76,10 @@ export class CallSession {
 		this.status = 'connecting';
 		this.error = undefined;
 		try {
-			const credentials = await joinRoom(this.roomId, 'speaker');
-			this.#identity = credentials.identity;
-			await this.#room.connect(credentials.serverUrl, credentials.token);
+			const { serverUrl, token } = this.options.credentials;
+			await this.#room.connect(serverUrl, token);
 			await this.#publishMicrophone();
+			void this.loadDevices();
 			this.audioBlocked = !this.#room.canPlaybackAudio;
 			this.#stats.start(
 				() => this.#micTrack(),
@@ -78,6 +87,7 @@ export class CallSession {
 				(metrics) => (this.metrics = metrics)
 			);
 			this.status = 'connected';
+			this.#refreshParticipants();
 		} catch (cause) {
 			this.status = 'error';
 			this.error = cause instanceof Error ? cause.message : String(cause);
@@ -106,8 +116,8 @@ export class CallSession {
 			this.#localMonitor = new LocalMonitor(outgoingMediaTrack(track));
 		}
 		if (mode === 'loopback') {
-			this.#loopback = new LoopbackMonitor(this.#identity);
-			await this.#loopback.start(await joinRoom(this.roomId, 'monitor'));
+			this.#loopback = new LoopbackMonitor(this.options.credentials.identity);
+			await this.#loopback.start(await this.options.monitorCredentials());
 		}
 	}
 
@@ -117,6 +127,7 @@ export class CallSession {
 		if (this.muted) await track.unmute();
 		else await track.mute();
 		this.muted = !this.muted;
+		this.#refreshParticipants();
 	}
 
 	async startAudio(): Promise<void> {
@@ -132,6 +143,7 @@ export class CallSession {
 		this.#remoteElements.clear();
 		await this.#room.disconnect();
 		this.status = 'idle';
+		this.participants = [];
 	}
 
 	async #publishMicrophone(): Promise<void> {
@@ -177,22 +189,28 @@ export class CallSession {
 		return undefined;
 	}
 
-	#refreshPeers(): void {
-		const speaking = this.#room.activeSpeakers.map((p) => p.identity);
-		this.peers = [...this.#room.remoteParticipants.values()].map((participant) => ({
+	#refreshParticipants(): void {
+		const local = this.#room.localParticipant;
+		const all = [local, ...this.#room.remoteParticipants.values()];
+		this.participants = all.map((participant) => ({
 			identity: participant.identity,
-			speaking: speaking.includes(participant.identity),
-			quality: participant.connectionQuality
+			name: participant.name || 'Guest',
+			speaking: participant.isSpeaking,
+			muted: participant === local ? this.muted : !participant.isMicrophoneEnabled,
+			quality: participant.connectionQuality,
+			isLocal: participant === local
 		}));
-		this.ownQuality = this.#room.localParticipant.connectionQuality;
 	}
 
 	#bindRoomEvents(): void {
 		const refresh = () => {
-			this.#refreshPeers();
+			this.#refreshParticipants();
 		};
 		this.#room
 			.on(RoomEvent.ParticipantConnected, refresh)
+			.on(RoomEvent.TrackMuted, refresh)
+			.on(RoomEvent.TrackUnmuted, refresh)
+			.on(RoomEvent.TrackPublished, refresh)
 			.on(RoomEvent.ParticipantDisconnected, refresh)
 			.on(RoomEvent.ActiveSpeakersChanged, refresh)
 			.on(RoomEvent.ConnectionQualityChanged, refresh)

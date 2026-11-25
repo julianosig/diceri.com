@@ -11,6 +11,11 @@
 	--color-surface-raised: oklch(0.96 0.005 255);
 	--color-ink: oklch(0.2 0.02 255);
 	--color-ink-muted: oklch(0.45 0.02 255);
+	/* Call screen (always dark, like a video stage). */
+	--color-stage: oklch(0.22 0.005 255);
+	--color-tile: oklch(0.3 0.01 255);
+	--color-control: oklch(0.36 0.01 255);
+	--color-danger: oklch(0.6 0.2 25);
 	--radius-tile: 1rem;
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 }

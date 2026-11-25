@@ -1,0 +1,110 @@
+<script lang="ts">
+	import type { Snippet } from 'svelte';
+	import type { CallPanel } from '../call-layout.ts';
+	import type { AudioSettings } from '../audio-settings.ts';
+	import type { CallSession, MonitorMode } from '../call-session.svelte.ts';
+	import AudioMeter from './AudioMeter.svelte';
+	import AudioSettingsForm from './AudioSettingsForm.svelte';
+	import CallStats from './CallStats.svelte';
+	import ControlBar from './ControlBar.svelte';
+	import MonitorControls from './MonitorControls.svelte';
+	import ParticipantTile from './ParticipantTile.svelte';
+	import SidePanel from './SidePanel.svelte';
+
+	interface Props {
+		session: CallSession;
+		meetingCode: string;
+		/** Badge on the People button (e.g. people waiting to join). */
+		peopleBadge?: number;
+		/** Extra content at the top of the People panel (host: join requests). */
+		peopleExtra?: Snippet;
+		/** Floating content over the stage (host: meeting card, join toasts). */
+		overlay?: Snippet;
+		onleave: () => void;
+	}
+
+	let { session, meetingCode, peopleBadge = 0, peopleExtra, overlay, onleave }: Props = $props();
+	let panel = $state<CallPanel>('none');
+	const grid = $derived(session.participants.length > 1 ? 'sm:grid-cols-2' : 'max-w-4xl');
+</script>
+
+<div class="flex h-dvh flex-col bg-stage">
+	{#if session.audioBlocked}
+		<button
+			type="button"
+			class="bg-brand-500 px-4 py-2 text-sm text-white"
+			onclick={() => session.startAudio()}
+		>
+			Click to enable audio from other participants
+		</button>
+	{/if}
+	<div class="flex min-h-0 flex-1 gap-4 p-4">
+		<main class="relative flex min-w-0 flex-1 items-center justify-center">
+			<div class="grid w-full gap-4 {grid}">
+				{#each session.participants as participant (participant.identity)}
+					<ParticipantTile {participant} />
+				{/each}
+			</div>
+			{#if session.status === 'connecting'}
+				<p class="absolute text-white/80">Connecting…</p>
+			{/if}
+			{#if session.error}
+				<p role="alert" class="absolute top-0 rounded-lg bg-danger px-4 py-2 text-sm text-white">
+					{session.error}
+				</p>
+			{/if}
+			<div class="pointer-events-none absolute inset-0 flex flex-col justify-end gap-3">
+				<div class="pointer-events-auto flex flex-col items-start gap-3">
+					{@render overlay?.()}
+				</div>
+			</div>
+		</main>
+		{#if panel === 'people'}
+			<SidePanel title="People" onclose={() => (panel = 'none')}>
+				{@render peopleExtra?.()}
+				<section class="flex flex-col gap-2">
+					<h3 class="text-xs font-medium tracking-wide text-ink-muted uppercase">In call</h3>
+					<ul class="flex flex-col gap-2">
+						{#each session.participants as participant (participant.identity)}
+							<li class="flex items-center gap-3">
+								<span
+									class="flex size-8 items-center justify-center rounded-full bg-brand-600 text-sm text-white"
+									aria-hidden="true"
+								>
+									{participant.name.charAt(0).toUpperCase()}
+								</span>
+								<span class="flex-1 truncate">
+									{participant.name}{participant.isLocal ? ' (You)' : ''}
+								</span>
+								{#if participant.muted}<span class="text-xs text-ink-muted">muted</span>{/if}
+							</li>
+						{/each}
+					</ul>
+				</section>
+			</SidePanel>
+		{:else if panel === 'settings'}
+			<SidePanel title="Audio settings" onclose={() => (panel = 'none')}>
+				<AudioMeter level={session.level} muted={session.muted} />
+				<MonitorControls
+					mode={session.monitor}
+					onchange={(mode: MonitorMode) => session.setMonitor(mode)}
+				/>
+				<AudioSettingsForm
+					settings={session.settings}
+					devices={session.devices}
+					onchange={(patch: Partial<AudioSettings>) => session.updateSettings(patch)}
+				/>
+				<CallStats metrics={session.metrics} />
+			</SidePanel>
+		{/if}
+	</div>
+	<ControlBar
+		{meetingCode}
+		muted={session.muted}
+		{panel}
+		badge={peopleBadge}
+		ontogglemute={() => session.toggleMute()}
+		onpanel={(next: CallPanel) => (panel = next)}
+		{onleave}
+	/>
+</div>
