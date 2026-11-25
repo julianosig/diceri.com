@@ -1,0 +1,70 @@
+[workspace]
+resolver = "3"
+members = ["crates/domain"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.94"
+publish = false
+
+[workspace.dependencies]
+# Internal crates
+diceri-domain = { path = "crates/domain" }
+diceri-application = { path = "crates/application" }
+diceri-infra = { path = "crates/infra" }
+
+# Async runtime and HTTP
+tokio = { version = "1.54", features = ["macros", "rt-multi-thread", "signal", "net", "time", "sync"] }
+axum = { version = "0.8.9", features = ["ws"] }
+tower = { version = "0.5.3", features = ["util"] }
+tower-http = { version = "0.7.1", features = ["trace", "cors", "request-id", "timeout"] }
+
+# Serialization and errors
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2.0.21"
+anyhow = "1.0.105"
+
+# Observability
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+# Utilities
+rand = "0.10"
+async-trait = "0.1.92"
+
+# Testing
+http-body-util = "0.1.5"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_debug_implementations = "warn"
+unreachable_pub = "warn"
+rust_2024_compatibility = { level = "warn", priority = -1 }
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# Restriction picks
+unwrap_used = "deny"
+expect_used = "warn"
+panic = "deny"
+todo = "deny"
+dbg_macro = "deny"
+print_stdout = "deny"
+print_stderr = "deny"
+indexing_slicing = "warn"
+as_conversions = "warn"
+await_holding_lock = "deny"
+large_futures = "warn"
+too_many_lines = "warn"
+cognitive_complexity = "warn"
+# Pedantic noise
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
