@@ -139,3 +139,31 @@ test('detects the spoken language regardless of the output language', async ({ b
 		await bob.browser.close();
 	}
 });
+
+test('recording a voice takes seconds and the call keeps translating', async ({ baseURL }) => {
+	test.setTimeout(120_000);
+	const url = baseURL ?? 'http://127.0.0.1:4180';
+	const bob = await launch('Bob', 'en', url);
+	try {
+		await bob.page.goto('/');
+		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await fillProfile(bob);
+		await bob.page.getByRole('button', { name: /Record my voice/ }).click();
+		await expect(bob.page.getByText('Recording · read aloud')).toBeVisible();
+		await expect(bob.page.getByText(/I agree to Diceri using my voice/)).toBeVisible();
+		await expect(bob.page.getByText('Your voice is ready')).toBeVisible({ timeout: 30_000 });
+
+		await bob.page.getByRole('button', { name: 'Join now' }).click();
+		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
+			timeout: 20_000
+		});
+		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
+		await bob.page.getByRole('radio', { name: 'Translated' }).click();
+		await bob.page.getByLabel('Translate me into').selectOption('pt-BR');
+		// The fixture is a synthetic voice, which the provider refuses to clone-speak,
+		// so this also proves the stock-voice fallback keeps translations flowing.
+		await expectCaption(bob, 'Bob', /parque/i);
+	} finally {
+		await bob.browser.close();
+	}
+});
