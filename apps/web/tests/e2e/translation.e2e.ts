@@ -16,12 +16,17 @@ interface Person {
 	page: Page;
 }
 
-async function launch(name: string, language: string, baseURL: string): Promise<Person> {
+async function launch(
+	name: string,
+	language: string,
+	baseURL: string,
+	spokenFixture = language
+): Promise<Person> {
 	const browser = await chromium.launch({
 		args: [
 			'--use-fake-ui-for-media-stream',
 			'--use-fake-device-for-media-stream',
-			`--use-file-for-fake-audio-capture=${fixture(language)}`,
+			`--use-file-for-fake-audio-capture=${fixture(spokenFixture)}`,
 			'--autoplay-policy=no-user-gesture-required'
 		]
 	});
@@ -106,6 +111,30 @@ test('a person alone can hear their own voice translated', async ({ baseURL }) =
 		await expect
 			.poll(() => bob.page.locator('audio').count(), { timeout: 20_000 })
 			.toBeGreaterThan(0);
+	} finally {
+		await bob.browser.close();
+	}
+});
+
+test('translates from the language actually spoken, not the one declared', async ({ baseURL }) => {
+	test.setTimeout(120_000);
+	const url = baseURL ?? 'http://127.0.0.1:4180';
+	// Declares English but speaks Portuguese (the pt-BR fixture).
+	const bob = await launch('Bob', 'en', url, 'pt-BR');
+	try {
+		await bob.page.goto('/');
+		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await fillProfile(bob);
+		await bob.page.getByRole('button', { name: 'Join now' }).click();
+		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
+			timeout: 20_000
+		});
+		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
+		await bob.page.getByRole('radio', { name: 'Translated' }).click();
+		await bob.page.getByLabel('Translate me into').selectOption('es');
+
+		await expectCaption(bob, 'Bob', /contrato/i);
+		await expectCaption(bob, 'Bob', /mañana|tarde/i);
 	} finally {
 		await bob.browser.close();
 	}
