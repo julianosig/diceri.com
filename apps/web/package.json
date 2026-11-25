@@ -52,7 +52,7 @@
 	},
 	"dependencies": {
 		"@livekit/krisp-noise-filter": "0.4.6",
-		"@lucide/svelte": "1.80.0",
+		"@lucide/svelte": "1.78.0",
 		"livekit-client": "2.25.0"
 	}
 }
