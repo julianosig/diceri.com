@@ -36,7 +36,7 @@ async function launch(
 
 async function fillProfile(person: Person): Promise<void> {
 	await person.page.getByLabel('Your name').fill(person.name);
-	await person.page.getByLabel('I speak and want to hear').selectOption(person.language);
+	await person.page.getByLabel('Hear everyone in').selectOption(person.language);
 }
 
 async function admit(host: Page, guest: Person): Promise<void> {
@@ -116,10 +116,10 @@ test('a person alone can hear their own voice translated', async ({ baseURL }) =
 	}
 });
 
-test('translates from the language actually spoken, not the one declared', async ({ baseURL }) => {
+test('detects the spoken language regardless of the output language', async ({ baseURL }) => {
 	test.setTimeout(120_000);
 	const url = baseURL ?? 'http://127.0.0.1:4180';
-	// Declares English but speaks Portuguese (the pt-BR fixture).
+	// Hears in English but speaks Portuguese (the pt-BR fixture).
 	const bob = await launch('Bob', 'en', url, 'pt-BR');
 	try {
 		await bob.page.goto('/');
