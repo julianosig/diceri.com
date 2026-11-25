@@ -2,7 +2,8 @@
 
 Status: initial target architecture (November 2026). Decisions are recorded in
 [`decisions/`](decisions/); the evidence is in
-[`research/2026-11-voice-translation-stack/report.md`](research/2026-11-voice-translation-stack/report.md).
+[`research/2026-11-voice-translation-stack/report.md`](research/2026-11-voice-translation-stack/report.md)
+and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multilingual-stack/report.md).
 
 ## Overview
 
@@ -41,11 +42,13 @@ Status: initial target architecture (November 2026). Decisions are recorded in
 
 1. **Capture:** speaker publishes an Opus track with echo cancellation on.
 2. **Ingest:** media-agent subscribes, receives 48 kHz PCM, resamples to 16 kHz.
-3. **STT:** streaming to Soniox `stt-rt-v6`; partials drive live captions, finals
-   drive translation. Endpointing decides segment boundaries.
-4. **MT:** each final segment is translated by a fast LLM with the last 2–4
-   segments as context and a per-call glossary. Only finals are spoken, because
-   spoken audio cannot be revised.
+3. **STT:** streaming to Soniox `stt-rt-v6` with the speaker's declared language
+   as a hint; Soniox's built-in translation drives live captions, finals drive
+   translation. Endpointing decides segment boundaries.
+4. **MT:** each final segment is translated **directly** (never via English) by
+   Gemini 3.5 Flash-Lite with minimal thinking, the last 2–4 segments as context
+   and a per-call glossary. Only finals are spoken, because spoken audio cannot
+   be revised.
 5. **TTS:** ElevenLabs `eleven_v4_turbo` with an instant voice clone created
    from the consented lobby sample (stock voice without consent).
 6. **Publish:** translated audio is published as `<speaker>-<lang>` track; each
@@ -58,6 +61,21 @@ STT final 100–300 ms, MT 300–700 ms, TTS first audio 150–300 ms, transport
 
 Estimated provider cost: ≈ $0.04 per call-minute for both directions
 (dominated by TTS). See ADR 0005.
+
+## Multilingual routing
+
+About 58 languages are supported any-to-any; 23 are Tier 1 (all stages strong).
+Each stage has one default provider; a static, config-driven routing table
+overrides it per language only where a provider has a proven gap (ADR 0005):
+
+| Key | Stage | Example routes |
+| --- | --- | --- |
+| speaker's declared language | STT | yue/zu/xh → AssemblyAI (coverage) |
+| listener's language | MT | Tier 2 targets → Gemini 3.5 Flash |
+| listener's language | TTS | zh/ja/ko → Qwen-Audio-3.1 (only if eval confirms) |
+
+Because both languages are declared in the lobby, every route is a lookup made
+before the first word, never a runtime guess.
 
 ## Providers behind ports
 
