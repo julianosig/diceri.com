@@ -15,3 +15,11 @@ pub use agent_dispatcher::{AGENT_KEY_HEADER, HttpTranslationDispatcher};
 pub use livekit_access_issuer::{LANGUAGE_ATTRIBUTE, LiveKitAccessIssuer};
 pub use memory_room_repository::MemoryRoomRepository;
 pub use os_random::OsRandom;
+
+/// Selects the process-wide TLS crypto provider. Dependencies enable both
+/// `ring` and `aws-lc-rs`, so rustls cannot pick one by itself; call this once
+/// at the start of every binary, before any TLS connection.
+pub fn install_tls_provider() {
+    // Fails only if a provider is already installed, which is fine.
+    let _ = rustls::crypto::aws_lc_rs::default_provider().install_default();
+}

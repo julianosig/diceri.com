@@ -8,6 +8,7 @@ use tokio::net::TcpListener;
 async fn main() -> anyhow::Result<()> {
     // A missing .env is fine: production injects real environment variables.
     let _ = dotenvy::dotenv();
+    diceri_infra::install_tls_provider();
     let config = Config::from_env().context("invalid configuration")?;
     telemetry::init(&config.log_format);
 

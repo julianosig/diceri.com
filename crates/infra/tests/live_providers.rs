@@ -23,6 +23,7 @@ const STOCK_VOICE: &str = "EXAVITQu4vr4xnSDxMaL";
 const PHRASE_PT: &str = "Amanhã às três da tarde a gente revisa o contrato.";
 
 fn key(name: &str) -> SecretString {
+    diceri_infra::install_tls_provider();
     let _ = dotenvy::from_filename("../../.env");
     SecretString::from(std::env::var(name).expect("provider key missing from .env"))
 }
