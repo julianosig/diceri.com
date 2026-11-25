@@ -71,7 +71,23 @@ async fn process(deps: &WorkerDeps, target: &LanguageCode, job: PhraseJob) {
             text: translated.clone(),
         })
         .await;
+    // A misdetected short phrase ("Alô.") can come back unchanged; repeating the
+    // speaker's own words adds nothing, so only the caption is kept.
+    if same_words(&translated, &job.text) {
+        return;
+    }
     speak(deps, target, &job, &translated, translated_ms).await;
+}
+
+/// Equal ignoring case, punctuation and spacing.
+fn same_words(a: &str, b: &str) -> bool {
+    let normalize = |text: &str| -> String {
+        text.chars()
+            .filter(|c| c.is_alphanumeric())
+            .flat_map(char::to_lowercase)
+            .collect()
+    };
+    normalize(a) == normalize(b)
 }
 
 async fn translate(deps: &WorkerDeps, target: &LanguageCode, job: &PhraseJob) -> Option<String> {
@@ -146,4 +162,16 @@ fn warn_failed(error: &TextToSpeechError, target: &LanguageCode) {
 fn log_latency(target: &LanguageCode, job: &PhraseJob, translated_ms: u128) {
     let speech_ms = job.ended_at.elapsed().as_millis();
     tracing::info!(%target, phrase = job.phrase, translated_ms, speech_ms, "phrase latency");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::same_words;
+
+    #[test]
+    fn same_words_ignores_case_punctuation_and_spacing() {
+        assert!(same_words("Alô.", "alô"));
+        assert!(same_words("Tudo bem?", "tudo  bem"));
+        assert!(!same_words("Hello.", "Olá."));
+    }
 }

@@ -228,3 +228,46 @@ async fn a_refused_clone_falls_back_to_the_stock_voice_for_good() {
     let used = harness.tts.voices_used.lock().unwrap().clone();
     assert_eq!(used, vec!["clone", "stock", "stock"]);
 }
+
+/// Translates to exactly the same text, as happens with a misdetected "Alô.".
+struct EchoTranslator;
+
+#[async_trait]
+impl Translator for EchoTranslator {
+    async fn translate(&self, request: TranslationRequest<'_>) -> Result<String, TranslatorError> {
+        Ok(request.text.to_owned())
+    }
+}
+
+#[tokio::test]
+async fn an_unchanged_translation_is_captioned_but_not_spoken() {
+    let output = Arc::new(RecordingOutput::default());
+    let config = SpeakerConfig {
+        speaker: "ana".to_owned(),
+        fallback_language: lang("pt-BR"),
+        voice: VoiceId("clone".to_owned()),
+        fallback_voice: VoiceId("stock".to_owned()),
+    };
+    let pipeline = SpeakerPipeline::new(
+        config,
+        Arc::new(EchoTranslator),
+        Arc::new(FakeTts::default()),
+        output.clone(),
+    );
+    let (tx, rx) = mpsc::channel(8);
+    for event in phrase_in("Alô.", "es") {
+        tx.send(Ok(event)).await.unwrap();
+    }
+    drop(tx);
+    let (_targets, targets_rx) = watch::channel(vec![lang("pt-BR")]);
+    pipeline.run(rx, targets_rx).await;
+    let translations = output
+        .captions
+        .lock()
+        .unwrap()
+        .iter()
+        .filter(|c| c.kind == CaptionKind::Translation)
+        .count();
+    assert_eq!(translations, 1);
+    assert_eq!(output.spoken.lock().unwrap().len(), 0);
+}
