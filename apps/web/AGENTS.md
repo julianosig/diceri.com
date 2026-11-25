@@ -32,9 +32,17 @@ src/
     utils/                    pure, framework-free helpers (cn, formatters)
 ```
 
-Planned features: `room`, `lobby` (device check, language, consent), `call`
-(video grid, controls), `media` (devices, LiveKit wrapper), `translation`
-(language picker, captions).
+Features today:
+
+| Feature   | Responsibility                                                            |
+| --------- | ------------------------------------------------------------------------- |
+| `room`    | create/look up rooms, remember the host key of rooms this browser created |
+| `lobby`   | pre-join (name, mic preview), guest knock and waiting, host join requests |
+| `call`    | LiveKit session, participant tiles, control bar, audio settings, stats    |
+| `meeting` | orchestrates one visit: pre-join → waiting → call → left                  |
+
+Dependency direction: `meeting` → `lobby` → `call` → `room`. Never import upwards.
+Planned: `translation` (language picker, captions).
 
 ## Rules
 
