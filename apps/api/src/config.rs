@@ -19,6 +19,13 @@ pub struct LiveKitConfig {
     pub api_secret: SecretString,
 }
 
+/// Where the media agent's control API listens, and the key it requires.
+#[derive(Debug, Clone)]
+pub struct AgentConfig {
+    pub url: String,
+    pub key: SecretString,
+}
+
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -27,6 +34,8 @@ pub struct Config {
     pub log_format: LogFormat,
     /// `None` disables media: rooms work, joining returns 503.
     pub livekit: Option<LiveKitConfig>,
+    /// `None` disables live translation.
+    pub agent: Option<AgentConfig>,
 }
 
 impl Config {
@@ -47,11 +56,13 @@ impl Config {
             _ => LogFormat::Pretty,
         };
         let livekit = livekit_from_env()?;
+        let agent = agent_from_env();
         Ok(Self {
             bind_address,
             allowed_origins,
             log_format,
             livekit,
+            agent,
         })
     }
 
@@ -63,6 +74,7 @@ impl Config {
             allowed_origins: vec!["http://localhost:5180".to_owned()],
             log_format: LogFormat::Pretty,
             livekit: None,
+            agent: None,
         }
     }
 }
@@ -82,4 +94,13 @@ fn livekit_from_env() -> anyhow::Result<Option<LiveKitConfig>> {
             "set all of DICERI_LIVEKIT_URL, DICERI_LIVEKIT_API_KEY and DICERI_LIVEKIT_API_SECRET"
         ),
     }
+}
+
+fn agent_from_env() -> Option<AgentConfig> {
+    let url = env::var("DICERI_AGENT_URL").ok()?;
+    let key = env::var("DICERI_AGENT_KEY").ok()?;
+    Some(AgentConfig {
+        url,
+        key: SecretString::from(key),
+    })
 }

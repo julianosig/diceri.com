@@ -8,8 +8,8 @@ use async_trait::async_trait;
 use diceri_domain::{Room, RoomId};
 
 use crate::ports::{
-    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, RandomSource,
-    RoomRepository, RoomRepositoryError,
+    DispatchError, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
+    RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
 };
 
 /// Deterministic randomness: every call returns the next byte value.
@@ -54,12 +54,26 @@ impl MediaAccessIssuer for RecordingIssuer {
     ) -> Result<MediaGrant, MediaAccessError> {
         self.0.lock().unwrap().push((
             participant.identity.to_owned(),
-            participant.name.map(|name| name.as_str().to_owned()),
+            participant
+                .profile
+                .map(|profile| profile.name.as_str().to_owned()),
             participant.role,
         ));
         Ok(MediaGrant {
             server_url: "wss://media.test".to_owned(),
             token: "jwt".to_owned(),
         })
+    }
+}
+
+/// Records rooms the media agent was asked to translate.
+#[derive(Default)]
+pub(crate) struct RecordingDispatcher(pub(crate) Mutex<Vec<RoomId>>);
+
+#[async_trait]
+impl TranslationDispatcher for RecordingDispatcher {
+    async fn start(&self, room: &RoomId) -> Result<(), DispatchError> {
+        self.0.lock().unwrap().push(room.clone());
+        Ok(())
     }
 }

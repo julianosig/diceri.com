@@ -25,7 +25,10 @@ pub(crate) struct FakeIssuer;
 
 impl MediaAccessIssuer for FakeIssuer {
     fn issue(&self, _: &RoomId, p: MediaParticipant<'_>) -> Result<MediaGrant, MediaAccessError> {
-        let name = p.name.map(|n| n.as_str().to_owned()).unwrap_or_default();
+        let name = p
+            .profile
+            .map(|n| n.name.as_str().to_owned())
+            .unwrap_or_default();
         Ok(MediaGrant {
             server_url: "wss://media.test".to_owned(),
             token: format!("{}|{name}|{:?}", p.identity, p.role),

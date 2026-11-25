@@ -1,16 +1,17 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, DisplayName, RoomRuleError};
+use diceri_domain::{AccessKey, ParticipantProfile, RoomRuleError};
 
 use super::{AdmissionError, AdmissionService, KnockOutcome};
 use crate::ports::{MediaAccessIssuer, MediaRole};
-use crate::test_support::{CountingRandom, InMemoryRooms, RecordingIssuer};
+use crate::test_support::{CountingRandom, InMemoryRooms, RecordingDispatcher, RecordingIssuer};
 use crate::use_cases::RoomService;
 
 struct Fixture {
     rooms: RoomService,
     admission: AdmissionService,
     issuer: Arc<RecordingIssuer>,
+    dispatcher: Arc<RecordingDispatcher>,
 }
 
 fn fixture(with_media: bool) -> Fixture {
@@ -18,15 +19,21 @@ fn fixture(with_media: bool) -> Fixture {
     let random = Arc::new(CountingRandom::default());
     let issuer = Arc::new(RecordingIssuer::default());
     let media = with_media.then(|| -> Arc<dyn MediaAccessIssuer> { issuer.clone() });
+    let dispatcher = Arc::new(RecordingDispatcher::default());
     Fixture {
         rooms: RoomService::new(repository.clone(), random.clone()),
-        admission: AdmissionService::new(repository, random, media),
+        admission: AdmissionService::new(repository, random, media)
+            .with_translation(dispatcher.clone()),
         issuer,
+        dispatcher,
     }
 }
 
-fn name(raw: &str) -> DisplayName {
-    raw.parse().unwrap()
+fn name(raw: &str) -> ParticipantProfile {
+    ParticipantProfile {
+        name: raw.parse().unwrap(),
+        language: "pt-BR".parse().unwrap(),
+    }
 }
 
 fn wrong_key() -> AccessKey {
@@ -170,4 +177,27 @@ async fn joining_without_media_server_is_unavailable() {
         .join_as_host(&room.id, room.host_key(), &name("Ana"))
         .await;
     assert!(matches!(result, Err(AdmissionError::MediaUnavailable)));
+}
+
+#[tokio::test]
+async fn joining_starts_translation_for_the_room() {
+    let f = fixture(true);
+    let room = f.rooms.create().await.unwrap();
+    f.admission
+        .join_as_host(&room.id, room.host_key(), &name("Ana"))
+        .await
+        .unwrap();
+    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    f.admission
+        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .await
+        .unwrap();
+    f.admission
+        .outcome(&room.id, &knock.request_id, &knock.key)
+        .await
+        .unwrap();
+    assert_eq!(
+        f.dispatcher.0.lock().unwrap().as_slice(),
+        [room.id.clone(), room.id]
+    );
 }

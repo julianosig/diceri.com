@@ -305,6 +305,7 @@ dependencies = [
  "diceri-infra",
  "dotenvy",
  "http-body-util",
+ "reqwest",
  "secrecy",
  "serde",
  "serde_json",
@@ -324,6 +325,7 @@ dependencies = [
  "diceri-domain",
  "thiserror",
  "tokio",
+ "tracing",
 ]
 
 [[package]]

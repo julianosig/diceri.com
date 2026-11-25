@@ -2,7 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 use crate::base62;
-use crate::{AccessKey, DisplayName};
+use crate::{AccessKey, ParticipantProfile};
 
 /// Public identifier of a guest's request to join (safe to show the host).
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -45,7 +45,7 @@ pub enum RequestStatus {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct JoinRequest {
     pub id: RequestId,
-    pub name: DisplayName,
+    pub profile: ParticipantProfile,
     /// Proves the guest owns this request; returned only to the guest.
     pub key: AccessKey,
     pub status: RequestStatus,
@@ -53,10 +53,10 @@ pub struct JoinRequest {
 
 impl JoinRequest {
     #[must_use]
-    pub fn new(id: RequestId, name: DisplayName, key: AccessKey) -> Self {
+    pub fn new(id: RequestId, profile: ParticipantProfile, key: AccessKey) -> Self {
         Self {
             id,
-            name,
+            profile,
             key,
             status: RequestStatus::Pending,
         }

@@ -5,6 +5,7 @@ mod random_source;
 mod room_repository;
 mod speech_to_text;
 mod text_to_speech;
+mod translation_dispatcher;
 mod translator;
 
 pub use media_access::{
@@ -18,4 +19,5 @@ pub use speech_to_text::{
 pub use text_to_speech::{
     SpeechAudio, SpeechRequest, TTS_SAMPLE_RATE, TextToSpeech, TextToSpeechError, VoiceId,
 };
+pub use translation_dispatcher::{DispatchError, TranslationDispatcher};
 pub use translator::{TranslationRequest, Translator, TranslatorError};

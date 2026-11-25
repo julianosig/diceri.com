@@ -6,7 +6,7 @@ use axum::http::StatusCode;
 
 use super::access_key::CallerKey;
 use super::dto::{
-    JoinResponse, KnockResponse, NameRequest, OutcomeResponse, PendingRequestResponse,
+    JoinResponse, KnockResponse, OutcomeResponse, PendingRequestResponse, ProfileRequest,
 };
 use super::handlers::{parse_request_id, parse_room_id};
 use crate::{ApiError, AppState};
@@ -15,12 +15,12 @@ pub(crate) async fn host_session(
     State(state): State<AppState>,
     Path(room_id): Path<String>,
     CallerKey(key): CallerKey,
-    Json(body): Json<NameRequest>,
+    Json(body): Json<ProfileRequest>,
 ) -> Result<Json<JoinResponse>, ApiError> {
     let room_id = parse_room_id(&room_id)?;
     let ticket = state
         .admission
-        .join_as_host(&room_id, &key, &body.display_name()?)
+        .join_as_host(&room_id, &key, &body.profile()?)
         .await?;
     tracing::info!(%room_id, identity = %ticket.identity, "host joined");
     Ok(Json(ticket.into()))
@@ -29,13 +29,10 @@ pub(crate) async fn host_session(
 pub(crate) async fn knock(
     State(state): State<AppState>,
     Path(room_id): Path<String>,
-    Json(body): Json<NameRequest>,
+    Json(body): Json<ProfileRequest>,
 ) -> Result<(StatusCode, Json<KnockResponse>), ApiError> {
     let room_id = parse_room_id(&room_id)?;
-    let knock = state
-        .admission
-        .knock(&room_id, body.display_name()?)
-        .await?;
+    let knock = state.admission.knock(&room_id, body.profile()?).await?;
     tracing::info!(%room_id, request_id = %knock.request_id, "guest asked to join");
     Ok((StatusCode::CREATED, Json(knock.into())))
 }

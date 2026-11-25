@@ -29,21 +29,35 @@ impl LiveKitAccessIssuer {
     }
 }
 
+/// Participant attribute carrying the language a participant speaks and hears.
+pub const LANGUAGE_ATTRIBUTE: &str = "language";
+
 fn grants_for(room: &RoomId, role: MediaRole) -> VideoGrants {
-    let speaker = role == MediaRole::Speaker;
-    VideoGrants {
+    let base = VideoGrants {
         room_join: true,
         room: room.to_string(),
-        can_publish: Some(speaker),
         can_subscribe: Some(true),
-        can_publish_data: Some(speaker),
-        can_publish_sources: if speaker {
-            vec!["microphone".to_owned()]
-        } else {
-            vec![]
-        },
-        hidden: !speaker,
         ..VideoGrants::default()
+    };
+    match role {
+        MediaRole::Speaker => VideoGrants {
+            can_publish: Some(true),
+            can_publish_data: Some(true),
+            can_publish_sources: vec!["microphone".to_owned()],
+            ..base
+        },
+        MediaRole::Monitor => VideoGrants {
+            can_publish: Some(false),
+            can_publish_data: Some(false),
+            hidden: true,
+            ..base
+        },
+        MediaRole::Translator => VideoGrants {
+            can_publish: Some(true),
+            can_publish_data: Some(true),
+            agent: true,
+            ..base
+        },
     }
 }
 
@@ -57,8 +71,13 @@ impl MediaAccessIssuer for LiveKitAccessIssuer {
             .with_identity(participant.identity)
             .with_ttl(TOKEN_TTL)
             .with_grants(grants_for(room, participant.role));
-        if let Some(name) = participant.name {
-            token = token.with_name(name.as_str());
+        if participant.role == MediaRole::Translator {
+            token = token.with_kind("agent");
+        }
+        if let Some(profile) = participant.profile {
+            token = token
+                .with_name(profile.name.as_str())
+                .with_attributes([(LANGUAGE_ATTRIBUTE, profile.language.as_str())]);
         }
         let token = token
             .to_jwt()
@@ -72,6 +91,8 @@ impl MediaAccessIssuer for LiveKitAccessIssuer {
 
 #[cfg(test)]
 mod tests {
+    use diceri_domain::ParticipantProfile;
+
     use super::*;
 
     fn room() -> RoomId {
@@ -84,6 +105,14 @@ mod tests {
         assert_eq!(grants.can_publish, Some(true));
         assert_eq!(grants.can_publish_sources, vec!["microphone".to_owned()]);
         assert!(!grants.hidden);
+    }
+
+    #[test]
+    fn translator_is_an_agent_that_publishes_any_source() {
+        let grants = grants_for(&room(), MediaRole::Translator);
+        assert!(grants.agent);
+        assert_eq!(grants.can_publish, Some(true));
+        assert_eq!(grants.can_publish_sources, Vec::<String>::new());
     }
 
     #[test]
@@ -100,10 +129,13 @@ mod tests {
             "key".to_owned(),
             SecretString::from("secret-that-is-long-enough-for-hs256"),
         );
-        let name = "Ana".parse().unwrap();
+        let profile = ParticipantProfile {
+            name: "Ana".parse().unwrap(),
+            language: "pt-BR".parse().unwrap(),
+        };
         let participant = MediaParticipant {
             identity: "p-test",
-            name: Some(&name),
+            profile: Some(&profile),
             role: MediaRole::Speaker,
         };
         let grant = issuer.issue(&room(), participant).unwrap();

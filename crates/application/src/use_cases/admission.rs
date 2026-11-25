@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use diceri_domain::{
-    AccessKey, DisplayName, JoinRequest, RequestId, RequestStatus, Room, RoomId, RoomRuleError,
+    AccessKey, JoinRequest, ParticipantProfile, RequestId, RequestStatus, Room, RoomId,
+    RoomRuleError,
 };
 
 use crate::ports::{
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, RandomSource,
-    RoomRepository, RoomRepositoryError,
+    RoomRepository, RoomRepositoryError, TranslationDispatcher,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -53,6 +54,7 @@ pub struct AdmissionService {
     rooms: Arc<dyn RoomRepository>,
     random: Arc<dyn RandomSource>,
     media: Option<Arc<dyn MediaAccessIssuer>>,
+    translation: Option<Arc<dyn TranslationDispatcher>>,
 }
 
 impl std::fmt::Debug for AdmissionService {
@@ -74,31 +76,41 @@ impl AdmissionService {
             rooms,
             random,
             media,
+            translation: None,
         }
+    }
+
+    /// Enables live translation: the media agent is started when people join.
+    #[must_use]
+    pub fn with_translation(mut self, dispatcher: Arc<dyn TranslationDispatcher>) -> Self {
+        self.translation = Some(dispatcher);
+        self
     }
 
     pub async fn join_as_host(
         &self,
         room_id: &RoomId,
         host_key: &AccessKey,
-        name: &DisplayName,
+        profile: &ParticipantProfile,
     ) -> Result<JoinTicket, AdmissionError> {
         let room = self.load(room_id).await?;
         if !room.is_host(host_key) {
             return Err(AdmissionError::Forbidden);
         }
-        self.ticket(room_id, Some(name), MediaRole::Speaker)
+        let ticket = self.ticket(room_id, Some(profile), MediaRole::Speaker)?;
+        self.start_translation(room_id).await;
+        Ok(ticket)
     }
 
     pub async fn knock(
         &self,
         room_id: &RoomId,
-        name: DisplayName,
+        profile: ParticipantProfile,
     ) -> Result<Knock, AdmissionError> {
         let mut room = self.load(room_id).await?;
         let request_id = RequestId::from_random_bytes(self.random.random_128());
         let key = AccessKey::from_random_bytes(self.random.random_128());
-        room.knock(JoinRequest::new(request_id.clone(), name, key.clone()))?;
+        room.knock(JoinRequest::new(request_id.clone(), profile, key.clone()))?;
         self.rooms.update(room).await?;
         Ok(Knock { request_id, key })
     }
@@ -140,11 +152,11 @@ impl AdmissionService {
         Ok(match request.status {
             RequestStatus::Pending => KnockOutcome::Pending,
             RequestStatus::Denied => KnockOutcome::Denied,
-            RequestStatus::Admitted => KnockOutcome::Admitted(self.ticket(
-                room_id,
-                Some(&request.name),
-                MediaRole::Speaker,
-            )?),
+            RequestStatus::Admitted => {
+                let ticket = self.ticket(room_id, Some(&request.profile), MediaRole::Speaker)?;
+                self.start_translation(room_id).await;
+                KnockOutcome::Admitted(ticket)
+            }
         })
     }
 
@@ -181,10 +193,19 @@ impl AdmissionService {
         }
     }
 
+    /// Best effort: a failure to start translation must not block joining.
+    async fn start_translation(&self, room_id: &RoomId) {
+        if let Some(dispatcher) = &self.translation
+            && let Err(error) = dispatcher.start(room_id).await
+        {
+            tracing::warn!(%error, %room_id, "translation not started");
+        }
+    }
+
     fn ticket(
         &self,
         room_id: &RoomId,
-        name: Option<&DisplayName>,
+        profile: Option<&ParticipantProfile>,
         role: MediaRole,
     ) -> Result<JoinTicket, AdmissionError> {
         let media = self
@@ -204,7 +225,7 @@ impl AdmissionService {
             room_id,
             MediaParticipant {
                 identity: &identity,
-                name,
+                profile,
                 role,
             },
         )?;

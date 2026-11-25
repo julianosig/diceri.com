@@ -1,5 +1,5 @@
 use diceri_application::use_cases::{JoinTicket, Knock, KnockOutcome};
-use diceri_domain::{DisplayName, JoinRequest, Room};
+use diceri_domain::{JoinRequest, ParticipantProfile, Room};
 use serde::{Deserialize, Serialize};
 
 use crate::ApiError;
@@ -30,17 +30,25 @@ pub(crate) struct CreatedRoomResponse {
     pub host_key: String,
 }
 
-/// Body carrying the participant's display name.
+/// Body carrying how the participant presents themselves.
 #[derive(Debug, Deserialize)]
-pub(crate) struct NameRequest {
+pub(crate) struct ProfileRequest {
     pub name: String,
+    /// BCP 47 tag of the language the participant speaks and wants to hear, e.g. `pt-BR`.
+    pub language: String,
 }
 
-impl NameRequest {
-    pub(crate) fn display_name(&self) -> Result<DisplayName, ApiError> {
-        self.name
+impl ProfileRequest {
+    pub(crate) fn profile(&self) -> Result<ParticipantProfile, ApiError> {
+        let name = self
+            .name
             .parse()
-            .map_err(|error| ApiError::Validation(format!("{error}")))
+            .map_err(|error| ApiError::Validation(format!("{error}")))?;
+        let language = self
+            .language
+            .parse()
+            .map_err(|error| ApiError::Validation(format!("{error}")))?;
+        Ok(ParticipantProfile { name, language })
     }
 }
 
@@ -85,13 +93,15 @@ impl From<Knock> for KnockResponse {
 pub(crate) struct PendingRequestResponse {
     pub id: String,
     pub name: String,
+    pub language: String,
 }
 
 impl From<JoinRequest> for PendingRequestResponse {
     fn from(request: JoinRequest) -> Self {
         Self {
             id: request.id.to_string(),
-            name: request.name.to_string(),
+            name: request.profile.name.to_string(),
+            language: request.profile.language.to_string(),
         }
     }
 }

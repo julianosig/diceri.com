@@ -1,4 +1,4 @@
-use diceri_domain::{DisplayName, RoomId};
+use diceri_domain::{ParticipantProfile, RoomId};
 
 /// What a participant is allowed to do in the media room.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -7,13 +7,16 @@ pub enum MediaRole {
     Speaker,
     /// Subscribe-only and hidden; used to hear your own audio round-trip.
     Monitor,
+    /// The media agent: subscribes to speakers, publishes translated audio and captions.
+    Translator,
 }
 
 /// Who is joining the media room.
 #[derive(Debug, Clone, Copy)]
 pub struct MediaParticipant<'a> {
     pub identity: &'a str,
-    pub name: Option<&'a DisplayName>,
+    /// Name and language, published as the participant's name and attributes.
+    pub profile: Option<&'a ParticipantProfile>,
     pub role: MediaRole,
 }
 

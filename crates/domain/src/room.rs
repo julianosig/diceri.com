@@ -97,15 +97,18 @@ impl Room {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::DisplayName;
+    use crate::ParticipantProfile;
 
     fn key(seed: u8) -> AccessKey {
         AccessKey::from_random_bytes([seed; 16])
     }
 
     fn request(seed: u8) -> JoinRequest {
-        let name: DisplayName = "Guest".parse().unwrap();
-        JoinRequest::new(RequestId::from_random_bytes([seed; 16]), name, key(seed))
+        let profile = ParticipantProfile {
+            name: "Guest".parse().unwrap(),
+            language: "en".parse().unwrap(),
+        };
+        JoinRequest::new(RequestId::from_random_bytes([seed; 16]), profile, key(seed))
     }
 
     fn room() -> Room {

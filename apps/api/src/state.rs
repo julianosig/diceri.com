@@ -1,8 +1,12 @@
 use std::sync::Arc;
 
-use diceri_application::ports::{MediaAccessIssuer, RandomSource, RoomRepository};
+use diceri_application::ports::{
+    MediaAccessIssuer, RandomSource, RoomRepository, TranslationDispatcher,
+};
 use diceri_application::use_cases::{AdmissionService, RoomService};
-use diceri_infra::{LiveKitAccessIssuer, MemoryRoomRepository, OsRandom};
+use diceri_infra::{
+    HttpTranslationDispatcher, LiveKitAccessIssuer, MemoryRoomRepository, OsRandom,
+};
 
 use crate::Config;
 
@@ -27,7 +31,17 @@ impl AppState {
                     livekit.api_secret.clone(),
                 ))
             });
-        Self::in_memory(media)
+        let mut state = Self::in_memory(media);
+        if let Some(agent) = &config.agent {
+            let dispatcher: Arc<dyn TranslationDispatcher> =
+                Arc::new(HttpTranslationDispatcher::new(
+                    agent.url.clone(),
+                    agent.key.clone(),
+                    reqwest::Client::new(),
+                ));
+            state.admission = state.admission.with_translation(dispatcher);
+        }
+        state
     }
 
     /// In-memory storage with an optional media issuer (also used by tests).
