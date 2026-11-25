@@ -1,5 +1,5 @@
 import type { MediaCredentials } from '#lib/features/room/index.ts';
-import { knock, knockOutcome, type Knock } from './lobby-api.ts';
+import { knock, knockOutcome, type Knock, type Profile } from './lobby-api.ts';
 
 const POLL_MS = 1500;
 
@@ -18,11 +18,11 @@ export class GuestKnock {
 		private readonly onAdmitted: (credentials: MediaCredentials, request: Knock) => void
 	) {}
 
-	async ask(name: string): Promise<void> {
+	async ask(profile: Profile): Promise<void> {
 		this.status = 'waiting';
 		this.error = undefined;
 		try {
-			this.request = await knock(this.roomId, name);
+			this.request = await knock(this.roomId, profile);
 			this.#schedule();
 		} catch (cause) {
 			this.#fail(cause);

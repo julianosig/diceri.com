@@ -4,7 +4,9 @@ import {
 	HostRequests,
 	hostSession,
 	monitorSession,
-	saveDisplayName
+	saveDisplayName,
+	saveLanguage,
+	type Profile
 } from '#lib/features/lobby/index.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 
@@ -21,6 +23,7 @@ export class MeetingFlow {
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
 	#deviceId: string | undefined;
+	#language = 'en';
 
 	constructor(
 		private readonly roomId: string,
@@ -36,18 +39,21 @@ export class MeetingFlow {
 		return this.hostKey !== undefined;
 	}
 
-	async join(name: string, deviceId: string | undefined): Promise<void> {
-		saveDisplayName(name);
+	async join(profile: Profile, deviceId: string | undefined): Promise<void> {
+		saveDisplayName(profile.name);
+		saveLanguage(profile.language);
 		this.#deviceId = deviceId;
+		this.#language = profile.language;
 		this.error = undefined;
 		if (!this.hostKey) {
 			this.phase = 'waiting';
-			await this.knock.ask(name);
+			await this.knock.ask(profile);
 			return;
 		}
 		this.phase = 'joining';
 		try {
-			await this.#startCall(await hostSession(this.roomId, this.hostKey, name), this.hostKey);
+			const credentials = await hostSession(this.roomId, this.hostKey, profile);
+			await this.#startCall(credentials, this.hostKey);
 		} catch (cause) {
 			this.phase = 'prejoin';
 			this.error = cause instanceof Error ? cause.message : String(cause);
@@ -70,6 +76,7 @@ export class MeetingFlow {
 		const roomId = this.roomId;
 		this.session = new CallSession({
 			credentials,
+			language: this.#language,
 			deviceId: this.#deviceId,
 			monitorCredentials: () => monitorSession(roomId, accessKey)
 		});

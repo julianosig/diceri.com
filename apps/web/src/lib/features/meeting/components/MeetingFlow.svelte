@@ -7,7 +7,8 @@
 		JoinRequestList,
 		JoinRequestToast,
 		PreJoin,
-		WaitingScreen
+		WaitingScreen,
+		type Profile
 	} from '#lib/features/lobby/index.ts';
 	import { MeetingFlow } from '../meeting-flow.svelte.ts';
 
@@ -91,7 +92,7 @@
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}
 				error={flow.error}
-				onjoin={(name: string, deviceId: string | undefined) => flow.join(name, deviceId)}
+				onjoin={(profile: Profile, deviceId: string | undefined) => flow.join(profile, deviceId)}
 			/>
 		{/if}
 	</main>

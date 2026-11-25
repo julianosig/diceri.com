@@ -4,19 +4,22 @@
 	import { Button } from '#lib/components/ui/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
 	import { isValidDisplayName, loadDisplayName, MAX_NAME_LENGTH } from '../display-name.ts';
+	import { LANGUAGES, loadLanguage } from '../languages.ts';
+	import type { Profile } from '../lobby-api.ts';
 	import { MicPreview } from '../mic-preview.svelte.ts';
 
 	interface Props {
 		isHost: boolean;
 		busy: boolean;
 		error?: string;
-		onjoin: (name: string, deviceId: string | undefined) => void;
+		onjoin: (profile: Profile, deviceId: string | undefined) => void;
 	}
 
 	let { isHost, busy, error, onjoin }: Props = $props();
 
 	const preview = new MicPreview();
 	let name = $state(loadDisplayName());
+	let language = $state(loadLanguage());
 	const canJoin = $derived(isValidDisplayName(name) && !busy);
 
 	onMount(() => {
@@ -31,7 +34,7 @@
 		if (!canJoin) return;
 		const deviceId = preview.deviceId;
 		await preview.stop();
-		onjoin(name.trim(), deviceId);
+		onjoin({ name: name.trim(), language }, deviceId);
 	}
 </script>
 
@@ -81,6 +84,17 @@
 				autocomplete="name"
 				required
 			/>
+		</label>
+		<label class="w-full max-w-xs text-left text-sm">
+			<span class="mb-1 block text-ink-muted">I speak and want to hear</span>
+			<select
+				class="w-full rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
+				bind:value={language}
+			>
+				{#each LANGUAGES as option (option.code)}
+					<option value={option.code}>{option.label}</option>
+				{/each}
+			</select>
 		</label>
 		<Button type="submit" size="lg" disabled={!canJoin}>
 			{#if busy}Joining…{:else}{isHost ? 'Join now' : 'Ask to join'}{/if}

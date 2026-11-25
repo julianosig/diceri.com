@@ -16,18 +16,26 @@ export type KnockOutcome =
 export interface PendingRequest {
 	id: string;
 	name: string;
+	language: string;
 }
 
-export function hostSession(roomId: string, hostKey: string, name: string) {
+/** How a participant presents themselves to the room. */
+export interface Profile {
+	name: string;
+	/** BCP 47 tag of the language they speak and want to hear. */
+	language: string;
+}
+
+export function hostSession(roomId: string, hostKey: string, profile: Profile) {
 	return requestJson<MediaCredentials>(`${room(roomId)}/host-session`, {
 		method: 'POST',
 		accessKey: hostKey,
-		body: { name }
+		body: profile
 	});
 }
 
-export function knock(roomId: string, name: string) {
-	return requestJson<Knock>(`${room(roomId)}/requests`, { method: 'POST', body: { name } });
+export function knock(roomId: string, profile: Profile) {
+	return requestJson<Knock>(`${room(roomId)}/requests`, { method: 'POST', body: profile });
 }
 
 export function knockOutcome(roomId: string, request: Knock) {
