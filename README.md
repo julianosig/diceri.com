@@ -17,3 +17,9 @@ just setup   # dependencies + git hooks
 just dev     # API on :8090, web on :5180
 just check   # everything CI runs
 ```
+
+## License
+
+Diceri is free software under the [GNU Affero General Public License v3.0 only](LICENSE)
+(`AGPL-3.0-only`). If you run a modified version as a network service, you must
+offer its users the corresponding source code (AGPL section 13).

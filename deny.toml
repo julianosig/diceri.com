@@ -20,7 +20,9 @@ allow = [
 confidence-threshold = 0.9
 
 [licenses.private]
-# Workspace crates are private (publish = false) and not license-checked.
+# Workspace crates are our own code (AGPL-3.0-only, see LICENSE) and are not
+# published; only third-party licenses are checked, and those must stay
+# compatible with the AGPL (permissive licenses only).
 ignore = true
 
 [bans]

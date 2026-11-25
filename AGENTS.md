@@ -150,6 +150,13 @@ function-length limits but not from file limits.
 - Never log audio, transcripts or provider API keys. Log ids and timings only.
 - CORS uses an explicit origin allow-list; never `Any`.
 
+## 9a. License
+
+The project is `AGPL-3.0-only` ([`LICENSE`](LICENSE)). Every dependency must be
+AGPL-compatible: permissive licenses only (MIT, Apache-2.0, BSD, ISC, Zlib, …),
+enforced by `cargo deny` for Rust and reviewed with `pnpm licenses list --prod`
+for the web app. Never vendor code under an incompatible or proprietary license.
+
 ## 10. Testing
 
 - Every use case and adapter has unit tests; every HTTP route has a router-level
