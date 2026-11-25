@@ -1,0 +1,26 @@
+use async_trait::async_trait;
+
+use crate::ports::VoiceId;
+
+/// A short recording of a participant's voice (any common audio container).
+#[derive(Debug, Clone)]
+pub struct VoiceSample {
+    pub bytes: Vec<u8>,
+    /// MIME type, e.g. `audio/webm`.
+    pub content_type: String,
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum VoiceCloneError {
+    #[error("the provider rejected the voice sample: {0}")]
+    Rejected(String),
+    #[error("voice cloning request failed: {0}")]
+    Request(String),
+}
+
+/// Instant voice cloning with explicit deletion (ADR 0006).
+#[async_trait]
+pub trait VoiceCloner: Send + Sync {
+    async fn create(&self, name: &str, sample: VoiceSample) -> Result<VoiceId, VoiceCloneError>;
+    async fn delete(&self, voice: &VoiceId) -> Result<(), VoiceCloneError>;
+}

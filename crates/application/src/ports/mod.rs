@@ -7,6 +7,7 @@ mod speech_to_text;
 mod text_to_speech;
 mod translation_dispatcher;
 mod translator;
+mod voice_cloner;
 
 pub use media_access::{
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
@@ -21,3 +22,4 @@ pub use text_to_speech::{
 };
 pub use translation_dispatcher::{DispatchError, TranslationDispatcher};
 pub use translator::{TranslationRequest, Translator, TranslatorError};
+pub use voice_cloner::{VoiceCloneError, VoiceCloner, VoiceSample};

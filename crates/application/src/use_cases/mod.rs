@@ -2,6 +2,8 @@
 
 mod admission;
 mod rooms;
+mod voices;
 
 pub use admission::{AdmissionError, AdmissionService, JoinTicket, Knock, KnockOutcome};
 pub use rooms::{RoomError, RoomService};
+pub use voices::{VoiceError, VoiceService};

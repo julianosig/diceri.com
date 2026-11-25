@@ -6,4 +6,6 @@ use crate::{DisplayName, LanguageCode};
 pub struct ParticipantProfile {
     pub name: DisplayName,
     pub output_language: LanguageCode,
+    /// Provider id of the participant's consented voice clone, if they recorded one.
+    pub voice_id: Option<String>,
 }

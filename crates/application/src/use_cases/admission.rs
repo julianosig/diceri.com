@@ -97,6 +97,7 @@ impl AdmissionService {
         if !room.is_host(host_key) {
             return Err(AdmissionError::Forbidden);
         }
+        ensure_voice_belongs(&room, profile)?;
         let ticket = self.ticket(room_id, Some(profile), MediaRole::Speaker)?;
         self.start_translation(room_id).await;
         Ok(ticket)
@@ -108,6 +109,7 @@ impl AdmissionService {
         profile: ParticipantProfile,
     ) -> Result<Knock, AdmissionError> {
         let mut room = self.load(room_id).await?;
+        ensure_voice_belongs(&room, &profile)?;
         let request_id = RequestId::from_random_bytes(self.random.random_128());
         let key = AccessKey::from_random_bytes(self.random.random_128());
         room.knock(JoinRequest::new(request_id.clone(), profile, key.clone()))?;
@@ -230,6 +232,14 @@ impl AdmissionService {
             },
         )?;
         Ok(JoinTicket { identity, grant })
+    }
+}
+
+/// A participant may only use a voice clone recorded in this room.
+fn ensure_voice_belongs(room: &Room, profile: &ParticipantProfile) -> Result<(), AdmissionError> {
+    match &profile.voice_id {
+        Some(voice) if !room.owns_voice(voice) => Err(AdmissionError::Forbidden),
+        _ => Ok(()),
     }
 }
 

@@ -33,6 +33,7 @@ fn name(raw: &str) -> ParticipantProfile {
     ParticipantProfile {
         name: raw.parse().unwrap(),
         output_language: "pt-BR".parse().unwrap(),
+        voice_id: None,
     }
 }
 
@@ -200,4 +201,23 @@ async fn joining_starts_translation_for_the_room() {
         f.dispatcher.0.lock().unwrap().as_slice(),
         [room.id.clone(), room.id]
     );
+}
+
+#[tokio::test]
+async fn a_voice_from_outside_the_room_is_forbidden() {
+    let f = fixture(true);
+    let room = f.rooms.create().await.unwrap();
+    let stolen = ParticipantProfile {
+        voice_id: Some("someone-else".to_owned()),
+        ..name("Eve")
+    };
+    let result = f
+        .admission
+        .join_as_host(&room.id, room.host_key(), &stolen)
+        .await;
+    assert!(matches!(result, Err(AdmissionError::Forbidden)));
+    assert!(matches!(
+        f.admission.knock(&room.id, stolen).await,
+        Err(AdmissionError::Forbidden)
+    ));
 }

@@ -9,6 +9,8 @@ pub enum RoomRuleError {
     UnknownRequest,
     #[error("join request was already decided")]
     AlreadyDecided,
+    #[error("too many voices were recorded in this room")]
+    TooManyVoices,
 }
 
 /// An anonymous meeting room joined through a shared link. The creator holds
@@ -19,6 +21,8 @@ pub struct Room {
     pub max_participants: u8,
     host_key: AccessKey,
     requests: Vec<JoinRequest>,
+    /// Voice clones recorded for this room (provider ids), deleted when people leave.
+    voices: Vec<String>,
 }
 
 impl Room {
@@ -26,6 +30,8 @@ impl Room {
     pub const DEFAULT_MAX_PARTICIPANTS: u8 = 2;
     /// Caps lobby spam from a leaked link.
     pub const MAX_PENDING_REQUESTS: usize = 20;
+    /// Caps voice-clone creation (a paid, quota-limited provider call) per room.
+    pub const MAX_VOICES: usize = 10;
 
     #[must_use]
     pub fn new(id: RoomId, host_key: AccessKey) -> Self {
@@ -34,6 +40,7 @@ impl Room {
             max_participants: Self::DEFAULT_MAX_PARTICIPANTS,
             host_key,
             requests: Vec::new(),
+            voices: Vec::new(),
         }
     }
 
@@ -76,6 +83,25 @@ impl Room {
         self.requests.iter().find(|r| &r.id == id)
     }
 
+    #[must_use]
+    pub fn has_voice_capacity(&self) -> bool {
+        self.voices.len() < Self::MAX_VOICES
+    }
+
+    pub fn register_voice(&mut self, voice_id: String) -> Result<(), RoomRuleError> {
+        if !self.has_voice_capacity() {
+            return Err(RoomRuleError::TooManyVoices);
+        }
+        self.voices.push(voice_id);
+        Ok(())
+    }
+
+    /// Only voices recorded in this room may be attached to its participants.
+    #[must_use]
+    pub fn owns_voice(&self, voice_id: &str) -> bool {
+        self.voices.iter().any(|voice| voice == voice_id)
+    }
+
     pub fn decide(&mut self, id: &RequestId, admit: bool) -> Result<(), RoomRuleError> {
         let request = self
             .requests
@@ -107,6 +133,7 @@ mod tests {
         let profile = ParticipantProfile {
             name: "Guest".parse().unwrap(),
             output_language: "en".parse().unwrap(),
+            voice_id: None,
         };
         JoinRequest::new(RequestId::from_random_bytes([seed; 16]), profile, key(seed))
     }
@@ -149,6 +176,21 @@ mod tests {
         assert_eq!(
             room().decide(&request(9).id, true),
             Err(RoomRuleError::UnknownRequest)
+        );
+    }
+
+    #[test]
+    fn voices_are_owned_by_the_room_and_capped() {
+        let mut room = room();
+        room.register_voice("v1".to_owned()).unwrap();
+        assert!(room.owns_voice("v1"));
+        assert!(!room.owns_voice("someone-elses"));
+        for n in 1..Room::MAX_VOICES {
+            room.register_voice(format!("v{}", n + 1)).unwrap();
+        }
+        assert_eq!(
+            room.register_voice("extra".to_owned()),
+            Err(RoomRuleError::TooManyVoices)
         );
     }
 
