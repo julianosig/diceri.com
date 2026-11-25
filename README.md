@@ -9,7 +9,8 @@ the other in their own language, in a voice that sounds like the speaker.
 
 ## Quick start
 
-Requirements: Rust 1.100 (via rustup), Node 26 LTS, pnpm 12, [`just`](https://just.systems).
+Requirements: Rust 1.100 (via rustup), Node 26 LTS, pnpm 12, [`just`](https://just.systems),
+and the system packages in [`docs/development.md`](docs/development.md).
 
 ```sh
 just setup   # dependencies + git hooks
