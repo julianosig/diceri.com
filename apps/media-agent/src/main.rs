@@ -7,6 +7,7 @@ mod providers;
 mod room_session;
 mod sessions;
 mod speaker_task;
+mod targets;
 mod track_names;
 mod translated_track;
 mod voices;
