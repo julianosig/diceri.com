@@ -36,6 +36,8 @@ pub struct Config {
     pub livekit: Option<LiveKitConfig>,
     /// `None` disables live translation.
     pub agent: Option<AgentConfig>,
+    /// ElevenLabs key for voice cloning; `None` disables recording your voice.
+    pub elevenlabs_api_key: Option<SecretString>,
 }
 
 impl Config {
@@ -63,6 +65,9 @@ impl Config {
             log_format,
             livekit,
             agent,
+            elevenlabs_api_key: env::var("DICERI_ELEVENLABS_API_KEY")
+                .ok()
+                .map(SecretString::from),
         })
     }
 
@@ -75,6 +80,7 @@ impl Config {
             log_format: LogFormat::Pretty,
             livekit: None,
             agent: None,
+            elevenlabs_api_key: None,
         }
     }
 }

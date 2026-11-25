@@ -1,7 +1,8 @@
 use axum::Json;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
-use diceri_application::use_cases::{AdmissionError, RoomError};
+use diceri_application::ports::VoiceCloneError;
+use diceri_application::use_cases::{AdmissionError, RoomError, VoiceError};
 use diceri_domain::RoomRuleError;
 use serde::Serialize;
 
@@ -100,12 +101,30 @@ impl From<AdmissionError> for ApiError {
             AdmissionError::Rule(rule @ RoomRuleError::AlreadyDecided) => {
                 Self::Conflict(rule.to_string())
             }
-            AdmissionError::Rule(rule @ RoomRuleError::TooManyPending) => {
-                Self::TooManyRequests(rule.to_string())
-            }
+            AdmissionError::Rule(
+                rule @ (RoomRuleError::TooManyPending | RoomRuleError::TooManyVoices),
+            ) => Self::TooManyRequests(rule.to_string()),
             AdmissionError::MediaUnavailable => Self::Unavailable("media server not configured"),
             AdmissionError::Repository(source) => Self::Internal(source.into()),
             AdmissionError::MediaAccess(source) => Self::Internal(source.into()),
+        }
+    }
+}
+
+impl From<VoiceError> for ApiError {
+    fn from(error: VoiceError) -> Self {
+        match error {
+            VoiceError::NotFound => Self::NotFound,
+            VoiceError::InvalidSample => Self::Validation(error.to_string()),
+            VoiceError::Rule(rule) => Self::TooManyRequests(rule.to_string()),
+            VoiceError::Clone(VoiceCloneError::Rejected(detail)) => {
+                tracing::warn!(%detail, "voice sample rejected by provider");
+                Self::Validation(
+                    "the recording could not be used; try again in a quieter place".to_owned(),
+                )
+            }
+            VoiceError::Clone(source) => Self::Internal(source.into()),
+            VoiceError::Repository(source) => Self::Internal(source.into()),
         }
     }
 }

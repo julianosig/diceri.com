@@ -10,13 +10,16 @@
 //! | GET | `/rooms/{room}/requests/{request}` | request |
 //! | POST | `/rooms/{room}/requests/{request}/admit` and `/deny` | host |
 //! | POST | `/rooms/{room}/monitor-session` | host or admitted request |
+//! | POST | `/rooms/{room}/voices` | — (audio body; returns a voice id) |
 
 mod access_key;
 mod admission;
 mod dto;
 mod handlers;
+mod voices;
 
 use axum::Router;
+use axum::extract::DefaultBodyLimit;
 use axum::routing::{get, post};
 
 use crate::AppState;
@@ -50,5 +53,9 @@ pub(crate) fn routes() -> Router<AppState> {
         .route(
             "/rooms/{room_id}/monitor-session",
             post(admission::monitor_session),
+        )
+        .route(
+            "/rooms/{room_id}/voices",
+            post(voices::record_voice).layer(DefaultBodyLimit::max(voices::MAX_UPLOAD_BYTES)),
         )
 }

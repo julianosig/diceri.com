@@ -23,7 +23,7 @@ async fn host_joins_with_host_key_only() {
 
     let (status, body) = send(&app, "POST", &uri, Some(&host_key), Some(name("Ana"))).await;
     assert_eq!(status, StatusCode::OK);
-    assert!(body["token"].as_str().unwrap().contains("|Ana|Speaker"));
+    assert!(body["token"].as_str().unwrap().contains("|Ana|Speaker|"));
 
     let (status, _) = send(&app, "POST", &uri, None, Some(name("Ana"))).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
@@ -77,7 +77,7 @@ async fn guest_is_admitted_by_host_and_receives_credentials() {
         outcome["credentials"]["token"]
             .as_str()
             .unwrap()
-            .contains("|Bruno|Speaker")
+            .contains("|Bruno|Speaker|")
     );
 }
 

@@ -37,6 +37,9 @@ pub(crate) struct ProfileRequest {
     pub name: String,
     /// BCP 47 tag of the language the participant wants to hear everyone in, e.g. `pt-BR`.
     pub output_language: String,
+    /// Voice clone recorded in this room (`POST /rooms/{room}/voices`), if any.
+    #[serde(default)]
+    pub voice_id: Option<String>,
 }
 
 impl ProfileRequest {
@@ -52,6 +55,7 @@ impl ProfileRequest {
         Ok(ParticipantProfile {
             name,
             output_language,
+            voice_id: self.voice_id.clone(),
         })
     }
 }
@@ -130,4 +134,11 @@ impl From<KnockOutcome> for OutcomeResponse {
             },
         }
     }
+}
+
+/// Returned after recording a voice: attach `voiceId` to the join profile.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct VoiceResponse {
+    pub voice_id: String,
 }
