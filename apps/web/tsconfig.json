@@ -9,6 +9,7 @@
 		"vite.config.ts",
 		"eslint.config.js",
 		"prettier.config.js",
-		"playwright.config.ts"
+		"playwright.config.ts",
+		"tests"
 	]
 }
