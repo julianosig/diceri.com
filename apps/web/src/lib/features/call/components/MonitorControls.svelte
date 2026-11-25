@@ -1,12 +1,15 @@
 <script lang="ts">
+	import { LANGUAGES } from '#lib/features/translation/index.ts';
 	import type { MonitorMode } from '../call-session.svelte.ts';
 
 	interface Props {
 		mode: MonitorMode;
+		previewLanguage: string;
 		onchange: (mode: MonitorMode) => void;
+		onpreviewchange: (language: string) => void;
 	}
 
-	let { mode, onchange }: Props = $props();
+	let { mode, previewLanguage, onchange, onpreviewchange }: Props = $props();
 
 	const modes: { value: MonitorMode; label: string; hint: string }[] = [
 		{ value: 'off', label: 'Off', hint: 'You do not hear yourself.' },
@@ -19,6 +22,11 @@
 			value: 'loopback',
 			label: 'Via server',
 			hint: 'Hear yourself after a round trip through the media server. Judges transmission.'
+		},
+		{
+			value: 'translated',
+			label: 'Translated',
+			hint: 'Hear your own voice translated by the agent. Speak, pause, and listen.'
 		}
 	];
 </script>
@@ -41,4 +49,20 @@
 		{/each}
 	</div>
 	<p class="text-xs text-ink-muted">{modes.find((m) => m.value === mode)?.hint}</p>
+	{#if mode === 'translated'}
+		<label class="flex flex-col gap-1 text-sm font-medium">
+			Translate me into
+			<select
+				class="rounded-lg bg-surface-raised px-3 py-2"
+				value={previewLanguage}
+				onchange={(event) => {
+					onpreviewchange(event.currentTarget.value);
+				}}
+			>
+				{#each LANGUAGES as option (option.code)}
+					<option value={option.code}>{option.label}</option>
+				{/each}
+			</select>
+		</label>
+	{/if}
 </fieldset>

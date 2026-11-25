@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
-	import { languageLabel } from '../languages.ts';
+	import { languageLabel } from '#lib/features/translation/index.ts';
 	import type { PendingRequest } from '../lobby-api.ts';
 
 	interface Props {

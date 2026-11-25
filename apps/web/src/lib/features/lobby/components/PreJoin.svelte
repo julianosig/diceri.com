@@ -4,7 +4,8 @@
 	import { Button } from '#lib/components/ui/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
 	import { isValidDisplayName, loadDisplayName, MAX_NAME_LENGTH } from '../display-name.ts';
-	import { LANGUAGES, loadLanguage } from '../languages.ts';
+	import { LANGUAGES } from '#lib/features/translation/index.ts';
+	import { loadLanguage } from '../languages.ts';
 	import type { Profile } from '../lobby-api.ts';
 	import { MicPreview } from '../mic-preview.svelte.ts';
 

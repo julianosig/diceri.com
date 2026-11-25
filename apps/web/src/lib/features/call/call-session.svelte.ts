@@ -24,15 +24,20 @@ import {
 	AGENT_IDENTITY,
 	CAPTIONS_TOPIC,
 	CaptionFeed,
+	LANGUAGES,
 	originalVolume,
 	parseCaption,
 	parseTranslatedTrack,
-	sameLanguage
+	PREVIEW_ATTRIBUTE,
+	sameLanguage,
+	wantsTranslatedTrack,
+	type Listener
 } from '#lib/features/translation/index.ts';
 import { StatsPoller, type CallMetrics } from './stats-poller.ts';
 
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
-export type MonitorMode = 'off' | 'local' | 'loopback';
+/** Hear yourself: off, local mic, through the server, or translated by the agent. */
+export type MonitorMode = 'off' | 'local' | 'loopback' | 'translated';
 
 export interface Participant {
 	identity: string;
@@ -67,6 +72,8 @@ export class CallSession {
 	participants = $state<Participant[]>([]);
 	audioBlocked = $state(false);
 	metrics = $state<CallMetrics>({});
+	/** Language to hear yourself in while the monitor is `translated`. */
+	previewLanguage = $state('en');
 	readonly captions: CaptionFeed;
 
 	#room = new Room({ adaptiveStream: true, dynacast: true });
@@ -81,8 +88,10 @@ export class CallSession {
 
 	constructor(private readonly options: CallSessionOptions) {
 		this.settings.deviceId = options.deviceId;
+		this.previewLanguage =
+			LANGUAGES.find((l) => !sameLanguage(l.code, options.language))?.code ?? 'en';
 		this.captions = new CaptionFeed(
-			options.language,
+			() => this.#listener(),
 			(identity) => this.#room.remoteParticipants.get(identity)?.attributes.language
 		);
 		this.#bindRoomEvents();
@@ -108,6 +117,8 @@ export class CallSession {
 			);
 			this.status = 'connected';
 			this.#refreshParticipants();
+			// Monitor choices made while connecting are applied now.
+			await this.#publishPreview();
 		} catch (cause) {
 			this.status = 'error';
 			this.error = cause instanceof Error ? cause.message : String(cause);
@@ -139,6 +150,23 @@ export class CallSession {
 			this.#loopback = new LoopbackMonitor(this.options.credentials.identity);
 			await this.#loopback.start(await this.options.monitorCredentials());
 		}
+		await this.#publishPreview();
+	}
+
+	async setPreviewLanguage(code: string): Promise<void> {
+		this.previewLanguage = code;
+		if (this.monitor === 'translated') await this.#publishPreview();
+	}
+
+	/**
+	 * Tells the agent which language to translate us into for ourselves (empty = off).
+	 * Before the connection is up this is a no-op; `connect` calls it again.
+	 */
+	async #publishPreview(): Promise<void> {
+		if (this.status !== 'connected') return;
+		const preview = this.monitor === 'translated' ? this.previewLanguage : '';
+		await this.#room.localParticipant.setAttributes({ [PREVIEW_ATTRIBUTE]: preview });
+		this.#syncTranslatedTracks();
 	}
 
 	async toggleMute(): Promise<void> {
@@ -254,6 +282,11 @@ export class CallSession {
 				const caption = parseCaption(payload);
 				if (caption) this.captions.push(caption);
 			})
+			.on(RoomEvent.TrackPublished, (publication: RemoteTrackPublication) => {
+				if (publication.trackName.startsWith('tr:') && !this.#wants(publication)) {
+					publication.setSubscribed(false);
+				}
+			})
 			.on(RoomEvent.TrackUnsubscribed, (track: RemoteTrack) => {
 				this.#remoteElements.get(track)?.remove();
 				this.#remoteElements.delete(track);
@@ -273,14 +306,37 @@ export class CallSession {
 		participant: RemoteParticipant
 	): void {
 		if (!(track instanceof RemoteAudioTrack)) return;
-		const language = this.options.language;
 		if (participant.identity === AGENT_IDENTITY) {
-			const translated = parseTranslatedTrack(publication.trackName);
-			if (translated && sameLanguage(translated.language, language)) this.#attachRemote(track, 1);
+			if (this.#wants(publication)) this.#attachRemote(track, 1);
 			else publication.setSubscribed(false);
 			return;
 		}
-		this.#attachRemote(track, originalVolume(participant.attributes.language, language));
+		this.#attachRemote(
+			track,
+			originalVolume(participant.attributes.language, this.options.language)
+		);
+	}
+
+	#wants(publication: RemoteTrackPublication): boolean {
+		const translated = parseTranslatedTrack(publication.trackName);
+		return translated !== undefined && wantsTranslatedTrack(translated, this.#listener());
+	}
+
+	#listener(): Listener {
+		return {
+			identity: this.options.credentials.identity,
+			language: this.options.language,
+			preview: this.monitor === 'translated' ? this.previewLanguage : undefined
+		};
+	}
+
+	/** Re-subscribes to wanted translations and drops unwanted ones after a change. */
+	#syncTranslatedTracks(): void {
+		const agent = this.#room.remoteParticipants.get(AGENT_IDENTITY);
+		for (const publication of agent?.trackPublications.values() ?? []) {
+			const wanted = this.#wants(publication);
+			if (wanted !== publication.isSubscribed) publication.setSubscribed(wanted);
+		}
 	}
 
 	#attachRemote(track: RemoteAudioTrack, volume: number): void {

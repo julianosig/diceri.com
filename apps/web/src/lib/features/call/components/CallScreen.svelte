@@ -91,7 +91,9 @@
 				<AudioMeter level={session.level} muted={session.muted} />
 				<MonitorControls
 					mode={session.monitor}
+					previewLanguage={session.previewLanguage}
 					onchange={(mode: MonitorMode) => session.setMonitor(mode)}
+					onpreviewchange={(language: string) => session.setPreviewLanguage(language)}
 				/>
 				<AudioSettingsForm
 					settings={session.settings}

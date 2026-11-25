@@ -3,7 +3,8 @@ import {
 	DUCKED_ORIGINAL_VOLUME,
 	originalVolume,
 	parseTranslatedTrack,
-	sameLanguage
+	sameLanguage,
+	wantsTranslatedTrack
 } from './translation-routing.ts';
 
 describe('parseTranslatedTrack', () => {
@@ -28,5 +29,20 @@ describe('language rules', () => {
 		expect(originalVolume('pt-BR', 'pt-BR')).toBe(1);
 		expect(originalVolume('en', 'pt-BR')).toBe(DUCKED_ORIGINAL_VOLUME);
 		expect(originalVolume(undefined, 'pt-BR')).toBe(1);
+	});
+});
+
+describe('wantsTranslatedTrack', () => {
+	const me = { identity: 'me', language: 'pt-BR', preview: undefined };
+
+	it('plays translations of others into my language only', () => {
+		expect(wantsTranslatedTrack({ speaker: 'bob', language: 'pt-BR' }, me)).toBe(true);
+		expect(wantsTranslatedTrack({ speaker: 'bob', language: 'es' }, me)).toBe(false);
+	});
+
+	it('plays my own voice only in the preview language', () => {
+		const own = { speaker: 'me', language: 'ja' };
+		expect(wantsTranslatedTrack(own, me)).toBe(false);
+		expect(wantsTranslatedTrack(own, { ...me, preview: 'ja' })).toBe(true);
 	});
 });

@@ -1,4 +1,4 @@
-import { sameLanguage } from './translation-routing.ts';
+import { sameLanguage, type Listener } from './translation-routing.ts';
 
 /** Wire format published by the media agent (apps/media-agent/src/output.rs). */
 export interface CaptionMessage {
@@ -28,13 +28,17 @@ export function parseCaption(payload: Uint8Array): CaptionMessage | undefined {
 
 /**
  * Whether a listener should see a caption: originals (and live partials) from
- * speakers of their language, translations into their language from others.
+ * speakers of their language, translations into their language from others,
+ * and their own voice translated into the language they are previewing.
  */
 export function isCaptionForListener(
 	message: CaptionMessage,
-	listenerLanguage: string,
+	listener: Listener,
 	speakerLanguage: string | undefined
 ): boolean {
-	if (sameLanguage(speakerLanguage, listenerLanguage)) return message.kind !== 'translation';
-	return message.kind === 'translation' && sameLanguage(message.language, listenerLanguage);
+	if (message.speaker === listener.identity) {
+		return message.kind === 'translation' && sameLanguage(message.language, listener.preview);
+	}
+	if (sameLanguage(speakerLanguage, listener.language)) return message.kind !== 'translation';
+	return message.kind === 'translation' && sameLanguage(message.language, listener.language);
 }

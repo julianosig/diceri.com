@@ -7,5 +7,10 @@ export {
 	DUCKED_ORIGINAL_VOLUME,
 	originalVolume,
 	parseTranslatedTrack,
-	sameLanguage
+	PREVIEW_ATTRIBUTE,
+	sameLanguage,
+	wantsTranslatedTrack,
+	type Listener,
+	type TranslatedTrack
 } from './translation-routing.ts';
+export { LANGUAGES, languageLabel, matchBrowserLanguage } from './languages.ts';

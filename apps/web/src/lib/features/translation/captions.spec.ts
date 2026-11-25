@@ -23,15 +23,31 @@ describe('parseCaption', () => {
 	});
 });
 
+const listener = (language: string, preview?: string) => ({
+	identity: 'me',
+	language,
+	preview
+});
+
 describe('isCaptionForListener', () => {
 	it('shows translations into the listener language from other-language speakers', () => {
-		expect(isCaptionForListener(caption('translation', 'en'), 'en', 'pt-BR')).toBe(true);
-		expect(isCaptionForListener(caption('translation', 'es'), 'en', 'pt-BR')).toBe(false);
-		expect(isCaptionForListener(caption('original', 'pt-BR'), 'en', 'pt-BR')).toBe(false);
+		expect(isCaptionForListener(caption('translation', 'en'), listener('en'), 'pt-BR')).toBe(true);
+		expect(isCaptionForListener(caption('translation', 'es'), listener('en'), 'pt-BR')).toBe(false);
+		expect(isCaptionForListener(caption('original', 'pt-BR'), listener('en'), 'pt-BR')).toBe(false);
 	});
 
 	it('shows originals from same-language speakers', () => {
-		expect(isCaptionForListener(caption('original', 'pt-BR'), 'pt-BR', 'pt-BR')).toBe(true);
-		expect(isCaptionForListener(caption('partial', 'pt-BR'), 'pt-BR', 'pt-BR')).toBe(true);
+		expect(isCaptionForListener(caption('original', 'pt-BR'), listener('pt-BR'), 'pt-BR')).toBe(
+			true
+		);
+		expect(isCaptionForListener(caption('partial', 'pt-BR'), listener('pt-BR'), 'pt-BR')).toBe(
+			true
+		);
+	});
+
+	it('shows my own voice only when previewing that language', () => {
+		const own = { ...caption('translation', 'ja'), speaker: 'me' };
+		expect(isCaptionForListener(own, listener('pt-BR'), undefined)).toBe(false);
+		expect(isCaptionForListener(own, listener('pt-BR', 'ja'), undefined)).toBe(true);
 	});
 });

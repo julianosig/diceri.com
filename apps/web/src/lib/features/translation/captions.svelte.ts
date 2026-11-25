@@ -1,4 +1,5 @@
 import { isCaptionForListener, type CaptionMessage } from './captions.ts';
+import type { Listener } from './translation-routing.ts';
 
 export interface CaptionLine {
 	speaker: string;
@@ -14,13 +15,13 @@ export class CaptionFeed {
 	lines = $state<CaptionLine[]>([]);
 
 	constructor(
-		private readonly listenerLanguage: string,
+		private readonly listener: () => Listener,
 		private readonly speakerLanguage: (speaker: string) => string | undefined
 	) {}
 
 	push(message: CaptionMessage): void {
 		const speakerLanguage = this.speakerLanguage(message.speaker);
-		if (!isCaptionForListener(message, this.listenerLanguage, speakerLanguage)) return;
+		if (!isCaptionForListener(message, this.listener(), speakerLanguage)) return;
 		const line: CaptionLine = {
 			speaker: message.speaker,
 			phrase: message.phrase,
