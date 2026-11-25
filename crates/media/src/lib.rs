@@ -10,6 +10,7 @@ mod output;
 mod segmenter;
 mod speaker;
 mod target_worker;
+mod voice_choice;
 
 pub use caption::{Caption, CaptionKind};
 pub use output::PipelineOutput;

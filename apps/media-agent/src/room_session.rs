@@ -3,9 +3,9 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use anyhow::Context as _;
-use diceri_application::ports::{MediaAccessIssuer as _, MediaParticipant, MediaRole};
+use diceri_application::ports::{MediaAccessIssuer as _, MediaParticipant, MediaRole, VoiceId};
 use diceri_domain::{LanguageCode, RoomId};
-use diceri_infra::OUTPUT_LANGUAGE_ATTRIBUTE;
+use diceri_infra::{OUTPUT_LANGUAGE_ATTRIBUTE, VOICE_ATTRIBUTE};
 use diceri_media::PipelineOutput;
 use livekit::prelude::{
     RemoteParticipant, RemoteTrack, RemoteTrackPublication, Room, RoomEvent, RoomOptions,
@@ -57,7 +57,7 @@ async fn serve(
         tokio::select! {
             event = events.recv() => {
                 match event {
-                    None | Some(RoomEvent::Disconnected { .. }) => return,
+                    None | Some(RoomEvent::Disconnected { .. }) => break,
                     Some(event) => speakers.handle(event, room, providers, &output),
                 }
                 speakers.refresh_targets(room);
@@ -66,17 +66,20 @@ async fn serve(
                 if has_listeners(members(room).iter().map(Snapshot::member)) {
                     last_human = Instant::now();
                 } else if last_human.elapsed() >= IDLE_TIMEOUT {
-                    return;
+                    break;
                 }
             }
         }
     }
+    speakers.delete_all_clones(providers);
 }
 
-/// Target-language channels of the speakers currently being translated.
+/// Target-language channels of the speakers currently being translated, and
+/// the voice clones to delete when their owners leave.
 #[derive(Default)]
 struct Speakers {
     targets: HashMap<String, watch::Sender<Vec<LanguageCode>>>,
+    clones: HashMap<String, VoiceId>,
 }
 
 impl Speakers {
@@ -87,6 +90,12 @@ impl Speakers {
         providers: &Arc<Providers>,
         output: &Arc<dyn PipelineOutput>,
     ) {
+        if let RoomEvent::ParticipantDisconnected(participant) = &event {
+            if let Some(voice) = self.clones.remove(participant.identity().as_str()) {
+                delete_clone(providers, voice);
+            }
+            return;
+        }
         let RoomEvent::TrackSubscribed {
             track: RemoteTrack::Audio(track),
             publication,
@@ -102,12 +111,22 @@ impl Speakers {
         let initial = targets_for(snapshot.iter().map(Snapshot::member), &speaker.identity);
         let (sender, receiver) = watch::channel(initial);
         self.targets.insert(speaker.identity.clone(), sender);
+        if let Some(voice) = &speaker.voice {
+            self.clones.insert(speaker.identity.clone(), voice.clone());
+        }
         tokio::spawn(speaker_task::run(
             speaker,
             providers.clone(),
             output.clone(),
             receiver,
         ));
+    }
+
+    /// Deletes every remaining clone when the session ends.
+    fn delete_all_clones(&mut self, providers: &Arc<Providers>) {
+        for (_, voice) in self.clones.drain() {
+            delete_clone(providers, voice);
+        }
     }
 
     /// Recomputes every speaker's targets after membership or attributes change.
@@ -131,6 +150,17 @@ impl Speakers {
 fn log_targets(speaker: &str, targets: &[LanguageCode]) {
     let languages: Vec<&str> = targets.iter().map(LanguageCode::as_str).collect();
     tracing::info!(speaker, ?languages, "translation targets changed");
+}
+
+/// Deletes a voice clone in the background (ADR 0006: clones never outlive the call).
+fn delete_clone(providers: &Arc<Providers>, voice: VoiceId) {
+    let cloner = providers.cloner.clone();
+    tokio::spawn(async move {
+        match cloner.delete(&voice).await {
+            Ok(()) => tracing::info!("voice clone deleted"),
+            Err(error) => tracing::warn!(%error, "voice clone could not be deleted"),
+        }
+    });
 }
 
 /// Owned copy of a remote participant's identity and attributes.
@@ -170,12 +200,17 @@ fn speaker(
     }
     let attributes = participant.attributes();
     let fallback_language = attributes.get(OUTPUT_LANGUAGE_ATTRIBUTE)?.parse().ok()?;
+    let voice = attributes
+        .get(VOICE_ATTRIBUTE)
+        .filter(|voice| !voice.is_empty())
+        .map(|voice| VoiceId(voice.clone()));
     let identity = participant.identity().to_string();
     let hints = speech_hints(room.iter().map(Snapshot::member), &identity);
     Some(Speaker {
         identity,
         hints,
         fallback_language,
+        voice,
         track,
     })
 }

@@ -27,8 +27,13 @@ impl Translator for TaggingTranslator {
     }
 }
 
-/// Returns one chunk whose length is the text length.
-struct FakeTts;
+/// Returns one chunk whose length is the text length; refuses the voice
+/// `refused` (like a clone that needs verification) and records voices used.
+#[derive(Default)]
+struct FakeTts {
+    refused: Option<&'static str>,
+    voices_used: Mutex<Vec<String>>,
+}
 
 #[async_trait]
 impl TextToSpeech for FakeTts {
@@ -36,6 +41,15 @@ impl TextToSpeech for FakeTts {
         &self,
         request: SpeechRequest<'_>,
     ) -> Result<SpeechAudio, TextToSpeechError> {
+        self.voices_used
+            .lock()
+            .unwrap()
+            .push(request.voice.0.clone());
+        if self.refused == Some(request.voice.0.as_str()) {
+            return Err(TextToSpeechError::Request(
+                "voice requires verification".to_owned(),
+            ));
+        }
         let (tx, rx) = mpsc::channel(1);
         tx.send(Ok(vec![0; request.text.len()])).await.unwrap();
         Ok(rx)
@@ -73,10 +87,16 @@ fn lang(code: &str) -> LanguageCode {
 struct Harness {
     output: Arc<RecordingOutput>,
     translator: Arc<TaggingTranslator>,
+    tts: Arc<FakeTts>,
 }
 
 impl Harness {
     async fn run(events: Vec<TranscriptEvent>, targets: &[&str]) -> Self {
+        Self::run_with(events, targets, FakeTts::default()).await
+    }
+
+    async fn run_with(events: Vec<TranscriptEvent>, targets: &[&str], tts: FakeTts) -> Self {
+        let tts = Arc::new(tts);
         let output = Arc::new(RecordingOutput::default());
         let translator = Arc::new(TaggingTranslator {
             contexts: Mutex::default(),
@@ -84,14 +104,11 @@ impl Harness {
         let config = SpeakerConfig {
             speaker: "ana".to_owned(),
             fallback_language: lang("pt-BR"),
-            voice: VoiceId("voice".to_owned()),
+            voice: VoiceId("clone".to_owned()),
+            fallback_voice: VoiceId("stock".to_owned()),
         };
-        let pipeline = SpeakerPipeline::new(
-            config,
-            translator.clone(),
-            Arc::new(FakeTts),
-            output.clone(),
-        );
+        let pipeline =
+            SpeakerPipeline::new(config, translator.clone(), tts.clone(), output.clone());
         let (tx, rx) = mpsc::channel(64);
         for event in events {
             tx.send(Ok(event)).await.unwrap();
@@ -99,7 +116,11 @@ impl Harness {
         drop(tx);
         let (_targets_tx, targets_rx) = watch::channel(targets.iter().map(|t| lang(t)).collect());
         pipeline.run(rx, targets_rx).await;
-        Self { output, translator }
+        Self {
+            output,
+            translator,
+            tts,
+        }
     }
 
     fn texts(&self, kind: CaptionKind) -> Vec<String> {
@@ -193,4 +214,17 @@ async fn translates_from_the_detected_language_not_the_declared_one() {
         .find(|c| c.kind == CaptionKind::Original)
         .unwrap();
     assert_eq!(original.language.as_str(), "en");
+}
+
+#[tokio::test]
+async fn a_refused_clone_falls_back_to_the_stock_voice_for_good() {
+    let tts = FakeTts {
+        refused: Some("clone"),
+        ..FakeTts::default()
+    };
+    let events = [phrase("um"), phrase("dois")].concat();
+    let harness = Harness::run_with(events, &["en"], tts).await;
+    assert_eq!(harness.output.spoken.lock().unwrap().len(), 2);
+    let used = harness.tts.voices_used.lock().unwrap().clone();
+    assert_eq!(used, vec!["clone", "stock", "stock"]);
 }

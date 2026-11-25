@@ -2,12 +2,13 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use diceri_application::ports::{
-    SpeechRequest, TextToSpeech, TranslationRequest, Translator, VoiceId,
+    SpeechAudio, SpeechRequest, TextToSpeech, TextToSpeechError, TranslationRequest, Translator,
 };
 use diceri_domain::LanguageCode;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
+use crate::voice_choice::VoiceChoice;
 use crate::{Caption, CaptionKind, PipelineOutput};
 
 /// Phrases waiting per target language; beyond this the speaker is far ahead
@@ -30,7 +31,7 @@ pub(crate) struct PhraseJob {
 pub(crate) struct WorkerDeps {
     pub speaker: String,
     pub source: LanguageCode,
-    pub voice: VoiceId,
+    pub voice: VoiceChoice,
     pub translator: Arc<dyn Translator>,
     pub tts: Arc<dyn TextToSpeech>,
     pub output: Arc<dyn PipelineOutput>,
@@ -94,22 +95,51 @@ async fn speak(
     text: &str,
     translated_ms: u128,
 ) {
-    let request = SpeechRequest {
-        text,
-        language: target,
-        voice: &deps.voice,
-    };
-    let Some(audio) = deps
-        .tts
-        .synthesize(request)
-        .await
-        .inspect_err(|error| tracing::warn!(%error, %target, "synthesis failed"))
-        .ok()
-    else {
+    let Some(audio) = synthesize(deps, target, text).await else {
         return;
     };
     log_latency(target, job, translated_ms);
     deps.output.speak(&deps.speaker, target, audio).await;
+}
+
+/// Synthesizes in the speaker's voice, switching to the stock voice for good
+/// if the provider refuses the clone (e.g. it requires verification).
+async fn synthesize(deps: &WorkerDeps, target: &LanguageCode, text: &str) -> Option<SpeechAudio> {
+    match synthesize_once(deps, target, text).await {
+        Ok(audio) => Some(audio),
+        Err(error) if deps.voice.give_up_preferred() => {
+            warn_clone_refused(&error, target);
+            synthesize_once(deps, target, text)
+                .await
+                .inspect_err(|e| warn_failed(e, target))
+                .ok()
+        }
+        Err(error) => {
+            warn_failed(&error, target);
+            None
+        }
+    }
+}
+
+async fn synthesize_once(
+    deps: &WorkerDeps,
+    target: &LanguageCode,
+    text: &str,
+) -> Result<SpeechAudio, TextToSpeechError> {
+    let request = SpeechRequest {
+        text,
+        language: target,
+        voice: deps.voice.current(),
+    };
+    deps.tts.synthesize(request).await
+}
+
+fn warn_clone_refused(error: &TextToSpeechError, target: &LanguageCode) {
+    tracing::warn!(%error, %target, "voice clone refused, using a stock voice");
+}
+
+fn warn_failed(error: &TextToSpeechError, target: &LanguageCode) {
+    tracing::warn!(%error, %target, "synthesis failed");
 }
 
 /// Milliseconds from the end of the phrase to translation and to first speech.

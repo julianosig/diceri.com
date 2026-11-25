@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_application::ports::STT_SAMPLE_RATE;
+use diceri_application::ports::{STT_SAMPLE_RATE, VoiceId};
 use diceri_domain::LanguageCode;
 use diceri_media::{PipelineOutput, SpeakerConfig, SpeakerPipeline};
 use futures_util::StreamExt as _;
@@ -18,6 +18,8 @@ pub(crate) struct Speaker {
     pub hints: Vec<LanguageCode>,
     /// Assumed source when a phrase has no detected language: their output language.
     pub fallback_language: LanguageCode,
+    /// The speaker's consented voice clone, if they recorded one.
+    pub voice: Option<VoiceId>,
     pub track: RemoteAudioTrack,
 }
 
@@ -37,7 +39,10 @@ pub(crate) async fn run(
     };
     pump_audio(&speaker.track, stream.audio);
     let config = SpeakerConfig {
-        voice: voice_for(&speaker.identity, &providers.voices),
+        voice: speaker
+            .voice
+            .unwrap_or_else(|| voice_for(&speaker.identity, &providers.voices)),
+        fallback_voice: voice_for(&speaker.identity, &providers.voices),
         speaker: speaker.identity,
         fallback_language: speaker.fallback_language,
     };

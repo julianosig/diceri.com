@@ -11,6 +11,7 @@ use tokio::sync::{mpsc, watch};
 use crate::context::RollingContext;
 use crate::segmenter::{SegmentUpdate, Segmenter};
 use crate::target_worker::{PhraseJob, TargetWorker, WorkerDeps};
+use crate::voice_choice::VoiceChoice;
 use crate::{Caption, CaptionKind, PipelineOutput};
 
 /// Phrases of context given to the translator.
@@ -22,7 +23,10 @@ pub struct SpeakerConfig {
     pub speaker: String,
     /// Assumed source language when the recognizer reports none for a phrase.
     pub fallback_language: LanguageCode,
+    /// The speaker's consented clone, or a stock voice.
     pub voice: VoiceId,
+    /// Stock voice used if `voice` is refused by the provider.
+    pub fallback_voice: VoiceId,
 }
 
 /// Per-stream mutable state of a running pipeline.
@@ -71,7 +75,7 @@ impl SpeakerPipeline {
         let deps = WorkerDeps {
             speaker: config.speaker,
             source: config.fallback_language,
-            voice: config.voice,
+            voice: VoiceChoice::new(config.voice, config.fallback_voice),
             translator,
             tts,
             output,
