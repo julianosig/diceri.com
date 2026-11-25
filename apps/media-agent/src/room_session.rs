@@ -40,10 +40,19 @@ pub(crate) async fn run(room_id: RoomId, providers: Arc<Providers>) -> anyhow::R
             .context("connect to room")?;
     tracing::info!(%room_id, "agent joined room");
     serve(&room, events, &providers).await;
-    room.close().await.context("leave room")
+    leave(room).await;
+    Ok(())
 }
 
 /// Reacts to room events until disconnected or idle for [`IDLE_TIMEOUT`].
+/// When the host ends the meeting the room is already gone, so closing can fail
+/// harmlessly; there is nothing left to clean up on the media side.
+async fn leave(room: Room) {
+    if let Err(error) = room.close().await {
+        tracing::debug!(%error, "room already closed");
+    }
+}
+
 async fn serve(
     room: &Room,
     mut events: mpsc::UnboundedReceiver<RoomEvent>,
