@@ -14,7 +14,7 @@ use diceri_application::ports::{
     TranslationRequest, Translator, VoiceId,
 };
 use diceri_domain::LanguageCode;
-use diceri_infra::speech::{SonioxConfig, SonioxSpeechToText};
+use diceri_infra::speech::{ScribeConfig, ScribeSpeechToText, SonioxConfig, SonioxSpeechToText};
 use diceri_infra::synthesis::{ElevenLabsConfig, ElevenLabsTextToSpeech};
 use diceri_infra::translation::{GeminiConfig, GeminiTranslator};
 use secrecy::SecretString;
@@ -95,12 +95,12 @@ async fn gemini_translates_portuguese_to_english() {
     assert!(english.to_lowercase().contains("contract"), "{english}");
 }
 
-#[tokio::test]
-#[ignore = "live: calls ElevenLabs and Soniox"]
-async fn soniox_transcribes_synthesized_portuguese() {
+/// Streams synthesized Portuguese through `stt` in real time and checks the result.
+async fn transcribes_synthesized_portuguese(stt: &dyn SpeechToText, name: &str) {
     let audio = to_stt_rate(&synthesize(PHRASE_PT, &lang("pt-BR")).await);
-    let stt = SonioxSpeechToText::new(SonioxConfig::new(key("DICERI_SONIOX_API_KEY")));
-    let mut stream = stt.open(&[lang("pt-BR")]).await.unwrap();
+    let speech_ms = u128::try_from(audio.len() / 16).unwrap();
+    let started = Instant::now();
+    let mut stream = stt.open(&[lang("pt-BR"), lang("en")]).await.unwrap();
     let frame = usize::try_from(STT_SAMPLE_RATE / 50).unwrap();
     let sender = stream.audio.clone();
     let feeder = tokio::spawn(async move {
@@ -108,27 +108,54 @@ async fn soniox_transcribes_synthesized_portuguese() {
             sender.send(chunk.to_vec()).await.unwrap();
             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
         }
-        // One second of silence lets endpoint detection close the phrase.
-        for _ in 0..50 {
+        // Silence lets endpoint detection close the phrase.
+        for _ in 0..150 {
             sender.send(vec![0; frame]).await.unwrap();
             tokio::time::sleep(std::time::Duration::from_millis(20)).await;
         }
     });
     drop(stream.audio);
     let mut transcript = String::new();
-    let mut endpoint = false;
+    let mut detected = None;
+    let mut endpoint_at = None;
     while let Some(event) = stream.events.recv().await {
         match event.expect("speech-to-text stream error") {
-            TranscriptEvent::Final { text, .. } => transcript.push_str(&text),
-            TranscriptEvent::Endpoint => endpoint = true,
+            TranscriptEvent::Final { text, language } => {
+                transcript.push_str(&text);
+                detected = detected.or(language);
+            }
+            TranscriptEvent::Endpoint => {
+                endpoint_at.get_or_insert_with(|| started.elapsed());
+            }
             TranscriptEvent::Partial(_) => {}
         }
     }
     feeder.await.unwrap();
-    eprintln!("soniox: {transcript}");
-    assert!(endpoint, "expected an endpoint marker");
+    let after_speech = endpoint_at.map(|at| at.as_millis().saturating_sub(speech_ms));
+    eprintln!(
+        "{name}: {transcript:?} language={detected:?} phrase closed {after_speech:?} ms after speech"
+    );
+    assert!(endpoint_at.is_some(), "expected an endpoint");
+    assert_eq!(
+        detected.map(|l| l.primary().to_owned()).as_deref(),
+        Some("pt")
+    );
     assert!(
         transcript.to_lowercase().contains("contrato"),
         "{transcript}"
     );
+}
+
+#[tokio::test]
+#[ignore = "live: calls ElevenLabs and Soniox"]
+async fn soniox_transcribes_synthesized_portuguese() {
+    let stt = SonioxSpeechToText::new(SonioxConfig::new(key("DICERI_SONIOX_API_KEY")));
+    transcribes_synthesized_portuguese(&stt, "soniox").await;
+}
+
+#[tokio::test]
+#[ignore = "live: calls ElevenLabs Scribe"]
+async fn scribe_transcribes_synthesized_portuguese() {
+    let stt = ScribeSpeechToText::new(ScribeConfig::new(key("DICERI_ELEVENLABS_API_KEY")));
+    transcribes_synthesized_portuguese(&stt, "scribe").await;
 }
