@@ -29,7 +29,8 @@ async fn main() -> anyhow::Result<()> {
         )
         .init();
     let config = config::AgentConfig::from_env().context("invalid agent configuration")?;
-    let providers = Arc::new(providers::Providers::from_config(&config));
+    let providers = Arc::new(providers::Providers::from_config(&config)?);
+    tracing::info!(stt = ?config.stt_provider, "speech-to-text provider");
     let router = control::router(
         sessions::Sessions::new(providers),
         config.control_key.clone(),
