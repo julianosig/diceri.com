@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import { Mic } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
@@ -8,20 +8,33 @@
 	import { loadLanguage } from '../languages.ts';
 	import type { Profile } from '../lobby-api.ts';
 	import { MicPreview } from '../mic-preview.svelte.ts';
+	import { VoiceRecorder } from '../voice-recorder.svelte.ts';
+	import VoiceSetup from './VoiceSetup.svelte';
 
 	interface Props {
+		roomId: string;
 		isHost: boolean;
 		busy: boolean;
 		error?: string;
 		onjoin: (profile: Profile, deviceId: string | undefined) => void;
 	}
 
-	let { isHost, busy, error, onjoin }: Props = $props();
+	let { roomId, isHost, busy, error, onjoin }: Props = $props();
 
 	const preview = new MicPreview();
+	// svelte-ignore state_referenced_locally
+	const recorder = new VoiceRecorder(roomId);
 	let name = $state(loadDisplayName());
 	let outputLanguage = $state(loadLanguage());
-	const canJoin = $derived(isValidDisplayName(name) && !busy);
+	const recording = $derived(recorder.step === 'recording' || recorder.step === 'creating');
+	const canJoin = $derived(isValidDisplayName(name) && !busy && !recording);
+
+	// Give the microphone back to the preview once a recording finishes.
+	$effect(() => {
+		if (recorder.step === 'ready' || recorder.step === 'error') {
+			void preview.start(untrack(() => preview.deviceId));
+		}
+	});
 
 	onMount(() => {
 		void preview.start();
@@ -35,7 +48,7 @@
 		if (!canJoin) return;
 		const deviceId = preview.deviceId;
 		await preview.stop();
-		onjoin({ name: name.trim(), outputLanguage }, deviceId);
+		onjoin({ name: name.trim(), outputLanguage, voiceId: recorder.voiceId }, deviceId);
 	}
 </script>
 
@@ -97,6 +110,12 @@
 				{/each}
 			</select>
 		</label>
+		<VoiceSetup
+			{recorder}
+			language={outputLanguage}
+			deviceId={preview.deviceId}
+			onbeforerecord={() => preview.stop()}
+		/>
 		<Button type="submit" size="lg" disabled={!canJoin}>
 			{#if busy}Joining…{:else}{isHost ? 'Join now' : 'Ask to join'}{/if}
 		</Button>

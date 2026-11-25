@@ -24,6 +24,8 @@ export interface Profile {
 	name: string;
 	/** BCP 47 tag of the language they want to hear everyone in (speech is detected). */
 	outputLanguage: string;
+	/** Voice clone recorded in this room, so translations sound like them. */
+	voiceId?: string;
 }
 
 export function hostSession(roomId: string, hostKey: string, profile: Profile) {
@@ -62,5 +64,13 @@ export function monitorSession(roomId: string, accessKey: string) {
 	return requestJson<MediaCredentials>(`${room(roomId)}/monitor-session`, {
 		method: 'POST',
 		accessKey
+	});
+}
+
+/** Uploads a short recording; returns the clone id to send with the profile. */
+export function recordVoice(roomId: string, sample: Blob) {
+	return requestJson<{ voiceId: string }>(`${room(roomId)}/voices`, {
+		method: 'POST',
+		blob: sample
 	});
 }

@@ -89,6 +89,7 @@
 			</section>
 		{:else}
 			<PreJoin
+				{roomId}
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}
 				error={flow.error}
