@@ -15,9 +15,9 @@ setup: toolchain
 toolchain:
     ./scripts/install-webrtc-clang.sh
 
-# Run API and web dev servers together.
+# Run API, media agent and web dev servers together.
 dev:
-    trap 'kill 0' EXIT; cargo run -p diceri-api & pnpm --filter @diceri/web dev & wait
+    trap 'kill 0' EXIT; cargo run -p diceri-api & cargo run -p diceri-media-agent & pnpm --filter @diceri/web dev & wait
 
 # Format all code.
 fmt:
@@ -63,6 +63,10 @@ e2e:
 test-live:
     cargo test -p diceri-infra --test live_providers -- --ignored --nocapture --test-threads=1
 
+# Regenerate the spoken WAV fixtures for end-to-end tests (calls ElevenLabs).
+fixtures:
+    cargo run -q -p diceri-infra --example generate_audio_fixtures
+
 # Repository size limits (files per folder, Rust file length).
 limits:
     ./scripts/check-limits.sh
@@ -73,5 +77,5 @@ browsers:
 
 # Production builds.
 build:
-    cargo build --release -p diceri-api
+    cargo build --release -p diceri-api -p diceri-media-agent
     pnpm --filter @diceri/web build

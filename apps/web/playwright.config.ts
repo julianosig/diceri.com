@@ -6,6 +6,7 @@ import { defineConfig, devices } from '@playwright/test';
  * (or in CI secrets) enable the media tests; without them those tests skip.
  */
 const API_PORT = 18091;
+const AGENT_PORT = 18095;
 const WEB_PORT = 4180;
 const repoRoot = new URL('../../', import.meta.url).pathname;
 
@@ -15,7 +16,7 @@ export default defineConfig({
 	fullyParallel: true,
 	forbidOnly: Boolean(process.env.CI),
 	retries: process.env.CI ? 1 : 0,
-	timeout: 60_000,
+	timeout: 90_000,
 	reporter: process.env.CI ? [['github'], ['list']] : 'list',
 	use: {
 		// 127.0.0.1 is a secure context, required for getUserMedia.
@@ -29,10 +30,24 @@ export default defineConfig({
 	projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 	webServer: [
 		{
+			// Translation agent; reads provider keys from .env (or CI secrets).
+			command: 'cargo run -q -p diceri-media-agent',
+			cwd: repoRoot,
+			url: `http://127.0.0.1:${String(AGENT_PORT)}/healthz`,
+			env: { DICERI_AGENT_BIND_ADDRESS: `127.0.0.1:${String(AGENT_PORT)}` },
+			// Surfaces per-phrase latency logs in the test output.
+			stdout: 'pipe',
+			timeout: 600_000,
+			reuseExistingServer: false
+		},
+		{
 			command: 'cargo run -q -p diceri-api',
 			cwd: repoRoot,
 			url: `http://127.0.0.1:${String(API_PORT)}/healthz`,
-			env: { DICERI_BIND_ADDRESS: `127.0.0.1:${String(API_PORT)}` },
+			env: {
+				DICERI_BIND_ADDRESS: `127.0.0.1:${String(API_PORT)}`,
+				DICERI_AGENT_URL: `http://127.0.0.1:${String(AGENT_PORT)}`
+			},
 			timeout: 180_000,
 			reuseExistingServer: false
 		},
