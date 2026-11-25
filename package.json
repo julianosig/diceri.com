@@ -13,5 +13,10 @@
 		"lint": "pnpm -r lint",
 		"format": "pnpm -r format",
 		"test": "pnpm -r test"
+	},
+	"devDependencies": {
+		"@commitlint/cli": "^21.2.4",
+		"@commitlint/config-conventional": "^21.2.4",
+		"lefthook": "^2.2.2"
 	}
 }

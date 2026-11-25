@@ -1,0 +1,25 @@
+# Git hooks. Install with `just setup` (runs automatically on `pnpm install`).
+pre-commit:
+  parallel: true
+  jobs:
+    - name: web-format
+      root: apps/web/
+      glob: "*.{ts,js,svelte,css,json}"
+      run: pnpm exec prettier --write {staged_files} && pnpm exec eslint {staged_files}
+      stage_fixed: true
+    - name: rust-format
+      glob: "*.rs"
+      run: cargo fmt --all
+      stage_fixed: true
+    - name: limits
+      run: ./scripts/check-limits.sh
+
+commit-msg:
+  jobs:
+    - name: commitlint
+      run: pnpm exec commitlint --edit {1}
+
+pre-push:
+  jobs:
+    - name: check
+      run: just check
