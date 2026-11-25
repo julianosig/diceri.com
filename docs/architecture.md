@@ -64,14 +64,14 @@ Estimated provider cost: ≈ $0.04 per call-minute for both directions
 
 ## Multilingual routing
 
-About 58 languages are supported any-to-any; 23 are Tier 1 (all stages strong).
+About 57 languages are supported any-to-any; 23 are Tier 1 (all stages strong).
 Each stage has one default provider; a static, config-driven routing table
 overrides it per language only where a provider has a proven gap (ADR 0005):
 
 | Key | Stage | Example routes |
 | --- | --- | --- |
 | speaker's declared language | STT | yue/zu/xh → AssemblyAI (coverage) |
-| listener's language | MT | Tier 2 targets → Gemini 3.5 Flash |
+| listener's language | MT | Tier 2 targets → Gemini 3.6 Flash |
 | listener's language | TTS | zh/ja/ko → Qwen-Audio-3.1 (only if eval confirms) |
 
 Because both languages are declared in the lobby, every route is a lookup made

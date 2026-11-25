@@ -18,8 +18,8 @@ possible, with low latency and sustainable cost. Research (Nov 2026):
 
 - Cascade with a single provider per stage
 - Cascade with per-language routing per stage
-- Managed end-to-end: Gemini 3.5 Live Translate (preview), OpenAI
-  gpt-realtime-translate (13 output languages), Palabra, Azure Live Interpreter
+- Managed end-to-end: Gemini 3.5 Live Translate (preview), DeepL Voice (Aure),
+  ElevenLabs Realtime Translation (alpha), OpenAI gpt-realtime-translate (13 output languages), Palabra, Azure Live Interpreter
 - Open-weight end-to-end: Meta Seamless (non-commercial), Kyutai Hibiki-Zero (into English only)
 
 ## Decision outcome
@@ -31,18 +31,18 @@ and the listener's chosen language (MT, TTS).
 | Stage | Default | Fallback | Route now | Route only if eval confirms |
 | --- | --- | --- | --- | --- |
 | STT | Soniox `stt-rt-v6` with language hints | ElevenLabs Scribe v3 Live | AssemblyAI 3.7 for yue, zu, xh | AssemblyAI 3.7 for sv, fr, de, nl |
-| MT | Gemini 3.5 Flash-Lite, thinking minimal, direct X→Y (never pivot via English) | gpt-6-luna / gpt-5.6-luna | Gemini 3.5 Flash for Tier 2 targets (Baltic, Balkan, kk, be, fa, Arabic dialects, zh-Hant) | Flash for any pair with a clear quality gain |
+| MT | Gemini 3.5 Flash-Lite, thinking minimal, direct X→Y (never pivot via English) | gpt-6-luna / gpt-5.6-luna | Gemini 3.6 Flash for Tier 2 targets (Baltic, Balkan, kk, be, fa, Arabic dialects, zh-Hant) | Flash for any pair with a clear quality gain |
 | Captions | Soniox built-in two-way translation | LLM MT text | — | — |
 | TTS | ElevenLabs `eleven_v4_turbo` (instant clone) | Inworld TTS-2 | — | Qwen-Audio-3.1-TTS for zh, ja, ko targets |
 
-Supported languages: ~58 any-to-any (Soniox ∩ ElevenLabs v4). Tier 1 (all
+Supported languages: ~57 any-to-any (Soniox ∩ ElevenLabs v4). Tier 1 (all
 stages strong): en, es, pt, fr, de, it, nl, ru, tr, fi, ar, hi, zh, ja, ko, vi,
 pl, cs, uk, ro, el, id, th. The lobby asks each participant to declare their
 language; it is passed to STT as a hint and keys every route.
 
 ### Consequences
 
-- Good, because true voice cloning, captions and glossary control across ~58 languages.
+- Good, because true voice cloning, captions and glossary control across ~57 languages.
 - Good, because target latency ≈ 1–2 s vs ≈ 3 s measured for managed end-to-end.
 - Good, because cost ≈ $0.04 per two-party call-minute; routing barely changes it.
 - Bad, because up to four vendors to integrate and monitor; mitigated by ports
