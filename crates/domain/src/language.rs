@@ -17,6 +17,12 @@ impl LanguageCode {
     pub fn as_str(&self) -> &str {
         &self.0
     }
+
+    /// The language without region (`pt-BR` → `pt`), as most speech APIs expect.
+    #[must_use]
+    pub fn primary(&self) -> &str {
+        self.0.split('-').next().unwrap_or(&self.0)
+    }
 }
 
 fn is_valid(raw: &str) -> bool {
@@ -71,6 +77,12 @@ mod tests {
         for raw in ["en", "pt-BR", "yue"] {
             assert!(raw.parse::<LanguageCode>().is_ok(), "{raw} should be valid");
         }
+    }
+
+    #[test]
+    fn primary_drops_the_region() {
+        assert_eq!("pt-BR".parse::<LanguageCode>().unwrap().primary(), "pt");
+        assert_eq!("en".parse::<LanguageCode>().unwrap().primary(), "en");
     }
 
     #[test]
