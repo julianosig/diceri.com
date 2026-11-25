@@ -18,6 +18,10 @@ export default defineConfig({
 			adapter: adapter({ fallback: '200.html' })
 		})
 	],
+	server: {
+		// Same-origin API in dev; production serves the SPA from the API host.
+		proxy: { '/api': process.env.DICERI_API_URL ?? 'http://127.0.0.1:8080' }
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
