@@ -156,6 +156,9 @@ The project is `AGPL-3.0-only` ([`LICENSE`](LICENSE)). Every dependency must be
 AGPL-compatible: permissive licenses only (MIT, Apache-2.0, BSD, ISC, Zlib, …),
 enforced by `cargo deny` for Rust and reviewed with `pnpm licenses list --prod`
 for the web app. Never vendor code under an incompatible or proprietary license.
+The only exception is LiveKit's Krisp noise filter, allowed by the additional
+permission in [`LICENSE-EXCEPTION.md`](LICENSE-EXCEPTION.md); adding any other
+non-free component needs a new, explicit exception decided by the maintainers.
 
 ## 10. Testing
 
