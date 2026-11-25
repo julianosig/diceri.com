@@ -29,7 +29,7 @@ export function parseCaption(payload: Uint8Array): CaptionMessage | undefined {
 /**
  * Whether a listener should see a caption: originals (and live partials) from
  * speakers of their language, translations into their language from others,
- * and their own voice translated into the language they are previewing.
+ * and, while previewing, their own recognized text and its translation.
  */
 export function isCaptionForListener(
 	message: CaptionMessage,
@@ -37,6 +37,9 @@ export function isCaptionForListener(
 	speakerLanguage: string | undefined
 ): boolean {
 	if (message.speaker === listener.identity) {
+		// Previewing yourself: what was understood, then its translation.
+		if (listener.preview === undefined) return false;
+		if (message.kind === 'original') return true;
 		return message.kind === 'translation' && sameLanguage(message.language, listener.preview);
 	}
 	if (sameLanguage(speakerLanguage, listener.language)) return message.kind !== 'translation';

@@ -50,4 +50,10 @@ describe('isCaptionForListener', () => {
 		expect(isCaptionForListener(own, listener('pt-BR'), undefined)).toBe(false);
 		expect(isCaptionForListener(own, listener('pt-BR', 'ja'), undefined)).toBe(true);
 	});
+
+	it('shows what was understood from me while previewing', () => {
+		const said = { ...caption('original', 'pt'), speaker: 'me' };
+		expect(isCaptionForListener(said, listener('en'), undefined)).toBe(false);
+		expect(isCaptionForListener(said, listener('en', 'ja'), undefined)).toBe(true);
+	});
 });
