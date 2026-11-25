@@ -1,5 +1,8 @@
 <script lang="ts">
 	import { CreateRoomButton } from '#lib/features/room/index.ts';
+
+	/** AGPL section 13: users of the network service can get its source. */
+	const SOURCE_URL = 'https://github.com/julianosig/diceri.com';
 </script>
 
 <svelte:head>
@@ -15,4 +18,10 @@
 		language — in a voice that sounds like the speaker.
 	</p>
 	<CreateRoomButton />
+	<footer class="absolute bottom-4 text-xs text-ink-muted">
+		Free software under the
+		<a class="underline" href="{SOURCE_URL}/blob/main/LICENSE">AGPL-3.0</a>
+		·
+		<a class="underline" href={SOURCE_URL}>Source code</a>
+	</footer>
 </main>
