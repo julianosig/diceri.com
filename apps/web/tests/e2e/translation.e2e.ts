@@ -85,3 +85,28 @@ test('three people hear each other translated into their own language', async ({
 		await Promise.all([ana.browser.close(), bob.browser.close(), carla.browser.close()]);
 	}
 });
+
+test('a person alone can hear their own voice translated', async ({ baseURL }) => {
+	test.setTimeout(120_000);
+	const url = baseURL ?? 'http://127.0.0.1:4180';
+	const bob = await launch('Bob', 'en', url);
+	try {
+		await bob.page.goto('/');
+		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await fillProfile(bob);
+		await bob.page.getByRole('button', { name: 'Join now' }).click();
+		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
+			timeout: 20_000
+		});
+		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
+		await bob.page.getByRole('radio', { name: 'Translated' }).click();
+		await bob.page.getByLabel('Translate me into').selectOption('pt-BR');
+
+		await expectCaption(bob, 'Bob', /parque/i);
+		await expect
+			.poll(() => bob.page.locator('audio').count(), { timeout: 20_000 })
+			.toBeGreaterThan(0);
+	} finally {
+		await bob.browser.close();
+	}
+});
