@@ -22,3 +22,6 @@ test-results/
 !.vscode/settings.json
 .DS_Store
 *.swp
+
+# Local toolchains (scripts/install-webrtc-clang.sh)
+/.toolchain/

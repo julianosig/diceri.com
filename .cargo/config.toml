@@ -1,0 +1,4 @@
+# libwebrtc (LiveKit SDK) needs a newer clang than the system one for C++.
+# Install it with `just toolchain` (scripts/install-webrtc-clang.sh).
+[env]
+CXX = { value = ".toolchain/clang/bin/clang++", relative = true }

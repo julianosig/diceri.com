@@ -6,10 +6,14 @@ default:
     @just --list
 
 # Install dependencies and git hooks.
-setup:
+setup: toolchain
     pnpm install
     pnpm exec lefthook install
     cargo fetch
+
+# Local clang required by libwebrtc (LiveKit SDK); see docs/development.md.
+toolchain:
+    ./scripts/install-webrtc-clang.sh
 
 # Run API and web dev servers together.
 dev:
