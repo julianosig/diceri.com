@@ -43,9 +43,10 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
 
 1. **Capture:** speaker publishes an Opus track with echo cancellation on.
 2. **Ingest:** media-agent subscribes, receives 48 kHz PCM, resamples to 16 kHz.
-3. **STT:** streaming to Soniox `stt-rt-v6` with the speaker's declared language
-   as a hint; Soniox's built-in translation drives live captions, finals drive
-   translation. Endpointing decides segment boundaries.
+3. **STT:** streaming to Soniox `stt-rt-v6` with language identification; the
+   spoken language is **detected per phrase**, never declared (room output
+   languages are hints). Finals drive translation; endpointing decides phrase
+   boundaries.
 4. **MT:** each final segment is translated **directly** (never via English) by
    Gemini 3.5 Flash-Lite with minimal thinking, the last 2–4 segments as context
    and a per-call glossary. Only finals are spoken, because spoken audio cannot
@@ -71,12 +72,12 @@ overrides it per language only where a provider has a proven gap (ADR 0005):
 
 | Key | Stage | Example routes |
 | --- | --- | --- |
-| speaker's declared language | STT | yue/zu/xh → AssemblyAI (coverage) |
+| phrase's detected language | STT | yue/zu/xh → AssemblyAI (coverage) |
 | listener's language | MT | Tier 2 targets → Gemini 3.6 Flash |
 | listener's language | TTS | zh/ja/ko → Qwen-Audio-3.1 (only if eval confirms) |
 
-Because both languages are declared in the lobby, every route is a lookup made
-before the first word, never a runtime guess.
+Each participant chooses only their **output language** in the lobby. Target
+routes are lookups on it; source routes use the detected language of the phrase.
 
 ## Providers behind ports
 

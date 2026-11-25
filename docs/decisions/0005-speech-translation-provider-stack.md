@@ -25,8 +25,8 @@ possible, with low latency and sustainable cost. Research (Nov 2026):
 ## Decision outcome
 
 Chosen option (pending evaluation): **cascade, one default provider per stage,
-plus a static routing table** keyed by the speaker's declared language (STT)
-and the listener's chosen language (MT, TTS).
+plus a static routing table** keyed by the phrase's detected language (STT, MT
+source) and the listener's output language (MT target, TTS).
 
 | Stage | Default | Fallback | Route now | Route only if eval confirms |
 | --- | --- | --- | --- | --- |
@@ -37,8 +37,11 @@ and the listener's chosen language (MT, TTS).
 
 Supported languages: ~57 any-to-any (Soniox ∩ ElevenLabs v4). Tier 1 (all
 stages strong): en, es, pt, fr, de, it, nl, ru, tr, fi, ar, hi, zh, ja, ko, vi,
-pl, cs, uk, ro, el, id, th. The lobby asks each participant to declare their
-language; it is passed to STT as a hint and keys every route.
+pl, cs, uk, ro, el, id, th. Participants choose only their **output language**
+(what they hear). The spoken language is never declared: STT language
+identification detects it per phrase (2026-11-25, after users picked the wrong
+spoken language and got untranslated speech); room output languages are passed
+to STT as hints.
 
 ### Consequences
 
