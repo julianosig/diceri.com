@@ -12,8 +12,10 @@ concurrency:
 permissions:
   contents: read
 
+# Layers mirror the justfile: check → test → test-browser → e2e (docs/testing.md).
 jobs:
   rust:
+    name: rust (check + test)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -25,10 +27,11 @@ jobs:
           tool: cargo-deny
       - run: cargo fmt --all --check
       - run: cargo clippy --workspace --all-targets --locked -- -D warnings
-      - run: cargo test --workspace --locked
       - run: cargo deny check
+      - run: cargo test --workspace --locked
 
   web:
+    name: web (check + test + browser)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -38,11 +41,40 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
       - run: pnpm --filter @diceri/web check
       - run: pnpm --filter @diceri/web lint
-      - run: pnpm --filter @diceri/web exec vitest --run
-      - run: pnpm --filter @diceri/web build
+      - run: pnpm --filter @diceri/web test
+      - run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @diceri/web test:browser
+
+  e2e:
+    name: e2e (api + web + livekit)
+    needs: [rust, web]
+    runs-on: ubuntu-latest
+    env:
+      # Repository secrets; without them the media tests skip.
+      DICERI_LIVEKIT_URL: ${{ secrets.DICERI_LIVEKIT_URL }}
+      DICERI_LIVEKIT_API_KEY: ${{ secrets.DICERI_LIVEKIT_API_KEY }}
+      DICERI_LIVEKIT_API_SECRET: ${{ secrets.DICERI_LIVEKIT_API_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install toolchain from rust-toolchain.toml
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @diceri/web exec playwright install --with-deps chromium
+      - run: pnpm --filter @diceri/web test:e2e
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-traces
+          path: apps/web/test-results
+          retention-days: 7
 
   repo:
     runs-on: ubuntu-latest
