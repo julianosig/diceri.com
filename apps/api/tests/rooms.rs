@@ -10,7 +10,7 @@ use serde_json::Value;
 use tower::ServiceExt as _;
 
 fn app() -> Router {
-    build_router(AppState::in_memory(), &Config::for_tests())
+    build_router(AppState::in_memory(None), &Config::for_tests())
 }
 
 async fn send(app: Router, method: &str, uri: &str) -> (StatusCode, Value) {

@@ -42,9 +42,13 @@ in responses.
 | `DICERI_BIND_ADDRESS` | `127.0.0.1:8090` | listen address |
 | `DICERI_ALLOWED_ORIGINS` | `http://localhost:5173` | comma-separated CORS allow-list |
 | `DICERI_LOG_FORMAT` | `pretty` | `pretty` or `json` |
+| `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
+| `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |
+| `DICERI_LIVEKIT_API_SECRET` | unset | LiveKit API secret (secret) |
 | `RUST_LOG` | `info,tower_http=debug` | tracing filter |
 
-Document every new variable here in the same commit that introduces it. Wrap
+Copy `.env.example` to `.env` for local development (loaded with `dotenvy`).
+Document every new variable here and in `.env.example` in the same commit. Wrap
 secrets in `secrecy::SecretString` so they cannot be logged.
 
 ## Rules

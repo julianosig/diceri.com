@@ -1,7 +1,7 @@
 use axum::Json;
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
-use diceri_application::use_cases::RoomError;
+use diceri_application::use_cases::{JoinRoomError, RoomError};
 use serde::Serialize;
 
 /// Errors returned by HTTP handlers, rendered as RFC 9457 problem details.
@@ -11,6 +11,8 @@ pub enum ApiError {
     NotFound,
     #[error("invalid request: {0}")]
     Validation(String),
+    #[error("service unavailable: {0}")]
+    Unavailable(&'static str),
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -28,6 +30,11 @@ impl IntoResponse for ApiError {
         let (status, title, detail) = match self {
             Self::NotFound => (StatusCode::NOT_FOUND, "Not Found", None),
             Self::Validation(detail) => (StatusCode::BAD_REQUEST, "Bad Request", Some(detail)),
+            Self::Unavailable(detail) => (
+                StatusCode::SERVICE_UNAVAILABLE,
+                "Service Unavailable",
+                Some(detail.to_owned()),
+            ),
             Self::Internal(error) => {
                 tracing::error!(error = ?error, "internal error");
                 (
@@ -56,6 +63,16 @@ impl From<RoomError> for ApiError {
         match error {
             RoomError::NotFound => Self::NotFound,
             RoomError::Repository(source) => Self::Internal(source.into()),
+        }
+    }
+}
+
+impl From<JoinRoomError> for ApiError {
+    fn from(error: JoinRoomError) -> Self {
+        match error {
+            JoinRoomError::NotFound => Self::NotFound,
+            JoinRoomError::Repository(source) => Self::Internal(source.into()),
+            JoinRoomError::MediaAccess(source) => Self::Internal(source.into()),
         }
     }
 }

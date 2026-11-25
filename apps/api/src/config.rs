@@ -2,6 +2,7 @@ use std::env;
 use std::net::SocketAddr;
 
 use anyhow::Context as _;
+use secrecy::SecretString;
 
 /// Log output format, selected with `DICERI_LOG_FORMAT`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -10,12 +11,22 @@ pub enum LogFormat {
     Json,
 }
 
+/// LiveKit project credentials. All three variables must be set together.
+#[derive(Debug, Clone)]
+pub struct LiveKitConfig {
+    pub url: String,
+    pub api_key: String,
+    pub api_secret: SecretString,
+}
+
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
     pub bind_address: SocketAddr,
     pub allowed_origins: Vec<String>,
     pub log_format: LogFormat,
+    /// `None` disables media: rooms work, joining returns 503.
+    pub livekit: Option<LiveKitConfig>,
 }
 
 impl Config {
@@ -35,10 +46,12 @@ impl Config {
             Ok("json") => LogFormat::Json,
             _ => LogFormat::Pretty,
         };
+        let livekit = livekit_from_env()?;
         Ok(Self {
             bind_address,
             allowed_origins,
             log_format,
+            livekit,
         })
     }
 
@@ -49,6 +62,24 @@ impl Config {
             bind_address: SocketAddr::from(([127, 0, 0, 1], 0)),
             allowed_origins: vec!["http://localhost:5173".to_owned()],
             log_format: LogFormat::Pretty,
+            livekit: None,
         }
+    }
+}
+
+fn livekit_from_env() -> anyhow::Result<Option<LiveKitConfig>> {
+    let url = env::var("DICERI_LIVEKIT_URL").ok();
+    let api_key = env::var("DICERI_LIVEKIT_API_KEY").ok();
+    let api_secret = env::var("DICERI_LIVEKIT_API_SECRET").ok();
+    match (url, api_key, api_secret) {
+        (Some(url), Some(api_key), Some(secret)) => Ok(Some(LiveKitConfig {
+            url,
+            api_key,
+            api_secret: SecretString::from(secret),
+        })),
+        (None, None, None) => Ok(None),
+        _ => anyhow::bail!(
+            "set all of DICERI_LIVEKIT_URL, DICERI_LIVEKIT_API_KEY and DICERI_LIVEKIT_API_SECRET"
+        ),
     }
 }

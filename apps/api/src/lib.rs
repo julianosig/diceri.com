@@ -11,7 +11,7 @@ mod shutdown;
 mod state;
 pub mod telemetry;
 
-pub use config::{Config, LogFormat};
+pub use config::{Config, LiveKitConfig, LogFormat};
 pub use error::ApiError;
 pub use router::build_router;
 pub use shutdown::shutdown_signal;
