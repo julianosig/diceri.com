@@ -11,6 +11,8 @@ diceri-domain.workspace = true
 diceri-application.workspace = true
 async-trait.workspace = true
 rand.workspace = true
+livekit-api.workspace = true
+secrecy.workspace = true
 
 [dev-dependencies]
 tokio.workspace = true

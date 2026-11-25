@@ -33,6 +33,9 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 # Utilities
 rand = "0.10"
 async-trait = "0.1.92"
+livekit-api = { version = "0.11", default-features = false, features = ["access-token"] }
+secrecy = "0.10.3"
+dotenvy = "0.15.7"
 
 # Testing
 http-body-util = "0.1.5"
