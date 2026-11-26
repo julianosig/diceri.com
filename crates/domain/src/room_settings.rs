@@ -1,6 +1,7 @@
 use std::fmt;
 use std::str::FromStr;
 
+use crate::Mascot;
 use crate::short_text::{ShortTextIssue, clean};
 
 const MAX_TITLE_CHARS: usize = 60;
@@ -63,6 +64,8 @@ pub struct RoomSettings {
     /// Shown on the public live board (title and host name). Private by default.
     pub listed: bool,
     pub entry: EntryPolicy,
+    /// The room's animated symbol.
+    pub mascot: Mascot,
 }
 
 impl RoomSettings {
@@ -73,6 +76,7 @@ impl RoomSettings {
             title,
             listed: false,
             entry: EntryPolicy::Approval,
+            mascot: Mascot::default(),
         }
     }
 }

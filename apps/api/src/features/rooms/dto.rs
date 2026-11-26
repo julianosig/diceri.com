@@ -1,5 +1,5 @@
 use diceri_application::use_cases::{JoinTicket, Knock, KnockOutcome};
-use diceri_domain::{EntryPolicy, JoinRequest, ParticipantProfile, Room, RoomSettings};
+use diceri_domain::{EntryPolicy, JoinRequest, Mascot, ParticipantProfile, Room, RoomSettings};
 use serde::{Deserialize, Serialize};
 
 use crate::ApiError;
@@ -41,6 +41,9 @@ pub(crate) struct CreateRoomRequest {
     pub listed: bool,
     #[serde(default)]
     pub entry: EntryDto,
+    /// One of the mascot names (`wizard`, `robot`, …); `wizard` when omitted.
+    #[serde(default)]
+    pub mascot: Option<String>,
 }
 
 impl CreateRoomRequest {
@@ -49,10 +52,16 @@ impl CreateRoomRequest {
             .title
             .parse()
             .map_err(|error| ApiError::Validation(format!("{error}")))?;
+        let mascot = self
+            .mascot
+            .as_deref()
+            .map_or(Ok(Mascot::default()), str::parse)
+            .map_err(|error| ApiError::Validation(format!("{error}")))?;
         Ok(RoomSettings {
             title,
             listed: self.listed,
             entry: self.entry.into(),
+            mascot,
         })
     }
 }
@@ -70,6 +79,8 @@ pub(crate) struct RoomResponse {
     /// Username of the account that owns (hosts) the room.
     pub owner: String,
     pub entry: EntryDto,
+    /// The room's animated symbol (`/mascots/<name>.gif`).
+    pub mascot: &'static str,
 }
 
 impl From<&Room> for RoomResponse {
@@ -81,6 +92,7 @@ impl From<&Room> for RoomResponse {
             title: room.settings.title.to_string(),
             owner: room.owner.to_string(),
             entry: room.settings.entry.into(),
+            mascot: room.settings.mascot.as_str(),
         }
     }
 }

@@ -30,6 +30,7 @@ async fn created_room_returns_host_key_once() {
     assert_eq!(id.len(), 36);
     assert_eq!(id.as_bytes()[14], b'7', "ids are UUIDv7");
     assert_eq!(fetched["code"], code.as_str());
+    assert_eq!(fetched["mascot"], "wizard", "the default symbol");
     assert_eq!(fetched["maxParticipants"], 2);
     assert_eq!(fetched["title"], "Test room");
     assert_eq!(fetched["entry"], "approval");
@@ -81,4 +82,16 @@ async fn too_many_writes_from_one_client_are_rejected() {
         StatusCode::TOO_MANY_REQUESTS
     );
     assert_eq!(sign_up("203.0.113.2", "spam4").await, StatusCode::CREATED);
+}
+
+#[tokio::test]
+async fn unknown_mascots_are_rejected() {
+    let app = app(false);
+    let cookie = support::sign_up(&app, "zoe").await;
+    let headers = support::headers(None, Some(&cookie));
+    let body = serde_json::json!({ "title": "Fan club", "mascot": "pikachu" });
+    let (status, _, problem) =
+        support::exchange(&app, "POST", "/api/v1/rooms", &headers, Some(body)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    assert_eq!(problem["detail"], "unknown mascot");
 }

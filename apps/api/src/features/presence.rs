@@ -42,6 +42,7 @@ struct RankedRoomDto {
     title: String,
     owner: String,
     entry: EntryDto,
+    mascot: &'static str,
     people: usize,
     languages: Vec<String>,
 }
@@ -67,6 +68,7 @@ impl From<RankedRoom> for RankedRoomDto {
             title: room.title.to_string(),
             owner: room.owner.to_string(),
             entry: room.entry.into(),
+            mascot: room.mascot.as_str(),
             people: room.people,
             languages: room
                 .languages

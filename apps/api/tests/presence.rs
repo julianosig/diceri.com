@@ -55,13 +55,18 @@ async fn live_room(
 #[tokio::test]
 async fn ranks_listed_rooms_with_title_host_and_entry() {
     let (app, media) = app();
-    let listed = json!({ "title": "Spanish practice", "listed": true, "entry": "open" });
-    let id = live_room(&app, &media, listed, 2).await;
+    let listed = json!({
+        "title": "Spanish practice",
+        "listed": true,
+        "entry": "open",
+        "mascot": "dragon"
+    });
+    let code = live_room(&app, &media, listed, 2).await;
     live_room(&app, &media, json!({ "title": "Private call" }), 3).await;
 
     let (status, body) = send(&app, "GET", "/api/v1/presence", None, None).await;
     assert_eq!(status, StatusCode::OK);
-    let (_, room) = send(&app, "GET", &format!("/api/v1/rooms/{id}"), None, None).await;
+    let (_, room) = send(&app, "GET", &format!("/api/v1/rooms/{code}"), None, None).await;
     let owner = room["owner"].clone();
     assert_eq!(
         body,
@@ -69,10 +74,11 @@ async fn ranks_listed_rooms_with_title_host_and_entry() {
             "online": 5,
             "liveRooms": 2,
             "ranking": [{
-                "code": id,
+                "code": code,
                 "title": "Spanish practice",
                 "owner": owner,
                 "entry": "open",
+                "mascot": "dragon",
                 "people": 2,
                 "languages": ["pt-BR", "es"]
             }]
