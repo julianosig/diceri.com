@@ -22,8 +22,9 @@ Decisions: [`docs/decisions/`](docs/decisions/). Research backing the stack:
 
 **English only** for everything in the repository: code, identifiers, comments,
 logs, error messages, commit messages, branch names, docs, ADRs and tests.
-User-facing UI copy is the only exception, and it lives in i18n message files,
-never hard-coded in components once i18n lands.
+User-facing UI copy is the only exception, and it lives in the i18n message catalogues
+(`apps/web/src/lib/i18n/messages/`, [ADR 0012](docs/decisions/0012-typed-i18n-message-catalogues.md)),
+never hard-coded in components. Pages not yet moved there are migrated when touched.
 
 ## 3. Repository map
 

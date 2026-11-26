@@ -29,6 +29,7 @@ src/
       types.ts
       index.ts                the ONLY import entry point for other code
     api/                      http client, websocket client, generated types
+    i18n/                     interface language: locales, `i18n` state, messages/<lang>.ts
     utils/                    pure, framework-free helpers (cn, formatters)
 ```
 
@@ -49,6 +50,10 @@ Dependency direction: `meeting` → `lobby` → `call` → `translation`, `room`
 
 ## Rules
 
+- **Copy:** every user-facing string comes from `i18n.t.<section>.<key>`
+  (`#lib/i18n/index.ts`). Add the key to `messages/en.ts` first; the compiler then
+  lists every language that still needs it. Use logical utilities (`text-start`, `ms-`)
+  so Arabic (right to left) lays out correctly.
 - **Imports:** `#lib/...` with the file extension (`#lib/utils/cn.ts`). Import a
   feature only via its `index.ts`. Relative imports only inside the same feature.
 - **Components:** typed `$props()`; snippets instead of slots; callback props
