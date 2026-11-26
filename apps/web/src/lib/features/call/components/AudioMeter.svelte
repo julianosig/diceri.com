@@ -6,24 +6,32 @@
 		muted: boolean;
 		label?: string;
 		tone?: 'light' | 'dark';
+		/** Show the label and percentage above the bar (the bar keeps its label for screen readers). */
+		showLabel?: boolean;
 	}
 
 	let {
 		level,
 		muted,
 		label = 'Outgoing level (after filtering)',
-		tone = 'light'
+		tone = 'light',
+		showLabel = true
 	}: Props = $props();
 	const percent = $derived(Math.round(level * 100));
 </script>
 
 <div class="flex flex-col gap-1">
-	<div
-		class={cn('flex justify-between text-xs', tone === 'dark' ? 'text-white/70' : 'text-ink-muted')}
-	>
-		<span>{label}</span>
-		<span>{muted ? 'Muted' : `${String(percent)}%`}</span>
-	</div>
+	{#if showLabel}
+		<div
+			class={cn(
+				'flex justify-between text-xs',
+				tone === 'dark' ? 'text-white/70' : 'text-ink-muted'
+			)}
+		>
+			<span>{label}</span>
+			<span>{muted ? 'Muted' : `${String(percent)}%`}</span>
+		</div>
+	{/if}
 	<div
 		class={cn(
 			'h-2 overflow-hidden rounded-full',

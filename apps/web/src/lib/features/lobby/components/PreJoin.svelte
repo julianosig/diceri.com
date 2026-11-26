@@ -97,22 +97,24 @@
 	{#if isHost}
 		<RoomEntryPicker {entry} />
 	{/if}
-	<section class="flex w-full flex-col gap-3 text-start" aria-label="Microphone preview">
-		<AudioMeter level={preview.level} muted={false} label="Microphone level" />
-		<label class={[fieldClass, 'text-sm']}>
-			<Mic class={iconClass} aria-hidden="true" />
-			<span class="sr-only">Microphone</span>
-			<select
-				class="w-full select-field truncate bg-transparent py-2 text-base outline-none"
-				value={preview.deviceId ?? ''}
-				onchange={(event) => preview.start(event.currentTarget.value || undefined)}
-			>
-				<option value="">System default</option>
-				{#each preview.devices as device (device.deviceId)}
-					<option value={device.deviceId}>{device.label || 'Microphone'}</option>
-				{/each}
-			</select>
+	<section class="flex w-full flex-col gap-2 text-start" aria-label="Microphone preview">
+		<label class="text-sm">
+			<span class="mb-1 block text-ink-muted">Microphone</span>
+			<span class={fieldClass}>
+				<Mic class={iconClass} aria-hidden="true" />
+				<select
+					class="w-full select-field truncate bg-transparent py-2 text-base outline-none"
+					value={preview.deviceId ?? ''}
+					onchange={(event) => preview.start(event.currentTarget.value || undefined)}
+				>
+					<option value="">System default</option>
+					{#each preview.devices as device (device.deviceId)}
+						<option value={device.deviceId}>{device.label || 'Microphone'}</option>
+					{/each}
+				</select>
+			</span>
 		</label>
+		<AudioMeter level={preview.level} muted={false} label="Microphone level" showLabel={false} />
 		{#if preview.error}
 			<p role="alert" class="text-sm text-red-600">{preview.error}</p>
 		{/if}
