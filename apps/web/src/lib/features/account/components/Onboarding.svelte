@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import {
 		AtSign,
 		CircleCheck,
@@ -24,16 +25,20 @@
 
 	interface Props {
 		session: AccountSession;
+		/** Pre-fills and checks a name (`/?claim=ana` from a free `/@ana`). */
+		initialUsername?: string;
 	}
 
-	let { session }: Props = $props();
+	let { session, initialUsername }: Props = $props();
 
 	const usernames = new UsernameCheck();
 	$effect(() => () => {
 		usernames.dispose();
 	});
 
-	let username = $state('');
+	const initial = untrack(() => initialUsername) ?? '';
+	let username = $state(initial);
+	if (initial) usernames.update(initial);
 	let password = $state('');
 	let repeat = $state('');
 	let mascot = $state<MascotId>(randomMascot());

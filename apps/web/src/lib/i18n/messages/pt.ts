@@ -68,5 +68,16 @@ export const pt: Messages = {
 		submitting: 'Abrindo…',
 		failed: 'Não foi possível abrir sua sala. Tente de novo.'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} não está ao vivo agora`,
+		liveBody: (h: string) =>
+			`Esta sala abre quando @${h} começa uma chamada. Volte daqui a pouco — ou abra a sua própria sala em segundos.`,
+		createOwn: 'Criar minha própria sala',
+		tryAgain: 'Tentar de novo',
+		freeTitle: (h: string) => `@${h} ainda está livre!`,
+		freeBody: 'Ninguém escolheu esta sala ainda. Ela pode ser sua.',
+		claim: (h: string) => `Quero o @${h}`,
+		home: 'Voltar para o início'
+	},
 	footer: { freeSoftware: 'Software livre', sourceCode: 'Código-fonte' }
 };

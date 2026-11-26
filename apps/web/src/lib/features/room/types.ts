@@ -33,3 +33,9 @@ export interface MediaCredentials {
 	serverUrl: string;
 	token: string;
 }
+
+/** The public face of a username: what `/@username` shows while its room is closed. */
+export interface UserProfile {
+	username: string;
+	mascot: string;
+}

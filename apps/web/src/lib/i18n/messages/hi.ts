@@ -68,5 +68,16 @@ export const hi: Messages = {
 		submitting: 'खुल रहा है…',
 		failed: 'आपका रूम नहीं खुल सका। फिर से कोशिश करें।'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} अभी लाइव नहीं है`,
+		liveBody: (h: string) =>
+			`@${h} के कॉल शुरू करने पर यह रूम खुलता है। थोड़ी देर बाद आएँ — या कुछ ही सेकंड में अपना रूम बनाएँ।`,
+		createOwn: 'अपना रूम बनाएँ',
+		tryAgain: 'फिर से कोशिश करें',
+		freeTitle: (h: string) => `@${h} अभी भी उपलब्ध है!`,
+		freeBody: 'अभी तक किसी ने यह रूम नहीं लिया है। यह आपका हो सकता है।',
+		claim: (h: string) => `@${h} लें`,
+		home: 'होम पर वापस जाएँ'
+	},
 	footer: { freeSoftware: 'फ्री सॉफ़्टवेयर', sourceCode: 'सोर्स कोड' }
 };

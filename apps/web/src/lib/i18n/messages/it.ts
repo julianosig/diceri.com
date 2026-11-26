@@ -68,5 +68,16 @@ export const it: Messages = {
 		submitting: 'Apertura…',
 		failed: 'Impossibile aprire la tua stanza. Riprova.'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} non è in diretta ora`,
+		liveBody: (h: string) =>
+			`Questa stanza si apre quando @${h} avvia una chiamata. Torna presto — oppure apri la tua stanza in pochi secondi.`,
+		createOwn: 'Crea la mia stanza',
+		tryAgain: 'Riprova',
+		freeTitle: (h: string) => `@${h} è ancora libero!`,
+		freeBody: 'Nessuno ha ancora preso questa stanza. Può essere tua.',
+		claim: (h: string) => `Prendi @${h}`,
+		home: 'Torna alla home'
+	},
 	footer: { freeSoftware: 'Software libero', sourceCode: 'Codice sorgente' }
 };

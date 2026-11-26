@@ -68,5 +68,16 @@ export const zh: Messages = {
 		submitting: '正在打开…',
 		failed: '无法打开你的房间，请重试。'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} 现在不在线`,
+		liveBody: (h: string) =>
+			`@${h} 发起通话时，这个房间就会打开。稍后再来，或者几秒钟内创建你自己的房间。`,
+		createOwn: '创建我自己的房间',
+		tryAgain: '重试',
+		freeTitle: (h: string) => `@${h} 还没有被领取！`,
+		freeBody: '还没有人领取这个房间，它可以是你的。',
+		claim: (h: string) => `领取 @${h}`,
+		home: '返回首页'
+	},
 	footer: { freeSoftware: '自由软件', sourceCode: '源代码' }
 };

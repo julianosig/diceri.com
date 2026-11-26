@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { AccountBadge, AccountSession, Onboarding } from '#lib/features/account/index.ts';
 	import { HeroAnimation } from '#lib/features/landing/index.ts';
 	import { LanguageSelect, Logo, ThemeToggle } from '#lib/components/ui/index.ts';
@@ -43,7 +44,10 @@
 		{#if account.account}
 			<OpenRoomForm username={account.account.username} mascot={account.account.mascot} />
 		{:else if account.account === null}
-			<Onboarding session={account} />
+			<Onboarding
+				session={account}
+				initialUsername={page.url.searchParams.get('claim') ?? undefined}
+			/>
 		{/if}
 	</div>
 	<footer class="mt-auto text-xs text-ink-muted">

@@ -73,5 +73,16 @@ export const ar: Messages = {
 		submitting: 'جارٍ الفتح…',
 		failed: 'تعذّر فتح غرفتك. حاول مرة أخرى.'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `${ltr(`@${h}`)} ليس في بث مباشر الآن`,
+		liveBody: (h: string) =>
+			`تُفتح هذه الغرفة عندما يبدأ ${ltr(`@${h}`)} مكالمة. عُد قريبًا — أو افتح غرفتك الخاصة في ثوانٍ.`,
+		createOwn: 'أنشئ غرفتي الخاصة',
+		tryAgain: 'حاول مرة أخرى',
+		freeTitle: (h: string) => `${ltr(`@${h}`)} ما زال متاحًا!`,
+		freeBody: 'لم يحجز أحد هذه الغرفة بعد. يمكن أن تكون لك.',
+		claim: (h: string) => `احجز ${ltr(`@${h}`)}`,
+		home: 'العودة إلى الصفحة الرئيسية'
+	},
 	footer: { freeSoftware: 'برمجيات حرة', sourceCode: 'الشيفرة المصدرية' }
 };

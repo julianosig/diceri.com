@@ -68,5 +68,16 @@ export const ko: Messages = {
 		submitting: '여는 중…',
 		failed: '방을 열 수 없습니다. 다시 시도하세요.'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h}님은 지금 라이브가 아니에요`,
+		liveBody: (h: string) =>
+			`@${h}님이 통화를 시작하면 이 방이 열려요. 잠시 후 다시 오거나, 몇 초 만에 내 방을 만들어 보세요.`,
+		createOwn: '내 방 만들기',
+		tryAgain: '다시 시도',
+		freeTitle: (h: string) => `@${h}은(는) 아직 비어 있어요!`,
+		freeBody: '아직 아무도 이 방을 가져가지 않았어요. 당신의 방이 될 수 있어요.',
+		claim: (h: string) => `@${h} 가져가기`,
+		home: '홈으로 돌아가기'
+	},
 	footer: { freeSoftware: '자유 소프트웨어', sourceCode: '소스 코드' }
 };

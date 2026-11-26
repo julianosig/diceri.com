@@ -67,5 +67,16 @@ export const ja: Messages = {
 		submitting: '開いています…',
 		failed: 'ルームを開けませんでした。もう一度お試しください。'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} は今ライブではありません`,
+		liveBody: (h: string) =>
+			`このルームは @${h} が通話を始めると開きます。またあとで来るか、数秒で自分のルームを作りましょう。`,
+		createOwn: '自分のルームを作る',
+		tryAgain: 'もう一度試す',
+		freeTitle: (h: string) => `@${h} はまだ空いています！`,
+		freeBody: 'このルームはまだ誰のものでもありません。あなたのものにできます。',
+		claim: (h: string) => `@${h} を取得`,
+		home: 'ホームに戻る'
+	},
 	footer: { freeSoftware: 'フリーソフトウェア', sourceCode: 'ソースコード' }
 };

@@ -60,7 +60,20 @@ test('someone else opening /@username must ask to join', async ({ page, browser 
 	await expect(guest.getByText(`@${username}'s room`)).toBeVisible();
 });
 
-test('a room that is not open says so', async ({ page }) => {
-	await page.goto('/@nobodyhere');
-	await expect(page.getByText('@nobodyhere is not live right now', { exact: false })).toBeVisible();
+test('a free @ offers to claim it, prefilled on the home page', async ({ page }) => {
+	const username = uniqueUsername();
+	await page.goto(`/@${username}`);
+	await expect(page.getByText(`@${username} is still free!`)).toBeVisible();
+	await page.getByRole('link', { name: `Claim @${username}` }).click();
+	await expect(page.getByText(`@${username} is available`, { exact: false })).toBeVisible();
+	await expect(page.getByLabel('Password', { exact: true })).toBeVisible();
+});
+
+test('a closed room shows its mascot and points to your own room', async ({ page, browser }) => {
+	const username = await signUp(page);
+	const visitor = await (await browser.newContext()).newPage();
+	await visitor.goto(`/@${username}`);
+	await expect(visitor.getByText(`@${username} isn’t live right now`)).toBeVisible();
+	await visitor.getByRole('link', { name: 'Create my own room' }).click();
+	await expect(visitor.getByPlaceholder('yourname')).toBeVisible();
 });

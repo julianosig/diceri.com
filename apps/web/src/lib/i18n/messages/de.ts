@@ -68,5 +68,16 @@ export const de: Messages = {
 		submitting: 'Wird geöffnet…',
 		failed: 'Dein Raum konnte nicht geöffnet werden. Versuch es noch einmal.'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} ist gerade nicht live`,
+		liveBody: (h: string) =>
+			`Dieser Raum öffnet sich, wenn @${h} einen Anruf startet. Schau bald wieder vorbei – oder öffne in Sekunden deinen eigenen Raum.`,
+		createOwn: 'Eigenen Raum erstellen',
+		tryAgain: 'Erneut versuchen',
+		freeTitle: (h: string) => `@${h} ist noch frei!`,
+		freeBody: 'Niemand hat diesen Raum bisher gesichert. Er kann deiner sein.',
+		claim: (h: string) => `@${h} sichern`,
+		home: 'Zur Startseite'
+	},
 	footer: { freeSoftware: 'Freie Software', sourceCode: 'Quellcode' }
 };

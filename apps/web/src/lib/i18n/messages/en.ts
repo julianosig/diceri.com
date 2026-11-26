@@ -71,6 +71,17 @@ export const en = {
 		submitting: 'Opening…',
 		failed: 'Could not open your room. Try again.'
 	},
+	roomOffline: {
+		liveTitle: (h: string) => `@${h} isn’t live right now`,
+		liveBody: (h: string) =>
+			`This room opens when @${h} starts a call. Come back soon — or open your own room in seconds.`,
+		createOwn: 'Create my own room',
+		tryAgain: 'Try again',
+		freeTitle: (h: string) => `@${h} is still free!`,
+		freeBody: 'Nobody has claimed this room yet. It could be yours.',
+		claim: (h: string) => `Claim @${h}`,
+		home: 'Back to home'
+	},
 	footer: { freeSoftware: 'Free software', sourceCode: 'Source code' }
 };
 
