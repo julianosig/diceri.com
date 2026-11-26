@@ -8,8 +8,25 @@ to declare", chosen as a domain hack for `diceri.com`.
 ## Logo
 
 The lockup is one SVG: the mark, the wordmark **Diceri** and its meaning underneath,
-*from Latin dicere: to speak*. `Logo.svelte` inlines it (so the text uses the page font
-and colour); `apps/web/static/logo.svg` is the standalone copy for sharing.
+*from Latin dicere: to speak*. All text is outlines (Inter, SIL OFL 1.1, converted with
+opentype.js into `apps/web/src/lib/components/ui/logo-paths.ts`), so it renders the same
+everywhere without fonts. `Logo.svelte` inlines it and follows the theme (text in the ink
+colour, facet gaps in the surface colour); `static/logo.svg` (light) and
+`static/logo-dark.svg` (dark) are standalone copies for sharing.
+
+## Themes
+
+Light and dark are design-system themes: every colour is a token in
+`apps/web/src/routes/layout.css`, and the `dark` class on `<html>` swaps them.
+`ThemeToggle` switches and remembers the choice; without one, the system preference
+wins. An inline script in `app.html` applies it before first paint.
+
+## Home illustration
+
+`static/hero/diceri-banner.{webp,gif}` (+ a still frame for reduced motion): a 6:1 strip
+where "Olá!" from Brazil goes through Diceri and arrives as "こんにちは!" in Japan.
+Generated with Codex as a 4-frame sheet stacked vertically (the first, taller 2×2
+version was cut to this strip to keep the promise above the fold).
 
 ## Promise
 

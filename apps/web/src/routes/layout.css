@@ -26,11 +26,19 @@
 }
 
 @layer base {
+	/* Light is the default theme; `.dark` on <html> (ThemeToggle, app.html) switches. */
+	:root {
+		color-scheme: light;
+	}
+
 	.dark {
+		color-scheme: dark;
 		--color-surface: oklch(0.17 0.01 255);
 		--color-surface-raised: oklch(0.23 0.015 255);
 		--color-ink: oklch(0.95 0.005 255);
 		--color-ink-muted: oklch(0.72 0.02 255);
+		/* The live board and call stage stay dark; lift them off the dark page. */
+		--color-stage: oklch(0.13 0.008 255);
 	}
 
 	body {
