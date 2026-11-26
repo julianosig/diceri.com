@@ -2,10 +2,11 @@ use std::str::FromStr as _;
 use std::time::Duration;
 
 use async_trait::async_trait;
-use diceri_application::ports::{AccountRepository, AccountRepositoryError};
-use diceri_domain::{AccessKey, AccountId, Username};
+use diceri_application::ports::{
+    AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
+};
+use diceri_domain::{AccessKey, Account, AccountId, Username};
 use sha2::{Digest as _, Sha256};
-use sqlx::Row as _;
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{
     SqliteConnectOptions, SqliteJournalMode, SqlitePool, SqlitePoolOptions, SqliteSynchronous,
@@ -14,8 +15,9 @@ use sqlx::sqlite::{
 /// Versioned, forward-only schema (AGENTS.md §14), applied before serving.
 static MIGRATIONS: Migrator = sqlx::migrate!("./migrations");
 
-/// Accounts in SQLite. Keys are 128 random bits, so a plain SHA-256 is enough to
-/// make a leaked database useless for signing in (no salt or slow hash needed).
+/// Accounts and sessions in SQLite. Passwords arrive already hashed (Argon2id);
+/// session tokens are 128 random bits, so their SHA-256 is enough to make a leaked
+/// database useless for signing in.
 #[derive(Debug, Clone)]
 pub struct SqliteAccountRepository {
     pool: SqlitePool,
@@ -31,8 +33,7 @@ fn options(url: &str) -> Result<SqliteConnectOptions, AccountRepositoryError> {
         .map_err(|e| storage(&e))?
         .create_if_missing(true)
         .journal_mode(SqliteJournalMode::Wal)
-        // FULL, not NORMAL: a sign-up lost on power failure would leave its owner
-        // holding a key that matches no account.
+        // FULL, not NORMAL: a sign-up lost on power failure would surprise its owner.
         .synchronous(SqliteSynchronous::Full)
         .foreign_keys(true)
         .busy_timeout(Duration::from_secs(5))
@@ -55,9 +56,7 @@ impl SqliteAccountRepository {
         MIGRATIONS.run(&pool).await.map_err(|e| storage(&e))?;
         Ok(Self { pool })
     }
-}
 
-impl SqliteAccountRepository {
     /// Writes a consistent snapshot of the live database to `target` (which must not
     /// exist) with `VACUUM INTO`, then checks the copy with `PRAGMA integrity_check`.
     pub async fn snapshot(&self, target: &std::path::Path) -> Result<(), AccountRepositoryError> {
@@ -89,8 +88,12 @@ impl SqliteAccountRepository {
     }
 }
 
-fn key_hash(key: &AccessKey) -> Vec<u8> {
-    Sha256::digest(key.expose().as_bytes()).to_vec()
+fn token_hash(token: &AccessKey) -> Vec<u8> {
+    Sha256::digest(token.expose().as_bytes()).to_vec()
+}
+
+fn millis(value: u64) -> i64 {
+    i64::try_from(value).unwrap_or(i64::MAX)
 }
 
 /// Creation time is the instant encoded in the UUIDv7 id (Unix milliseconds).
@@ -103,21 +106,43 @@ fn created_at_ms(id: &AccountId) -> i64 {
     i64::try_from(millis).unwrap_or(i64::MAX)
 }
 
+/// Row shape of `accounts`, converted through the domain constructors.
+#[derive(sqlx::FromRow)]
+struct AccountRow {
+    id: uuid::Uuid,
+    username: String,
+    mascot: String,
+    password_hash: String,
+}
+
+impl TryFrom<AccountRow> for StoredAccount {
+    type Error = AccountRepositoryError;
+
+    fn try_from(row: AccountRow) -> Result<Self, Self::Error> {
+        Ok(Self {
+            account: Account {
+                id: AccountId::from_uuid(row.id).map_err(|e| storage(&e))?,
+                username: row.username.parse().map_err(|e| storage(&e))?,
+                mascot: row.mascot.parse().map_err(|e| storage(&e))?,
+            },
+            password_hash: PasswordHash(row.password_hash),
+        })
+    }
+}
+
 #[async_trait]
 impl AccountRepository for SqliteAccountRepository {
-    async fn create(
-        &self,
-        id: &AccountId,
-        username: &Username,
-        key: &AccessKey,
-    ) -> Result<(), AccountRepositoryError> {
+    async fn create(&self, stored: &StoredAccount) -> Result<(), AccountRepositoryError> {
+        let account = &stored.account;
         let result = sqlx::query(
-            "INSERT INTO accounts (id, username, key_hash, created_at) VALUES (?, ?, ?, ?)",
+            "INSERT INTO accounts (id, username, password_hash, mascot, created_at) \
+             VALUES (?, ?, ?, ?, ?)",
         )
-        .bind(id.as_uuid())
-        .bind(username.as_str())
-        .bind(key_hash(key))
-        .bind(created_at_ms(id))
+        .bind(account.id.as_uuid())
+        .bind(account.username.as_str())
+        .bind(stored.password_hash.0.as_str())
+        .bind(account.mascot.as_str())
+        .bind(created_at_ms(&account.id))
         .execute(&self.pool)
         .await;
         match result {
@@ -129,105 +154,75 @@ impl AccountRepository for SqliteAccountRepository {
         }
     }
 
-    async fn find_by_key(
+    async fn find_by_username(
         &self,
-        key: &AccessKey,
-    ) -> Result<Option<Username>, AccountRepositoryError> {
-        // Covered by the unique index `uq_accounts_key_hash`.
-        let row = sqlx::query("SELECT username FROM accounts WHERE key_hash = ?")
-            .bind(key_hash(key))
-            .fetch_optional(&self.pool)
+        username: &Username,
+    ) -> Result<Option<StoredAccount>, AccountRepositoryError> {
+        // Served by `uq_accounts_username`.
+        let row: Option<AccountRow> = sqlx::query_as(
+            "SELECT id, username, mascot, password_hash FROM accounts WHERE username = ?",
+        )
+        .bind(username.as_str())
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| storage(&e))?;
+        row.map(StoredAccount::try_from).transpose()
+    }
+
+    async fn create_session(&self, session: NewSession<'_>) -> Result<(), AccountRepositoryError> {
+        // Expired sessions are purged here (served by `index_sessions_on_expires_at`).
+        sqlx::query("DELETE FROM sessions WHERE expires_at <= ?")
+            .bind(millis(session.created_at_ms))
+            .execute(&self.pool)
             .await
             .map_err(|e| storage(&e))?;
-        row.map(|row| {
-            let name: String = row.try_get("username").map_err(|e| storage(&e))?;
-            name.parse().map_err(|e| storage(&e))
-        })
-        .transpose()
+        sqlx::query(
+            "INSERT INTO sessions (id, account_id, token_hash, created_at, expires_at) \
+             VALUES (?, ?, ?, ?, ?)",
+        )
+        .bind(session.id.as_uuid())
+        .bind(session.account.as_uuid())
+        .bind(token_hash(session.token))
+        .bind(millis(session.created_at_ms))
+        .bind(millis(session.expires_at_ms))
+        .execute(&self.pool)
+        .await
+        .map_err(|e| storage(&e))?;
+        Ok(())
+    }
+
+    async fn find_session(
+        &self,
+        token: &AccessKey,
+        now_ms: u64,
+    ) -> Result<Option<Account>, AccountRepositoryError> {
+        // Served by `uq_sessions_token_hash` and the accounts primary key.
+        let row: Option<AccountRow> = sqlx::query_as(
+            "SELECT a.id, a.username, a.mascot, a.password_hash \
+             FROM sessions s JOIN accounts a ON a.id = s.account_id \
+             WHERE s.token_hash = ? AND s.expires_at > ?",
+        )
+        .bind(token_hash(token))
+        .bind(millis(now_ms))
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(|e| storage(&e))?;
+        Ok(row
+            .map(StoredAccount::try_from)
+            .transpose()?
+            .map(|stored| stored.account))
+    }
+
+    async fn delete_session(&self, token: &AccessKey) -> Result<(), AccountRepositoryError> {
+        sqlx::query("DELETE FROM sessions WHERE token_hash = ?")
+            .bind(token_hash(token))
+            .execute(&self.pool)
+            .await
+            .map_err(|e| storage(&e))?;
+        Ok(())
     }
 }
 
 #[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::account_contract;
-
-    async fn repository() -> SqliteAccountRepository {
-        SqliteAccountRepository::connect("sqlite::memory:")
-            .await
-            .unwrap()
-    }
-
-    #[tokio::test]
-    async fn honours_the_account_repository_contract() {
-        account_contract::check(&repository().await).await;
-    }
-
-    #[tokio::test]
-    async fn stores_v7_ids_hashed_keys_and_millisecond_times() {
-        let accounts = repository().await;
-        let id = AccountId::from_parts(1_764_000_000_123, [1; 10]);
-        let key = AccessKey::from_random_bytes([3; 16]);
-        accounts
-            .create(&id, &"bob".parse().unwrap(), &key)
-            .await
-            .unwrap();
-        let row = sqlx::query("SELECT id, key_hash, created_at FROM accounts")
-            .fetch_one(&accounts.pool)
-            .await
-            .unwrap();
-        let stored_id: uuid::Uuid = row.get("id");
-        let stored_hash: Vec<u8> = row.get("key_hash");
-        let created_at: i64 = row.get("created_at");
-        assert_eq!(stored_id, id.as_uuid());
-        assert_eq!(stored_hash.len(), 32);
-        assert_ne!(stored_hash, key.expose().as_bytes());
-        assert_eq!(created_at, 1_764_000_000_123);
-    }
-
-    #[tokio::test]
-    async fn snapshots_are_complete_and_checked() {
-        let dir = std::env::temp_dir().join(format!("diceri-backup-{}", std::process::id()));
-        std::fs::create_dir_all(&dir).unwrap();
-        let live = dir.join("live.db");
-        let accounts = SqliteAccountRepository::connect(&format!("sqlite://{}", live.display()))
-            .await
-            .unwrap();
-        let key = AccessKey::from_random_bytes([4; 16]);
-        let id = AccountId::from_parts(5, [5; 10]);
-        accounts
-            .create(&id, &"carla".parse().unwrap(), &key)
-            .await
-            .unwrap();
-
-        let copy = dir.join("copy.db");
-        accounts.snapshot(&copy).await.unwrap();
-        let restored = SqliteAccountRepository::connect(&format!("sqlite://{}", copy.display()))
-            .await
-            .unwrap();
-        assert_eq!(
-            restored.find_by_key(&key).await.unwrap(),
-            Some("carla".parse().unwrap())
-        );
-        std::fs::remove_dir_all(&dir).unwrap();
-    }
-
-    #[tokio::test]
-    async fn the_schema_rejects_rows_the_domain_would_reject() {
-        let accounts = repository().await;
-        let id = AccountId::from_parts(1, [1; 10]);
-        let insert = sqlx::query(
-            "INSERT INTO accounts (id, username, key_hash, created_at) VALUES (?, 'Ana', ?, 1)",
-        )
-        .bind(id.as_uuid())
-        .bind(vec![0_u8; 32])
-        .execute(&accounts.pool)
-        .await;
-        let error = insert.unwrap_err();
-        assert!(
-            error
-                .as_database_error()
-                .is_some_and(sqlx::error::DatabaseError::is_check_violation)
-        );
-    }
-}
+#[path = "sqlite_accounts_tests.rs"]
+mod tests;

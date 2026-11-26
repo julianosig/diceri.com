@@ -1,12 +1,12 @@
-//! Username-only accounts. The key returned on sign-up is the session (an
-//! `HttpOnly` cookie) and the code to sign in on another device.
+//! Username + password accounts (no email). Signing up or in sets an `HttpOnly`
+//! session cookie; the username is also the name of the person's room.
 //!
 //! | Method | Path | Auth |
 //! | --- | --- | --- |
-//! | POST | `/accounts` | — (`{ username }`; returns the key once) |
-//! | POST | `/accounts/session` | — (`{ key }`: sign in on this device) |
+//! | POST | `/accounts` | — (`{ username, password, mascot }`) |
+//! | POST | `/accounts/session` | — (`{ username, password }`) |
 //! | GET | `/accounts/me` | session cookie |
-//! | POST | `/accounts/sign-out` | — |
+//! | POST | `/accounts/sign-out` | session cookie (optional) |
 
 mod handlers;
 mod session;

@@ -1,4 +1,4 @@
-use diceri_domain::{AccountId, ParticipantId, RequestId, RoomId};
+use diceri_domain::{AccountId, ParticipantId, RequestId, RoomId, SessionId};
 
 /// What a UUIDv7 is made of: Unix time in milliseconds and 10 random bytes.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -30,5 +30,10 @@ pub trait IdGenerator: Send + Sync {
     fn participant_id(&self) -> ParticipantId {
         let IdParts { unix_ms, random } = self.next_parts();
         ParticipantId::from_parts(unix_ms, random)
+    }
+
+    fn session_id(&self) -> SessionId {
+        let IdParts { unix_ms, random } = self.next_parts();
+        SessionId::from_parts(unix_ms, random)
     }
 }

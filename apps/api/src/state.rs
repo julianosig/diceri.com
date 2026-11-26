@@ -10,11 +10,23 @@ use diceri_application::use_cases::{
 };
 use diceri_infra::synthesis::ElevenLabsVoiceCloner;
 use diceri_infra::{
-    HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser,
-    MemoryAccountRepository, MemoryRoomRepository, OsRandom, SqliteAccountRepository,
+    Argon2Hasher, HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence,
+    LiveKitRoomCloser, MemoryAccountRepository, MemoryRoomRepository, OsRandom,
+    SqliteAccountRepository,
 };
 
 use crate::Config;
+
+/// Accounts over `repository` with Argon2id passwords and the OS clock/randomness.
+fn account_service(repository: Arc<dyn AccountRepository>) -> AccountService {
+    AccountService::new(
+        repository,
+        Arc::new(Argon2Hasher),
+        Arc::new(OsRandom),
+        Arc::new(OsRandom),
+        Arc::new(OsRandom),
+    )
+}
 
 /// Shared application state injected into handlers. Cheap to clone.
 #[derive(Debug, Clone)]
@@ -58,7 +70,7 @@ impl AppState {
                 .await
                 .context("cannot open the accounts database")?,
         );
-        state.accounts = AccountService::new(accounts, Arc::new(OsRandom), Arc::new(OsRandom));
+        state.accounts = account_service(accounts);
         state.secure_cookies = config.secure_cookies;
         if let Some(livekit) = &config.livekit {
             let room_closer = Arc::new(LiveKitRoomCloser::new(
@@ -109,11 +121,7 @@ impl AppState {
             rooms: RoomService::new(repository.clone(), random.clone(), ids.clone()),
             voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner, deployment)),
             presence: PresenceService::new(None, repository.clone()),
-            accounts: AccountService::new(
-                Arc::new(MemoryAccountRepository::default()),
-                random.clone(),
-                ids.clone(),
-            ),
+            accounts: account_service(Arc::new(MemoryAccountRepository::default())),
             secure_cookies: false,
             admission: AdmissionService::new(repository, random, ids, media),
         }

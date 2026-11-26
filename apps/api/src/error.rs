@@ -91,6 +91,7 @@ impl From<AccountError> for ApiError {
             AccountError::Taken => Self::Conflict(error.to_string()),
             AccountError::Unauthorized => Self::Unauthorized,
             AccountError::Repository(source) => Self::Internal(source.into()),
+            AccountError::Hasher(source) => Self::Internal(source.into()),
         }
     }
 }

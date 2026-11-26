@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, Room, RoomCode, RoomSettings, Username};
+use diceri_domain::{AccessKey, Account, Room, RoomCode, RoomSettings, Username};
 
 use crate::ports::{IdGenerator, RandomSource, RoomRepository, RoomRepositoryError};
 
@@ -12,7 +12,7 @@ pub enum RoomError {
     Repository(#[from] RoomRepositoryError),
 }
 
-/// Creates rooms and looks them up by their link code.
+/// Personal rooms: every account has one room, named after it (`/@username`).
 #[derive(Clone)]
 pub struct RoomService {
     repository: Arc<dyn RoomRepository>,
@@ -42,14 +42,38 @@ impl RoomService {
         }
     }
 
-    /// Creates a room owned by `owner`. It gets a UUIDv7 id plus two random
-    /// values: the link code and the host key (handed to the creator once).
-    pub async fn create(&self, owner: Username, settings: RoomSettings) -> Result<Room, RoomError> {
+    /// Opens the owner's room with `settings` (its mascot is the owner's). If the room
+    /// is already live it is reused with the new settings, so its link, code and host
+    /// key stay valid. The host key must be handed only to the owner.
+    pub async fn open(&self, owner: &Account, settings: RoomSettings) -> Result<Room, RoomError> {
+        let settings = RoomSettings {
+            mascot: owner.mascot,
+            ..settings
+        };
+        if let Some(mut room) = self.repository.find_live_by_owner(&owner.username).await? {
+            room.settings = settings;
+            self.repository.update(room.clone()).await?;
+            return Ok(room);
+        }
         let code = RoomCode::from_random_bytes(self.random.random_128());
         let host_key = AccessKey::from_random_bytes(self.random.random_128());
-        let room = Room::new(self.ids.room_id(), code, host_key, owner, settings);
+        let room = Room::new(
+            self.ids.room_id(),
+            code,
+            host_key,
+            owner.username.clone(),
+            settings,
+        );
         self.repository.insert(room.clone()).await?;
         Ok(room)
+    }
+
+    /// The live room at `/@username`.
+    pub async fn live(&self, owner: &Username) -> Result<Room, RoomError> {
+        self.repository
+            .find_live_by_owner(owner)
+            .await?
+            .ok_or(RoomError::NotFound)
     }
 
     pub async fn get(&self, code: &RoomCode) -> Result<Room, RoomError> {
@@ -62,6 +86,8 @@ impl RoomService {
 
 #[cfg(test)]
 mod tests {
+    use diceri_domain::{EntryPolicy, Mascot};
+
     use super::*;
     use crate::test_support::{InMemoryRooms, owner, private_room, room_service};
 
@@ -70,24 +96,39 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn creates_room_that_can_be_fetched_by_its_code() {
+    async fn the_room_is_named_after_its_owner_and_shows_their_mascot() {
         let service = service();
-        let room = service.create(owner(), private_room()).await.unwrap();
+        let room = service.open(&owner(), private_room()).await.unwrap();
+        assert_eq!(room.owner, owner().username);
+        assert_eq!(room.settings.mascot, Mascot::Robot);
+        assert_eq!(service.live(&owner().username).await.unwrap(), room);
         assert_eq!(service.get(&room.code).await.unwrap(), room);
     }
 
     #[tokio::test]
+    async fn opening_again_reuses_the_live_room_with_new_settings() {
+        let service = service();
+        let first = service.open(&owner(), private_room()).await.unwrap();
+        let open = RoomSettings {
+            entry: EntryPolicy::Open,
+            ..private_room()
+        };
+        let again = service.open(&owner(), open).await.unwrap();
+        assert_eq!(again.code, first.code);
+        assert_eq!(again.settings.entry, EntryPolicy::Open);
+    }
+
+    #[tokio::test]
     async fn the_link_code_and_host_key_are_separate_random_values() {
-        let room = service().create(owner(), private_room()).await.unwrap();
+        let room = service().open(&owner(), private_room()).await.unwrap();
         assert_ne!(room.host_key().expose(), room.code.as_str());
         assert_ne!(room.code.as_str(), room.id.to_string());
     }
 
     #[tokio::test]
-    async fn unknown_room_is_not_found() {
-        let unknown = RoomCode::from_random_bytes([200; 16]);
+    async fn nobody_is_live_until_they_open_their_room() {
         assert!(matches!(
-            service().get(&unknown).await,
+            service().live(&owner().username).await,
             Err(RoomError::NotFound)
         ));
     }

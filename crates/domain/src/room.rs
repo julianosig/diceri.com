@@ -184,7 +184,7 @@ mod tests {
     }
 
     fn room() -> Room {
-        let settings = RoomSettings::private("Chat".parse().unwrap());
+        let settings = RoomSettings::default();
         let owner = "ana".parse().unwrap();
         Room::new(
             RoomId::from_parts(1, [1; 10]),

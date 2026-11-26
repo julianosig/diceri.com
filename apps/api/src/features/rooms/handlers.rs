@@ -1,24 +1,35 @@
 use axum::Json;
 use axum::extract::{Path, State};
 use axum::http::StatusCode;
-use diceri_domain::{RequestId, RoomCode};
+use diceri_domain::{RequestId, RoomCode, Username};
 
-use super::dto::{CreateRoomRequest, CreatedRoomResponse, RoomResponse};
+use super::dto::{CreatedRoomResponse, OpenRoomRequest, RoomResponse};
 use crate::features::CurrentAccount;
 use crate::{ApiError, AppState};
 
-pub(crate) async fn create_room(
+/// Opens (or reopens with new settings) the signed-in owner's room.
+pub(crate) async fn open_room(
     State(state): State<AppState>,
     CurrentAccount(owner): CurrentAccount,
-    Json(body): Json<CreateRoomRequest>,
+    Json(body): Json<OpenRoomRequest>,
 ) -> Result<(StatusCode, Json<CreatedRoomResponse>), ApiError> {
-    let room = state.rooms.create(owner, body.settings()?).await?;
-    tracing::info!(room_id = %room.id, "room created");
+    let room = state.rooms.open(&owner, body.settings()).await?;
+    tracing::info!(room_id = %room.id, "room opened");
     let body = CreatedRoomResponse {
         room: RoomResponse::from(&room),
         host_key: room.host_key().expose().to_owned(),
     };
     Ok((StatusCode::CREATED, Json(body)))
+}
+
+/// The live room at `/@username`; 404 when its owner has not opened it.
+pub(crate) async fn user_room(
+    State(state): State<AppState>,
+    Path(username): Path<String>,
+) -> Result<Json<RoomResponse>, ApiError> {
+    let owner: Username = username.parse().map_err(|_| ApiError::NotFound)?;
+    let room = state.rooms.live(&owner).await?;
+    Ok(Json(RoomResponse::from(&room)))
 }
 
 pub(crate) async fn get_room(

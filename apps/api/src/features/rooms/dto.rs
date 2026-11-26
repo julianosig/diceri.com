@@ -1,5 +1,5 @@
 use diceri_application::use_cases::{JoinTicket, Knock, KnockOutcome};
-use diceri_domain::{EntryPolicy, JoinRequest, Mascot, ParticipantProfile, Room, RoomSettings};
+use diceri_domain::{EntryPolicy, JoinRequest, ParticipantProfile, Room, RoomSettings};
 use serde::{Deserialize, Serialize};
 
 use crate::ApiError;
@@ -31,52 +31,38 @@ impl From<EntryDto> for EntryPolicy {
     }
 }
 
-/// `POST /rooms`: the host names the room and picks who sees it and who gets in.
-#[derive(Debug, Deserialize)]
+/// `POST /rooms`: the owner opens their room (`/@username`) and picks who sees it
+/// and who gets in. The name and mascot come from the account.
+#[derive(Debug, Default, Deserialize)]
 #[serde(rename_all = "camelCase")]
-pub(crate) struct CreateRoomRequest {
-    pub title: String,
+pub(crate) struct OpenRoomRequest {
     /// Show on the public live board; private by default.
     #[serde(default)]
     pub listed: bool,
     #[serde(default)]
     pub entry: EntryDto,
-    /// One of the mascot names (`wizard`, `robot`, …); `wizard` when omitted.
-    #[serde(default)]
-    pub mascot: Option<String>,
 }
 
-impl CreateRoomRequest {
-    pub(crate) fn settings(&self) -> Result<RoomSettings, ApiError> {
-        let title = self
-            .title
-            .parse()
-            .map_err(|error| ApiError::Validation(format!("{error}")))?;
-        let mascot = self
-            .mascot
-            .as_deref()
-            .map_or(Ok(Mascot::default()), str::parse)
-            .map_err(|error| ApiError::Validation(format!("{error}")))?;
-        Ok(RoomSettings {
-            title,
+impl OpenRoomRequest {
+    pub(crate) fn settings(&self) -> RoomSettings {
+        RoomSettings {
             listed: self.listed,
             entry: self.entry.into(),
-            mascot,
-        })
+            ..RoomSettings::default()
+        }
     }
 }
 
-/// Public representation of a room (anyone with the link sees it).
+/// Public representation of a live room (anyone who opens `/@owner` sees it).
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RoomResponse {
     /// UUIDv7; identifies the room, grants nothing.
     pub id: String,
-    /// The shareable link code (`/r/<code>`): whoever has it can reach the room.
+    /// The code every lobby path takes (`/rooms/{code}/...`).
     pub code: String,
     pub max_participants: u8,
-    pub title: String,
-    /// Username of the account that owns (hosts) the room.
+    /// Username of the owner, which is also the room's name (`@owner`).
     pub owner: String,
     pub entry: EntryDto,
     /// The room's animated symbol (`/mascots/<name>.gif`).
@@ -89,7 +75,6 @@ impl From<&Room> for RoomResponse {
             id: room.id.to_string(),
             code: room.code.to_string(),
             max_participants: room.max_participants,
-            title: room.settings.title.to_string(),
             owner: room.owner.to_string(),
             entry: room.settings.entry.into(),
             mascot: room.settings.mascot.as_str(),

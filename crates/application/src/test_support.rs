@@ -5,23 +5,58 @@ use std::sync::atomic::{AtomicU8, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use diceri_domain::{AccessKey, AccountId, Room, RoomCode, RoomId, RoomSettings, Username};
+use diceri_domain::{
+    AccessKey, Account, AccountId, Mascot, Password, Room, RoomCode, RoomId, RoomSettings, Username,
+};
 
 use crate::ports::{
-    AccountRepository, AccountRepositoryError, DispatchError, IdGenerator, IdParts,
-    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, RandomSource,
-    RoomRepository, RoomRepositoryError, TranslationDispatcher,
+    AccountRepository, AccountRepositoryError, Clock, DispatchError, IdGenerator, IdParts,
+    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, NewSession,
+    PasswordHash, PasswordHasher, PasswordHasherError, RandomSource, RoomRepository,
+    RoomRepositoryError, StoredAccount, TranslationDispatcher,
 };
 use crate::use_cases::RoomService;
 
-/// A private, host-approved room titled "Test room".
+/// A private, host-approved room.
 pub(crate) fn private_room() -> RoomSettings {
-    RoomSettings::private("Test room".parse().unwrap())
+    RoomSettings::default()
 }
 
 /// The account that owns test rooms.
-pub(crate) fn owner() -> Username {
-    "owner".parse().unwrap()
+pub(crate) fn owner() -> Account {
+    Account {
+        id: AccountId::from_parts(1, [7; 10]),
+        username: "owner".parse().unwrap(),
+        mascot: Mascot::Robot,
+    }
+}
+
+/// Clock starting at 1 000 ms; tests move it forward.
+#[derive(Default)]
+pub(crate) struct FakeClock(pub(crate) AtomicU64);
+
+impl Clock for FakeClock {
+    fn now_ms(&self) -> u64 {
+        self.0.load(Ordering::Relaxed) + 1_000
+    }
+}
+
+/// "Hashes" by prefixing (fast and inspectable); real adapters use Argon2id.
+pub(crate) struct PlainHasher;
+
+#[async_trait]
+impl PasswordHasher for PlainHasher {
+    async fn hash(&self, password: &Password) -> Result<PasswordHash, PasswordHasherError> {
+        Ok(PasswordHash(format!("plain:{}", password.expose())))
+    }
+
+    async fn verify(
+        &self,
+        password: &Password,
+        hash: &PasswordHash,
+    ) -> Result<bool, PasswordHasherError> {
+        Ok(hash.0 == format!("plain:{}", password.expose()))
+    }
 }
 
 /// A room service over `repository` with deterministic randomness and ids.
@@ -46,35 +81,75 @@ impl IdGenerator for SequentialIds {
     }
 }
 
-/// Accounts keyed by the raw key (fine for tests; real adapters store hashes).
+/// Accounts and sessions keyed by raw values (fine for tests; real adapters hash).
 #[derive(Default)]
-pub(crate) struct InMemoryAccounts(Mutex<Vec<(Username, AccessKey)>>);
+pub(crate) struct InMemoryAccounts {
+    accounts: Mutex<Vec<StoredAccount>>,
+    /// `(token, account id, expires at)`.
+    sessions: Mutex<Vec<(AccessKey, AccountId, u64)>>,
+}
 
 #[async_trait]
 impl AccountRepository for InMemoryAccounts {
-    async fn create(
-        &self,
-        _: &AccountId,
-        username: &Username,
-        key: &AccessKey,
-    ) -> Result<(), AccountRepositoryError> {
-        let mut accounts = self.0.lock().unwrap();
-        if accounts.iter().any(|(name, _)| name == username) {
+    async fn create(&self, account: &StoredAccount) -> Result<(), AccountRepositoryError> {
+        let mut accounts = self.accounts.lock().unwrap();
+        if accounts
+            .iter()
+            .any(|stored| stored.account.username == account.account.username)
+        {
             return Err(AccountRepositoryError::Taken);
         }
-        accounts.push((username.clone(), key.clone()));
+        accounts.push(account.clone());
         Ok(())
     }
 
-    async fn find_by_key(
+    async fn find_by_username(
         &self,
-        key: &AccessKey,
-    ) -> Result<Option<Username>, AccountRepositoryError> {
-        let accounts = self.0.lock().unwrap();
+        username: &Username,
+    ) -> Result<Option<StoredAccount>, AccountRepositoryError> {
+        let accounts = self.accounts.lock().unwrap();
         Ok(accounts
             .iter()
-            .find(|(_, k)| k == key)
-            .map(|(name, _)| name.clone()))
+            .find(|stored| &stored.account.username == username)
+            .cloned())
+    }
+
+    async fn create_session(&self, session: NewSession<'_>) -> Result<(), AccountRepositoryError> {
+        self.sessions.lock().unwrap().push((
+            session.token.clone(),
+            *session.account,
+            session.expires_at_ms,
+        ));
+        Ok(())
+    }
+
+    async fn find_session(
+        &self,
+        token: &AccessKey,
+        now_ms: u64,
+    ) -> Result<Option<Account>, AccountRepositoryError> {
+        let account_id = self
+            .sessions
+            .lock()
+            .unwrap()
+            .iter()
+            .find(|(stored, _, expires)| stored == token && *expires > now_ms)
+            .map(|(_, id, _)| *id);
+        let accounts = self.accounts.lock().unwrap();
+        Ok(account_id.and_then(|id| {
+            accounts
+                .iter()
+                .find(|stored| stored.account.id == id)
+                .map(|stored| stored.account.clone())
+        }))
+    }
+
+    async fn delete_session(&self, token: &AccessKey) -> Result<(), AccountRepositoryError> {
+        self.sessions
+            .lock()
+            .unwrap()
+            .retain(|(stored, _, _)| stored != token);
+        Ok(())
     }
 }
 
@@ -105,6 +180,17 @@ impl RoomRepository for InMemoryRooms {
 
     async fn find_by_id(&self, id: &RoomId) -> Result<Option<Room>, RoomRepositoryError> {
         Ok(self.0.lock().unwrap().get(id).cloned())
+    }
+
+    async fn find_live_by_owner(
+        &self,
+        owner: &Username,
+    ) -> Result<Option<Room>, RoomRepositoryError> {
+        let rooms = self.0.lock().unwrap();
+        Ok(rooms
+            .values()
+            .find(|room| &room.owner == owner && !room.is_ended())
+            .cloned())
     }
 
     async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {

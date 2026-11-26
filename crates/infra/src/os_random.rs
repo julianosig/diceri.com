@@ -1,10 +1,10 @@
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use diceri_application::ports::{IdGenerator, IdParts, RandomSource};
+use diceri_application::ports::{Clock, IdGenerator, IdParts, RandomSource};
 use rand::Rng as _;
 
-/// Randomness from the thread-local CSPRNG, seeded by the operating system, and
-/// UUIDv7 parts from the system clock plus that randomness.
+/// The operating system's CSPRNG and clock: randomness, UUIDv7 parts (clock plus
+/// randomness) and the current time.
 #[derive(Debug, Default, Clone, Copy)]
 pub struct OsRandom;
 
@@ -16,18 +16,30 @@ impl RandomSource for OsRandom {
     }
 }
 
+impl Clock for OsRandom {
+    fn now_ms(&self) -> u64 {
+        unix_ms()
+    }
+}
+
+fn unix_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map_or(0, |elapsed| {
+            u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
+        })
+}
+
 impl IdGenerator for OsRandom {
     /// All 74 non-time bits are fresh randomness (no counter), so ids minted in the
     /// same millisecond are unordered among themselves but never collide in practice.
     fn next_parts(&self) -> IdParts {
-        let unix_ms = SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map_or(0, |elapsed| {
-                u64::try_from(elapsed.as_millis()).unwrap_or(u64::MAX)
-            });
         let mut random = [0_u8; 10];
         rand::rng().fill_bytes(&mut random);
-        IdParts { unix_ms, random }
+        IdParts {
+            unix_ms: unix_ms(),
+            random,
+        }
     }
 }
 

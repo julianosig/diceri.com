@@ -1,8 +1,9 @@
-//! Rooms and their lobby.
+//! Personal rooms (one per account, named `@username`) and their lobby.
 //!
 //! | Method | Path | Key (`x-diceri-key`) |
 //! | --- | --- | --- |
-//! | POST | `/rooms` | account session (title, listing, entry; returns the host key once) |
+//! | POST | `/rooms` | account session (listing, entry; returns the host key) |
+//! | GET | `/users/{username}/room` | — (the live room at `/@username`) |
 //! | GET | `/rooms/{room}` | — |
 //! | POST | `/rooms/{room}/host-session` | host |
 //! | POST | `/rooms/{room}/requests` | — (returns a request key) |
@@ -29,7 +30,8 @@ pub(crate) use access_key::ACCESS_KEY_HEADER;
 
 pub(crate) fn routes() -> Router<AppState> {
     Router::new()
-        .route("/rooms", post(handlers::create_room))
+        .route("/rooms", post(handlers::open_room))
+        .route("/users/{username}/room", get(handlers::user_room))
         .route("/rooms/{room_id}", get(handlers::get_room))
         .route(
             "/rooms/{room_id}/host-session",

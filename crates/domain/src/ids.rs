@@ -84,6 +84,10 @@ entity_id!(
     /// One connection of a person to a media room (the media identity).
     ParticipantId
 );
+entity_id!(
+    /// A signed-in browser of an account (its bearer token is separate).
+    SessionId
+);
 
 #[cfg(test)]
 mod tests {

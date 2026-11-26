@@ -128,7 +128,7 @@ mod tests {
     async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomCode) {
         let repository = Arc::new(InMemoryRooms::default());
         let rooms = room_service(repository.clone());
-        let room = rooms.create(owner(), private_room()).await.unwrap();
+        let room = rooms.open(&owner(), private_room()).await.unwrap();
         (
             VoiceService::new(repository.clone(), Arc::new(FakeCloner::default()), "test"),
             repository,

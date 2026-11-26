@@ -6,6 +6,7 @@
 #[cfg(test)]
 mod account_contract;
 mod agent_dispatcher;
+mod argon2_hasher;
 mod livekit;
 mod memory_accounts;
 mod memory_room_repository;
@@ -16,6 +17,7 @@ pub mod synthesis;
 pub mod translation;
 
 pub use agent_dispatcher::{AGENT_KEY_HEADER, HttpTranslationDispatcher};
+pub use argon2_hasher::Argon2Hasher;
 pub use livekit::{
     LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser, OUTPUT_LANGUAGE_ATTRIBUTE,
     VOICE_ATTRIBUTE,

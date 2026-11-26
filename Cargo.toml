@@ -36,6 +36,8 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 reqwest = { version = "0.13.5", default-features = false, features = ["json", "stream", "rustls", "http2", "multipart"] }
 tokio-tungstenite = { version = "0.30.0", features = ["rustls-tls-native-roots"] }
 sha2 = "0.11.2"
+# Password hashing (Argon2id, OWASP parameters); see AGENTS.md §14 rule 3.
+argon2 = "0.6.0"
 # SQLite only. `macros` + `migrate` embed `crates/infra/migrations` with `sqlx::migrate!`;
 # queries stay plain strings checked by adapter tests (no compile-time database).
 sqlx = { version = "0.9.1", default-features = false, features = ["runtime-tokio", "sqlite-bundled", "macros", "migrate", "uuid"] }

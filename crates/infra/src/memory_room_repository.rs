@@ -3,7 +3,7 @@ use std::sync::RwLock;
 
 use async_trait::async_trait;
 use diceri_application::ports::{RoomRepository, RoomRepositoryError};
-use diceri_domain::{Room, RoomCode, RoomId};
+use diceri_domain::{Room, RoomCode, RoomId, Username};
 
 /// In-memory room storage for development and tests, indexed by id and link code.
 #[derive(Debug, Default)]
@@ -40,6 +40,17 @@ impl RoomRepository for MemoryRoomRepository {
         Ok(self.rooms.read().map_err(poisoned)?.get(id).cloned())
     }
 
+    async fn find_live_by_owner(
+        &self,
+        owner: &Username,
+    ) -> Result<Option<Room>, RoomRepositoryError> {
+        let rooms = self.rooms.read().map_err(poisoned)?;
+        Ok(rooms
+            .values()
+            .find(|room| &room.owner == owner && !room.is_ended())
+            .cloned())
+    }
+
     async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {
         let mut rooms = self.rooms.write().map_err(poisoned)?;
         let slot = rooms
@@ -62,7 +73,7 @@ mod tests {
             RoomCode::from_random_bytes([3; 16]),
             AccessKey::from_random_bytes([2; 16]),
             "ana".parse().unwrap(),
-            RoomSettings::private("Test".parse().unwrap()),
+            RoomSettings::default(),
         )
     }
 

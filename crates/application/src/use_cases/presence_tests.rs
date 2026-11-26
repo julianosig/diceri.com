@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use diceri_domain::{EntryPolicy, Room, RoomSettings};
+use diceri_domain::{Account, AccountId, EntryPolicy, Mascot, Room, RoomSettings};
 
 use super::{PresenceService, RANKING_SIZE};
 use crate::ports::{LiveRoom, MediaAccessError, MediaPresence, RoomRepository as _};
@@ -49,18 +49,19 @@ fn fixture(fail: bool) -> Fixture {
 }
 
 impl Fixture {
-    /// Creates a room and puts `people` listening in `languages` in it.
-    async fn live(&self, title: &str, listed: bool, people: usize, languages: &[&str]) -> Room {
+    /// Opens `owner`'s room and puts `people` listening in `languages` in it.
+    async fn live(&self, owner: &str, listed: bool, people: usize, languages: &[&str]) -> Room {
         let settings = RoomSettings {
             listed,
             entry: EntryPolicy::Open,
-            ..RoomSettings::private(title.parse().unwrap())
+            ..RoomSettings::default()
         };
-        let room = self
-            .rooms
-            .create("ana".parse().unwrap(), settings)
-            .await
-            .unwrap();
+        let account = Account {
+            id: AccountId::from_parts(1, [owner.len().to_le_bytes()[0]; 10]),
+            username: owner.parse().unwrap(),
+            mascot: Mascot::Ghost,
+        };
+        let room = self.rooms.open(&account, settings).await.unwrap();
         self.media.rooms.lock().unwrap().push(LiveRoom {
             room: room.id,
             people,
@@ -73,32 +74,25 @@ impl Fixture {
 #[tokio::test]
 async fn ranks_listed_rooms_by_size_and_counts_everyone() {
     let f = fixture(false);
-    f.live("Small", true, 2, &["en", "pt-BR"]).await;
-    f.live("Private", false, 4, &["de"]).await;
-    let big = f.live("Big", true, 3, &["es", "en", "en"]).await;
+    f.live("small", true, 2, &["en", "pt-BR"]).await;
+    f.live("private", false, 4, &["de"]).await;
+    let big = f.live("big", true, 3, &["es", "en", "en"]).await;
 
     let snapshot = f.presence.snapshot().await;
     assert_eq!(snapshot.online, 9);
     assert_eq!(snapshot.live_rooms, 3);
-    let titles: Vec<&str> = snapshot.ranking.iter().map(|r| r.title.as_str()).collect();
-    assert_eq!(titles, ["Big", "Small"]);
+    let owners: Vec<&str> = snapshot.ranking.iter().map(|r| r.owner.as_str()).collect();
+    assert_eq!(owners, ["big", "small"]);
     let first = &snapshot.ranking[0];
     assert_eq!(first.code, big.code);
     assert_eq!(first.entry, EntryPolicy::Open);
+    assert_eq!(first.mascot, Mascot::Ghost);
     let languages: Vec<&str> = first
         .languages
         .iter()
         .map(diceri_domain::LanguageCode::as_str)
         .collect();
     assert_eq!(languages, ["en", "es"]);
-}
-
-#[tokio::test]
-async fn shows_who_owns_each_room() {
-    let f = fixture(false);
-    f.live("Chat", true, 1, &["en"]).await;
-    let snapshot = f.presence.snapshot().await;
-    assert_eq!(snapshot.ranking[0].owner.as_str(), "ana");
 }
 
 #[tokio::test]
@@ -122,8 +116,8 @@ async fn ignores_unknown_ended_and_empty_rooms() {
 #[tokio::test]
 async fn ranking_is_capped_but_totals_are_not() {
     let f = fixture(false);
-    for _ in 0..RANKING_SIZE + 5 {
-        f.live("Room", true, 1, &["en"]).await;
+    for n in 0..RANKING_SIZE + 5 {
+        f.live(&format!("room{n}"), true, 1, &["en"]).await;
     }
     let snapshot = f.presence.snapshot().await;
     assert_eq!(snapshot.ranking.len(), RANKING_SIZE);

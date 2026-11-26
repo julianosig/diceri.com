@@ -159,21 +159,28 @@ pub(crate) async fn exchange(
     )
 }
 
-/// Signs `username` up and returns the `Cookie` header that carries its session.
+/// The password every test account uses.
+pub(crate) const PASSWORD: &str = "correct horse battery";
+
+/// Signs `username` up (dragon mascot) and returns the `Cookie` header of its session.
 pub(crate) async fn sign_up(app: &Router, username: &str) -> String {
-    let body = serde_json::json!({ "username": username });
+    let body = serde_json::json!({
+        "username": username,
+        "password": PASSWORD,
+        "mascot": "dragon"
+    });
     let (status, cookie, _) = exchange(app, "POST", "/api/v1/accounts", &[], Some(body)).await;
     assert_eq!(status, StatusCode::CREATED);
     cookie.unwrap().split(';').next().unwrap().to_owned()
 }
 
-/// Creates a private, host-approved room and returns `(room_code, host_key)`.
+/// Opens a fresh account's private, host-approved room; returns `(room_code, host_key)`.
 pub(crate) async fn create_room(app: &Router) -> (String, String) {
-    create_room_with(app, serde_json::json!({ "title": "Test room" })).await
+    create_room_with(app, serde_json::json!({})).await
 }
 
-/// Signs up a fresh account, creates a room from a `POST /rooms` body with it and
-/// returns `(room_code, host_key)`; room paths take the code.
+/// Signs up a fresh account (`host<n>`), opens its room with a `POST /rooms` body and
+/// returns `(room_code, host_key)`; lobby paths take the code.
 pub(crate) async fn create_room_with(app: &Router, body: Value) -> (String, String) {
     static ACCOUNTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let n = ACCOUNTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);

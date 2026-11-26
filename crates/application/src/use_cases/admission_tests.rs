@@ -48,7 +48,7 @@ fn wrong_key() -> AccessKey {
 #[tokio::test]
 async fn host_joins_with_name_and_wrong_key_is_forbidden() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let ticket = f
         .admission
         .join_as_host(&room.code, room.host_key(), &name("Ana"))
@@ -67,7 +67,7 @@ async fn host_joins_with_name_and_wrong_key_is_forbidden() {
 #[tokio::test]
 async fn guest_waits_until_admitted_then_gets_credentials() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
 
     let waiting = f
@@ -99,7 +99,7 @@ async fn guest_waits_until_admitted_then_gets_credentials() {
 #[tokio::test]
 async fn denied_guest_learns_it_and_cannot_be_readmitted() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Eve")).await.unwrap();
     f.admission
         .decide(&room.code, room.host_key(), &knock.request_id, false)
@@ -125,7 +125,7 @@ async fn denied_guest_learns_it_and_cannot_be_readmitted() {
 #[tokio::test]
 async fn only_the_host_can_list_or_decide() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Eve")).await.unwrap();
     assert!(matches!(
         f.admission.pending(&room.code, &knock.key).await,
@@ -142,7 +142,7 @@ async fn only_the_host_can_list_or_decide() {
 #[tokio::test]
 async fn polling_requires_the_request_key() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     let outcome = f
         .admission
@@ -154,7 +154,7 @@ async fn polling_requires_the_request_key() {
 #[tokio::test]
 async fn monitor_is_only_for_members() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     assert!(matches!(
         f.admission.monitor(&room.code, &knock.key).await,
@@ -176,7 +176,7 @@ async fn monitor_is_only_for_members() {
 #[tokio::test]
 async fn joining_without_media_server_is_unavailable() {
     let f = fixture(false);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let result = f
         .admission
         .join_as_host(&room.code, room.host_key(), &name("Ana"))
@@ -187,7 +187,7 @@ async fn joining_without_media_server_is_unavailable() {
 #[tokio::test]
 async fn joining_starts_translation_for_the_room() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     f.admission
         .join_as_host(&room.code, room.host_key(), &name("Ana"))
         .await
@@ -210,7 +210,7 @@ async fn joining_starts_translation_for_the_room() {
 #[tokio::test]
 async fn a_voice_from_outside_the_room_is_forbidden() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let stolen = ParticipantProfile {
         voice_id: Some("someone-else".to_owned()),
         ..name("Eve")
@@ -233,7 +233,7 @@ fn ended<T>(result: &Result<T, AdmissionError>) -> bool {
 #[tokio::test]
 async fn after_the_host_ends_the_call_nobody_can_join() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     f.admission
         .decide(&room.code, room.host_key(), &knock.request_id, true)
@@ -262,7 +262,7 @@ async fn after_the_host_ends_the_call_nobody_can_join() {
 #[tokio::test]
 async fn only_the_host_can_end_the_call() {
     let f = fixture(true);
-    let room = f.rooms.create(owner(), private_room()).await.unwrap();
+    let room = f.rooms.open(&owner(), private_room()).await.unwrap();
     let result = f.admission.end_call(&room.code, &wrong_key()).await;
     assert!(matches!(result, Err(AdmissionError::Forbidden)));
 }
@@ -274,7 +274,7 @@ async fn in_an_open_room_people_get_in_without_waiting() {
         entry: EntryPolicy::Open,
         ..private_room()
     };
-    let room = f.rooms.create(owner(), settings).await.unwrap();
+    let room = f.rooms.open(&owner(), settings).await.unwrap();
     let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     let outcome = f
         .admission

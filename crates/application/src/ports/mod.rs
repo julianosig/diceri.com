@@ -3,6 +3,7 @@
 mod account_repository;
 mod ids;
 mod media_access;
+mod password_hasher;
 mod presence;
 mod random_source;
 mod room_repository;
@@ -12,11 +13,14 @@ mod translation_dispatcher;
 mod translator;
 mod voice_cloner;
 
-pub use account_repository::{AccountRepository, AccountRepositoryError};
+pub use account_repository::{
+    AccountRepository, AccountRepositoryError, NewSession, StoredAccount,
+};
 pub use ids::{IdGenerator, IdParts};
 pub use media_access::{
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
 };
+pub use password_hasher::{Clock, PasswordHash, PasswordHasher, PasswordHasherError};
 pub use presence::{LiveRoom, MediaPresence};
 pub use random_source::RandomSource;
 pub use room_repository::{RoomRepository, RoomRepositoryError};

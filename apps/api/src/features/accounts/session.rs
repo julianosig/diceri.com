@@ -2,14 +2,15 @@ use axum::extract::FromRequestParts;
 use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, HeaderValue};
-use diceri_domain::{AccessKey, Username};
+use diceri_application::use_cases::SESSION_TTL_MS;
+use diceri_domain::{AccessKey, Account};
 
 use crate::{ApiError, AppState};
 
-/// `HttpOnly` cookie holding the account key; scripts on the page never see it.
-const COOKIE_NAME: &str = "diceri_account";
-/// About a year: accounts have no password, so the cookie is the login.
-const MAX_AGE_SECONDS: u32 = 31_536_000;
+/// `HttpOnly` cookie holding the session token; scripts on the page never see it.
+const COOKIE_NAME: &str = "diceri_session";
+/// Same lifetime as the server-side session.
+const MAX_AGE_SECONDS: u64 = SESSION_TTL_MS / 1000;
 
 /// `Set-Cookie` that signs the browser in (`Some`) or out (`None`).
 pub(crate) fn session_cookie(
@@ -26,7 +27,8 @@ pub(crate) fn session_cookie(
     [(SET_COOKIE, header)]
 }
 
-fn key_from_cookies(headers: &HeaderMap) -> Option<AccessKey> {
+/// The session token from the request's cookies, if any.
+pub(crate) fn key_from_cookies(headers: &HeaderMap) -> Option<AccessKey> {
     headers
         .get_all(COOKIE)
         .iter()
@@ -38,7 +40,7 @@ fn key_from_cookies(headers: &HeaderMap) -> Option<AccessKey> {
 
 /// The signed-in account; requests without a valid session cookie get 401.
 #[derive(Debug)]
-pub(crate) struct CurrentAccount(pub Username);
+pub(crate) struct CurrentAccount(pub Account);
 
 impl FromRequestParts<AppState> for CurrentAccount {
     type Rejection = ApiError;
