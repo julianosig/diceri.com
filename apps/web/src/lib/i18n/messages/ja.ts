@@ -104,6 +104,8 @@ export const ja: Messages = {
 		cancel: 'キャンセル'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: '近日、有料機能として提供予定です。',
 		section: 'あなたの声',
 		recording: '録音中 · 声に出して読んでください',
 		secondsLeft: (seconds: number) => `${String(seconds)}秒`,

@@ -104,6 +104,8 @@ export const hi: Messages = {
 		cancel: 'रद्द करें'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: 'जल्द ही एक सशुल्क सुविधा के रूप में।',
 		section: 'आपकी आवाज़',
 		recording: 'रिकॉर्डिंग · ज़ोर से पढ़ें',
 		secondsLeft: (seconds: number) => `${String(seconds)} से.`,

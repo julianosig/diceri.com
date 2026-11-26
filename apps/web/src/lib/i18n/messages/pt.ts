@@ -104,6 +104,8 @@ export const pt: Messages = {
 		cancel: 'Cancelar'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: 'Em breve como recurso pago.',
 		section: 'Sua voz',
 		recording: 'Gravando · leia em voz alta',
 		secondsLeft: (seconds: number) => `${String(seconds)} s`,

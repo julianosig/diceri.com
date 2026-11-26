@@ -8,7 +8,7 @@
 	import { isValidDisplayName, loadDisplayName, MAX_NAME_LENGTH } from '../display-name.ts';
 	import { LANGUAGES } from '#lib/features/translation/index.ts';
 	import { loadLanguage } from '../languages.ts';
-	import type { Profile } from '../lobby-api.ts';
+	import { getCapabilities, type Profile } from '../lobby-api.ts';
 	import { MicPreview } from '../mic-preview.svelte.ts';
 	import { VoiceRecorder } from '../voice-recorder.svelte.ts';
 	import { joinAction } from '../join-copy.ts';
@@ -42,7 +42,17 @@
 		}
 	});
 
+	/** Recording your own voice is a paid feature: offered only when switched on. */
+	let voiceCloning = $state(false);
+
 	onMount(() => {
+		getCapabilities()
+			.then((capabilities) => {
+				voiceCloning = capabilities.voiceCloning;
+			})
+			.catch(() => {
+				voiceCloning = false;
+			});
 		void preview.start();
 		return () => {
 			void preview.stop();
@@ -129,6 +139,7 @@
 		{/if}
 	</section>
 	<VoiceSetup
+		available={voiceCloning}
 		{recorder}
 		language={outputLanguage}
 		deviceId={preview.deviceId}

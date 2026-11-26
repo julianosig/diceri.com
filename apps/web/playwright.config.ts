@@ -53,6 +53,8 @@ export default defineConfig({
 				DICERI_AGENT_URL: `http://127.0.0.1:${String(AGENT_PORT)}`,
 				// Parallel tests share one IP; the limit has its own router test.
 				DICERI_WRITE_LIMIT_PER_MINUTE: '0',
+				// The paid voice feature stays covered end to end while it is off in production.
+				DICERI_VOICE_CLONING: 'true',
 				DICERI_DEPLOYMENT: 'e2e',
 				// A fresh database per run, never the dev file.
 				DICERI_DATABASE_URL: 'sqlite::memory:'

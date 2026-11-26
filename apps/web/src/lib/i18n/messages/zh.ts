@@ -104,6 +104,8 @@ export const zh: Messages = {
 		cancel: '取消'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: '即将作为付费功能推出。',
 		section: '你的声音',
 		recording: '录音中 · 请朗读',
 		secondsLeft: (seconds: number) => `${String(seconds)} 秒`,

@@ -80,3 +80,12 @@ export function recordVoice(roomId: string, sample: Blob) {
 		blob: sample
 	});
 }
+
+/** What this deployment offers (recording your own voice is a paid feature). */
+export interface Capabilities {
+	voiceCloning: boolean;
+}
+
+export function getCapabilities(fetchFn?: typeof fetch) {
+	return requestJson<Capabilities>('/capabilities', { fetchFn });
+}

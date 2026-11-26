@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { Check, Mic, RotateCcw } from '@lucide/svelte';
+	import { Check, Lock, Mic, RotateCcw } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
@@ -13,9 +13,11 @@
 		deviceId: string | undefined;
 		/** Releases the preview microphone before recording. */
 		onbeforerecord: () => Promise<void>;
+		/** Whether this deployment offers it (a paid feature, off until it ships). */
+		available: boolean;
 	}
 
-	let { recorder, language, deviceId, onbeforerecord }: Props = $props();
+	let { recorder, language, deviceId, onbeforerecord, available }: Props = $props();
 	const progress = $derived(Math.min(100, (recorder.elapsed / RECORD_SECONDS) * 100));
 	const secondsLeft = $derived(Math.max(0, Math.ceil(RECORD_SECONDS - recorder.elapsed)));
 
@@ -36,7 +38,20 @@
 	aria-label={t.section}
 	aria-live="polite"
 >
-	{#if recorder.step === 'recording'}
+	{#if !available}
+		<!-- Shown but switched off: it will be a paid feature. -->
+		<div class="flex items-center justify-between gap-2">
+			<p class="text-sm font-medium text-ink-muted">{t.title}</p>
+			<span class="rounded-full bg-brand-500/15 px-2 py-0.5 text-xs font-semibold text-brand-500">
+				{t.pro}
+			</span>
+		</div>
+		<p class="text-xs text-ink-muted">{t.paidSoon}</p>
+		<Button size="sm" variant="secondary" disabled>
+			<Lock class="size-4" aria-hidden="true" />
+			{t.record(RECORD_SECONDS)}
+		</Button>
+	{:else if recorder.step === 'recording'}
 		<div class="flex items-center justify-between text-sm font-medium">
 			<span class="flex items-center gap-2 text-red-600">
 				<span class="size-2 animate-pulse rounded-full bg-red-600" aria-hidden="true"></span>

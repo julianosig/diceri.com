@@ -107,6 +107,8 @@ export const en = {
 		cancel: 'Cancel'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: 'Coming soon as a paid feature.',
 		section: 'Your voice',
 		recording: 'Recording · read aloud',
 		secondsLeft: (seconds: number) => `${String(seconds)}s`,

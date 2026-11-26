@@ -109,6 +109,8 @@ export const ar: Messages = {
 		cancel: 'إلغاء'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: 'قريبًا كميزة مدفوعة.',
 		section: 'صوتك',
 		recording: 'جارٍ التسجيل · اقرأ بصوت عالٍ',
 		secondsLeft: (seconds: number) => `${String(seconds)} ث`,

@@ -104,6 +104,8 @@ export const ko: Messages = {
 		cancel: '취소'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: '곧 유료 기능으로 제공됩니다.',
 		section: '내 목소리',
 		recording: '녹음 중 · 소리 내어 읽으세요',
 		secondsLeft: (seconds: number) => `${String(seconds)}초`,

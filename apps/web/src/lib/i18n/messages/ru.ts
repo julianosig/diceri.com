@@ -104,6 +104,8 @@ export const ru: Messages = {
 		cancel: 'Отмена'
 	},
 	voice: {
+		pro: 'Pro',
+		paidSoon: 'Скоро — как платная функция.',
 		section: 'Ваш голос',
 		recording: 'Запись · читайте вслух',
 		secondsLeft: (seconds: number) => `${String(seconds)} с`,
