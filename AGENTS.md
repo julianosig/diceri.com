@@ -8,7 +8,7 @@ edit wins; nested files only add detail, they never contradict this one.
 
 ## 1. Product
 
-Diceri is a Google-Meet-inspired app for **anonymous, link-joined meetings with
+Diceri is a Google-Meet-inspired app for **link-joined meetings without accounts, with
 live voice translation**. One person creates a room and shares the link; the
 other joins. Each listener picks the language they want to hear, and the other
 person's speech is transcribed, translated and re-spoken **in a voice that
@@ -142,7 +142,9 @@ function-length limits but not from file limits.
 
 ## 9. Security, privacy and consent
 
-- Rooms are anonymous. Room ids are 128-bit random (22 base62 chars); never
+- Rooms are private by default: only hosts who opt in show their room's title and their
+  name on the public live board ([ADR 0008](docs/decisions/0008-named-rooms-and-live-board.md)).
+  Room ids are 128-bit random (22 base62 chars); never
   expose sequential or database ids.
 - Media tokens (LiveKit JWTs) are minted only by `apps/api`, scoped to one
   room, and short-lived (5–10 min).
