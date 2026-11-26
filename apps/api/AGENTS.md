@@ -7,7 +7,7 @@ Rust crate in the workspace.
 
 | Crate | Contains | May depend on |
 | --- | --- | --- |
-| `diceri-domain` | value objects (`RoomId`, `LanguageCode`), entities, invariants | `serde`, `thiserror` only |
+| `diceri-domain` | value objects (`RoomId`, `RoomCode`, `LanguageCode`), entities, invariants | `serde`, `thiserror`, `uuid` (parse and build ids only; ADR 0010) |
 | `diceri-application` | use cases (`use_cases/`), ports as traits (`ports/`) | `domain` |
 | `diceri-infra` | adapters implementing ports, one per module | `application`, `domain`, provider SDKs |
 | `diceri-api` | axum router, handlers by feature, composition root | everything above |

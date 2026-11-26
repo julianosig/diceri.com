@@ -221,3 +221,87 @@ Training data and tutorials are often older than this stack. Do **not** use:
 - axum 0.7 idioms (`/:param` paths, `#[async_trait]` on extractors) → `/{param}`.
 - `unwrap()`/`expect()` outside tests; `println!` instead of `tracing`.
 - Holding a `std::sync` lock across `.await`; unbounded channels for audio.
+
+## 14. Database and identifiers
+
+Backed by [the database design research](docs/research/2026-11-database-design/report.md)
+and [ADR 0010](docs/decisions/0010-uuidv7-ids-and-database-conventions.md). SQLite today
+(accounts are the only durable data), PostgreSQL-ready.
+
+**Identifiers, capabilities and secrets: three different things.**
+
+1. Every entity id is a **UUIDv7** (RFC 9562) typed in `domain` (`RoomId`, `RequestId`,
+   `AccountId`, `ParticipantId`), generated in the application through the
+   `IdGenerator` port, never by the database. Primary key column: `id`.
+2. **Never use an id (any UUID) as a capability or secret** (RFC 9562 §8). Anything that
+   grants access is a separate 128-bit CSPRNG value: the room link is a `RoomCode`
+   (22 base62 chars), host/guest/account keys are `AccessKey`s.
+3. Secrets are stored only as SHA-256 (they are server-generated and high-entropy);
+   a user-chosen secret would need Argon2id. Never store a key in plaintext.
+4. Room codes and keys are never logged, never sent to providers or the media server,
+   and their `Debug` is redacted. Logs, LiveKit room names and provider resources use ids.
+5. Ids travel as lowercase hyphenated text; parse case-insensitively and answer 404 to
+   anything that is not a v7. Never expose account ids publicly (the handle is the
+   username).
+
+**Schema.**
+
+6. Every SQLite table is `STRICT`; ids are `BLOB NOT NULL CHECK (length(id) = 16)`
+   (PostgreSQL: `uuid`).
+7. Names: lowercase snake_case, plural tables, `<referenced_singular>_id` foreign keys,
+   `is_`/`has_` booleans, units in names (`_ms`, `_bytes`), instants `<participle>_at`.
+8. Name every constraint and index: `check_<table>_<col>_<kind>`, `uq_<table>_<cols>`,
+   `fk_<table>_<col>_<ref>`, `index_<table>_on_<cols>`.
+9. `NOT NULL` unless absence has a documented meaning. Every invariant of a domain type
+   gets a `CHECK` mirroring it (the domain constructor stays the primary validator).
+   `TEXT` + length `CHECK`, never `varchar(n)`. Enums: `TEXT CHECK (col IN (...))`.
+10. Foreign keys state `ON DELETE` explicitly and their column is indexed.
+11. Instants are UTC Unix **milliseconds** in `INTEGER` (PostgreSQL `timestamptz`), set by
+    the application; DB defaults are only a backstop; no triggers.
+12. Hard delete by default; "ended"/"closed" is a state column. No soft delete without
+    an ADR. Normalize to 3NF; JSON only for opaque payloads that are never queried.
+
+**Migrations.**
+
+13. Schema changes are `sqlx::migrate!` files in `crates/infra/migrations/`, named
+    `<YYYYMMDDHHMMSS>_<snake_description>.sql`, applied at startup before serving.
+14. Forward-only: no down migrations; never edit or delete a merged migration; fix
+    forward. One logical change per migration; DDL and data backfills are separate.
+15. Changes an older running release cannot survive (rename, drop, type change, new
+    NOT NULL) use expand/contract across two releases. SQLite table rebuilds follow the
+    official 12-step procedure in a `-- no-transaction` migration.
+16. Portable SQL only: `ON CONFLICT ... DO UPDATE` and `RETURNING` are fine;
+    no `AUTOINCREMENT`, `INSERT OR REPLACE`, `GLOB`.
+
+**Data access.**
+
+17. Ports in `application::ports` speak domain types and a `thiserror` enum; `sqlx`
+    types (`Row`, `Pool`, `Transaction`) never leave `infra`. Methods are
+    aggregate-scoped and intention-revealing; add one only when a use case needs it.
+18. Bind every value; SQL text is `&'static str`. `AssertSqlSafe` only in `infra`, for
+    allow-listed identifiers, with a comment saying why.
+19. Map driver errors with `is_unique_violation()` / `is_foreign_key_violation()` /
+    `is_check_violation()`, never by parsing messages. Rows become domain types through
+    their constructors (a corrupt row is a storage error, not a panic).
+20. Every query names the index that serves it; no queries in loops; lists use keyset
+    pagination on `(created_at, id)`, never `OFFSET`. Cross-aggregate atomicity goes
+    through a unit-of-work port, never a transaction threaded through `application`.
+21. Read-then-write transactions use `BEGIN IMMEDIATE`; no transaction spans a network
+    or provider call.
+
+**Operation, testing, privacy.**
+
+22. Connection options live in one function (`sqlite_accounts::options`): WAL,
+    `foreign_keys`, 5 s busy timeout, `synchronous = FULL` (change only with a written
+    reason), `optimize_on_close`. Bundled SQLite ≥ 3.51.3.
+23. The database lives on local disk, in a `0700` directory with `0600` files, outside
+    any served path. Backups are `VACUUM INTO` snapshots checked with
+    `PRAGMA integrity_check` (`scripts/backup-db.sh`); never copy a live `.db` without its WAL.
+24. Each repository port has one contract suite run against both its in-memory fake and
+    its SQL adapter; adapter tests run the real migrations.
+25. No column may hold audio, transcripts, translations or voice embeddings. Raw IP
+    addresses are never persisted.
+26. Every table with personal data is listed in [`docs/data-inventory.md`](docs/data-inventory.md)
+    with purpose, legal basis (LGPD/GDPR), retention and deletion path.
+27. Never log bound parameters, usernames, keys, hashes or the database URL; log
+    operation names, ids and durations.
