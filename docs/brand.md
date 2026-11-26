@@ -43,7 +43,7 @@ at once.
 
 > **The Google Meet alternative**
 > **where you talk and listen in your own language.**
-> They hear you in their language — in your own voice.
+> Everyone in the meeting hears your voice in their language.
 
 Written to the ICP in the second person. The first line is what people already search
 for and compare against (a nominative, comparative use of the name: no Google logo,

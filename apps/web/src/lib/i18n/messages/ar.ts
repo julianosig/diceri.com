@@ -17,7 +17,7 @@ export const ar: Messages = {
 	hero: {
 		headline: 'البديل لـ Google Meet',
 		promise: 'حيث تتحدث وتستمع بلغتك أنت.',
-		voice: 'يسمعونك بلغتهم — بصوتك أنت.',
+		voice: 'يسمع الجميع في الاجتماع صوتك بلغتهم.',
 		openSource: 'نحن مفتوحو المصدر',
 		illustration: 'رسم توضيحي: شخص يتحدث، وDiceri يترجم في المنتصف، والشخص الآخر يسمعه بلغته.'
 	},

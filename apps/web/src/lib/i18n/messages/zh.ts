@@ -12,7 +12,7 @@ export const zh: Messages = {
 	hero: {
 		headline: 'Google Meet 的替代方案',
 		promise: '用自己的语言说，也用自己的语言听。',
-		voice: '对方用他们的语言听到你——用你自己的声音。',
+		voice: '会议中的每个人都用自己的语言听到你的声音。',
 		openSource: '我们是开源的',
 		illustration: '插图：一个人说话，Diceri 在中间翻译，另一个人用自己的语言听到。'
 	},

@@ -11,7 +11,7 @@ export const es: Messages = {
 	hero: {
 		headline: 'La alternativa a Google Meet',
 		promise: 'donde hablas y escuchas en tu propio idioma.',
-		voice: 'Te escuchan en su idioma, con tu propia voz.',
+		voice: 'Todos en la reunión oyen tu voz en su idioma.',
 		openSource: 'Somos código abierto',
 		illustration:
 			'Ilustración: una persona habla, Diceri traduce en el medio y la otra persona lo oye en su propio idioma.'
