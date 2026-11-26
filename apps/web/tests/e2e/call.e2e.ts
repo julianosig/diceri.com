@@ -81,13 +81,9 @@ test('host can hear themselves through the server', async ({ page }) => {
 	);
 });
 
-test('a public open room is on the live board and anyone can walk in', async ({
-	page,
-	browser
-}) => {
+test('anyone can walk into an open room at /@username', async ({ page, browser }) => {
 	const owner = await skipWithoutMedia(page);
 	await page.goto('/');
-	await page.getByRole('switch', { name: 'Show on the live board' }).click();
 	await page.getByText('Anyone can join').click();
 	await page.getByRole('button', { name: 'Open my room' }).click();
 	await expect(page).toHaveURL(new RegExp(`/@${owner}$`));
@@ -96,21 +92,7 @@ test('a public open room is on the live board and anyone can walk in', async ({
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
 
 	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
-	const room = visitor.getByRole('link', { name: new RegExp(`^#\\d+ @${owner}:`) });
-	// Snapshots are cached for 10 s, so reload until the room shows up.
-	await expect
-		.poll(
-			async () => {
-				await visitor.goto('/');
-				await expect(visitor.getByTestId('online-count')).not.toHaveText('–');
-				return room.count();
-			},
-			{ timeout: 40_000, intervals: [2_000, 5_000] }
-		)
-		.toBe(1);
-	await room.click();
-
-	await expect(visitor).toHaveURL(new RegExp(`/@${owner}$`));
+	await visitor.goto(`/@${owner}`);
 	await expect(visitor.getByText(`@${owner}'s room`)).toBeVisible();
 	await expect(visitor.getByRole('img', { name: 'Dragon mascot' })).toBeVisible();
 	await visitor.getByLabel('Your name').fill('Walk-in');

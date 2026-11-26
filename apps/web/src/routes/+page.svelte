@@ -1,16 +1,15 @@
 <script lang="ts">
 	import { AccountBadge, AccountSession, Onboarding } from '#lib/features/account/index.ts';
 	import { HeroAnimation } from '#lib/features/landing/index.ts';
-	import { LivePresence, LiveRooms } from '#lib/features/presence/index.ts';
 	import { Logo, ThemeToggle } from '#lib/components/ui/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
 
 	/** AGPL section 13: users of the network service can get its source. */
 	const SOURCE_URL = 'https://github.com/julianosig/diceri.com';
 
-	const presence = new LivePresence();
+	// The live board (`LiveRooms` from the presence feature) is hidden for now; the
+	// API and component stay so it can come back with one line.
 	const account = new AccountSession();
-	$effect(() => presence.start());
 	$effect(() => {
 		void account.load();
 	});
@@ -49,7 +48,6 @@
 			<Onboarding session={account} />
 		{/if}
 	</div>
-	<LiveRooms snapshot={presence.snapshot} />
 	<footer class="mt-auto text-xs text-ink-muted">
 		Free software under the
 		<a class="underline" href="{SOURCE_URL}/blob/main/LICENSE">AGPL-3.0</a>
