@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount, untrack } from 'svelte';
-	import { Mic } from '@lucide/svelte';
+	import { Hand, Languages, LoaderCircle, Mic, UserRound, Video } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
 	import { RoomEntryPicker, type RoomEntry } from '#lib/features/room/index.ts';
@@ -55,44 +55,55 @@
 		await preview.stop();
 		onjoin({ name: name.trim(), outputLanguage, voiceId: recorder.voiceId }, deviceId);
 	}
+
+	/** A field: its icon and control share one bordered box. */
+	const fieldClass =
+		'flex items-center gap-2 rounded-lg border border-ink-muted/30 bg-surface ps-3 focus-within:border-brand-500';
+	const iconClass = 'size-5 shrink-0 text-ink-muted';
 </script>
 
 <!-- One column: who and where, then name, language, microphone, voice, join. -->
 <form
-	class="mx-auto flex w-full max-w-sm flex-col items-center gap-5 px-4 text-center"
+	class="mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 text-center"
 	onsubmit={submit}
 >
 	<label class="w-full text-start text-sm">
 		<span class="mb-1 block text-ink-muted">Your name</span>
-		<input
-			class="w-full rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
-			bind:value={name}
-			maxlength={MAX_NAME_LENGTH}
-			autocomplete="name"
-			required
-		/>
+		<span class={fieldClass}>
+			<UserRound class={iconClass} aria-hidden="true" />
+			<input
+				class="w-full bg-transparent py-2 pe-3 text-base outline-none"
+				bind:value={name}
+				maxlength={MAX_NAME_LENGTH}
+				autocomplete="name"
+				required
+			/>
+		</span>
 	</label>
 	<label class="w-full text-start text-sm">
 		<span class="mb-1 block text-ink-muted">Hear everyone in</span>
-		<select
-			class="w-full select-field rounded-lg border border-ink-muted/30 bg-surface py-2 ps-3 text-base"
-			bind:value={outputLanguage}
-		>
-			{#each LANGUAGES as option (option.code)}
-				<option value={option.code}>{option.label}</option>
-			{/each}
-		</select>
+		<span class={fieldClass}>
+			<Languages class={iconClass} aria-hidden="true" />
+			<select
+				class="w-full select-field bg-transparent py-2 text-base outline-none"
+				bind:value={outputLanguage}
+			>
+				{#each LANGUAGES as option (option.code)}
+					<option value={option.code}>{option.label}</option>
+				{/each}
+			</select>
+		</span>
 	</label>
 	{#if isHost}
 		<RoomEntryPicker {entry} />
 	{/if}
 	<section class="flex w-full flex-col gap-3 text-start" aria-label="Microphone preview">
 		<AudioMeter level={preview.level} muted={false} label="Microphone level" />
-		<label class="flex items-center gap-2 text-sm">
-			<Mic class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+		<label class={[fieldClass, 'text-sm']}>
+			<Mic class={iconClass} aria-hidden="true" />
 			<span class="sr-only">Microphone</span>
 			<select
-				class="w-full select-field truncate rounded-lg bg-surface-raised py-2 ps-3 text-base"
+				class="w-full select-field truncate bg-transparent py-2 text-base outline-none"
 				value={preview.deviceId ?? ''}
 				onchange={(event) => preview.start(event.currentTarget.value || undefined)}
 			>
@@ -113,7 +124,16 @@
 		onbeforerecord={() => preview.stop()}
 	/>
 	<Button type="submit" size="lg" disabled={!canJoin}>
-		{#if busy}Joining…{:else}{action}{/if}
+		{#if busy}
+			<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
+			Joining…
+		{:else if action === 'Join now'}
+			<Video class="size-5" aria-hidden="true" />
+			{action}
+		{:else}
+			<Hand class="size-5" aria-hidden="true" />
+			{action}
+		{/if}
 	</Button>
 	{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
 </form>

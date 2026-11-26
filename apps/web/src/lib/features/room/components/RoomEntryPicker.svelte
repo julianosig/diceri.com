@@ -36,12 +36,12 @@
 
 <fieldset class="flex w-full flex-col gap-2 text-start">
 	<legend class="mb-1 text-sm text-ink-muted">{t.whoGetsIn}</legend>
-	<div class="grid grid-cols-2 gap-2">
+	<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 		{#each ENTRIES as option (option.value)}
 			{@const Icon = option.icon}
 			<label
 				class={[
-					'flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm transition-colors has-focus-visible:ring-2 has-focus-visible:ring-brand-500',
+					'flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-sm whitespace-nowrap transition-colors has-focus-visible:ring-2 has-focus-visible:ring-brand-500',
 					current === option.value
 						? 'border-brand-500 bg-brand-500/10 font-medium'
 						: 'border-ink-muted/30'
