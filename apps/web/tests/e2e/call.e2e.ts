@@ -83,18 +83,19 @@ test('host can hear themselves through the server', async ({ page }) => {
 
 test('anyone can walk into an open room at /@username', async ({ page, browser }) => {
 	const owner = await skipWithoutMedia(page);
-	await page.goto('/');
-	await page.getByText('Anyone can join').click();
-	await page.getByRole('button', { name: 'Open my room' }).click();
-	await expect(page).toHaveURL(new RegExp(`/@${owner}$`));
+	await openMyRoom(page);
+	// The host picks who gets in on the pre-join screen; the live room updates at once.
+	await Promise.all([
+		page.waitForResponse((r) => r.url().endsWith('/api/v1/rooms') && r.ok()),
+		page.getByText('Anyone can join').click()
+	]);
 	await page.getByLabel('Your name').fill('Host');
 	await page.getByRole('button', { name: 'Join now' }).click();
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
 
 	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
 	await visitor.goto(`/@${owner}`);
-	await expect(visitor.getByText(`@${owner}'s room`)).toBeVisible();
-	await expect(visitor.getByRole('img', { name: 'Dragon mascot' })).toBeVisible();
+	await expect(visitor.getByRole('button', { name: 'Join now' })).toBeVisible();
 	await visitor.getByLabel('Your name').fill('Walk-in');
 	await visitor.getByRole('button', { name: 'Join now' }).click();
 	await expect(visitor.getByRole('button', { name: 'Leave call' })).toBeVisible({

@@ -107,9 +107,7 @@
 		{:else}
 			<PreJoin
 				{roomId}
-				owner={room.owner}
-				mascot={room.mascot}
-				open={room.entry === 'open'}
+				entry={room.entry}
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}
 				error={flow.error}

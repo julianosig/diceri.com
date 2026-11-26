@@ -1,6 +1,7 @@
 export { default as MascotAvatar } from './components/MascotAvatar.svelte';
 export { default as MascotPicker } from './components/MascotPicker.svelte';
-export { default as OpenRoomForm } from './components/OpenRoomForm.svelte';
+export { default as OpenRoomButton } from './components/OpenRoomButton.svelte';
+export { default as RoomEntryPicker } from './components/RoomEntryPicker.svelte';
 export { default as RoomOffline } from './components/RoomOffline.svelte';
 export { getUserProfile, getUserRoom, openRoom } from './room-api.ts';
 export { loadHostKey, saveHostKey } from './host-keys.ts';

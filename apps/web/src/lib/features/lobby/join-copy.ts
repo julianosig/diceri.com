@@ -1,24 +1,7 @@
-/** Words on the pre-join screen, by who is joining and how the room lets people in. */
-export interface JoinCopy {
-	heading: string;
-	hint: string;
-	action: string;
-}
-
-export function joinCopy(isHost: boolean, open: boolean): JoinCopy {
-	if (isHost) {
-		return {
-			heading: 'Ready to join?',
-			hint: 'You are the host of this meeting.',
-			action: 'Join now'
-		};
-	}
-	if (open) {
-		return { heading: 'Ready to join?', hint: 'Anyone can join this meeting.', action: 'Join now' };
-	}
-	return {
-		heading: 'Ask to join',
-		hint: 'The host will see your name and let you in.',
-		action: 'Ask to join'
-	};
+/**
+ * The pre-join button: hosts and guests of open rooms join directly; guests of rooms
+ * with approval ask the host first.
+ */
+export function joinAction(isHost: boolean, open: boolean): string {
+	return isHost || open ? 'Join now' : 'Ask to join';
 }
