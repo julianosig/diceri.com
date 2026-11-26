@@ -46,7 +46,9 @@ export default defineConfig({
 			url: `http://127.0.0.1:${String(API_PORT)}/healthz`,
 			env: {
 				DICERI_BIND_ADDRESS: `127.0.0.1:${String(API_PORT)}`,
-				DICERI_AGENT_URL: `http://127.0.0.1:${String(AGENT_PORT)}`
+				DICERI_AGENT_URL: `http://127.0.0.1:${String(AGENT_PORT)}`,
+				// Parallel tests share one IP; the limit has its own router test.
+				DICERI_WRITE_LIMIT_PER_MINUTE: '0'
 			},
 			timeout: 180_000,
 			reuseExistingServer: false

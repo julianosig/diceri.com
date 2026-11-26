@@ -43,6 +43,8 @@ in responses.
 | `DICERI_ALLOWED_ORIGINS` | `http://localhost:5180` | comma-separated CORS allow-list |
 | `DICERI_LOG_FORMAT` | `pretty` | `pretty` or `json` |
 | `DICERI_WEB_DIR` | unset | built SPA (`apps/web/build`) served for non-API paths |
+| `DICERI_WRITE_LIMIT_PER_MINUTE` | `60` | POSTs per client IP per minute (`0` disables) |
+| `DICERI_CLIENT_IP_HEADER` | unset | client IP header behind a proxy (`cf-connecting-ip` for Cloudflare) |
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
 | `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |
 | `DICERI_LIVEKIT_API_SECRET` | unset | LiveKit API secret (secret) |

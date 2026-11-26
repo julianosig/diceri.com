@@ -5,6 +5,9 @@ use std::path::PathBuf;
 use anyhow::Context as _;
 use secrecy::SecretString;
 
+/// Default POSTs per client per minute: generous for people, tight for scripts.
+const DEFAULT_WRITE_LIMIT: u32 = 60;
+
 /// Log output format, selected with `DICERI_LOG_FORMAT`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LogFormat {
@@ -41,6 +44,10 @@ pub struct Config {
     pub elevenlabs_api_key: Option<SecretString>,
     /// Built SPA (`apps/web/build`) served for non-API paths; `None` serves only the API.
     pub web_dir: Option<PathBuf>,
+    /// POSTs allowed per client per minute; `0` disables the limit.
+    pub write_limit_per_minute: u32,
+    /// Header carrying the client IP behind a proxy (e.g. `cf-connecting-ip`).
+    pub client_ip_header: Option<String>,
 }
 
 impl Config {
@@ -72,6 +79,10 @@ impl Config {
                 .ok()
                 .map(SecretString::from),
             web_dir: env::var_os("DICERI_WEB_DIR").map(PathBuf::from),
+            write_limit_per_minute: env::var("DICERI_WRITE_LIMIT_PER_MINUTE")
+                .map_or(Ok(DEFAULT_WRITE_LIMIT), |raw| raw.parse())
+                .context("DICERI_WRITE_LIMIT_PER_MINUTE must be a whole number")?,
+            client_ip_header: env::var("DICERI_CLIENT_IP_HEADER").ok(),
         })
     }
 
@@ -86,6 +97,8 @@ impl Config {
             agent: None,
             elevenlabs_api_key: None,
             web_dir: None,
+            write_limit_per_minute: 0,
+            client_ip_header: None,
         }
     }
 }

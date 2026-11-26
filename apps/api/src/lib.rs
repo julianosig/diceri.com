@@ -6,6 +6,7 @@
 mod config;
 mod error;
 mod features;
+mod rate_limit;
 mod router;
 mod shutdown;
 mod state;

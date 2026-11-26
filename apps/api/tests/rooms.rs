@@ -35,3 +35,30 @@ async fn malformed_room_id_is_not_found() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_eq!(body["status"], 404);
 }
+
+#[tokio::test]
+async fn too_many_writes_from_one_client_are_rejected() {
+    let config = diceri_api::Config {
+        write_limit_per_minute: 2,
+        client_ip_header: Some("cf-connecting-ip".to_owned()),
+        ..diceri_api::Config::for_tests()
+    };
+    let app = diceri_api::build_router(diceri_api::AppState::in_memory(None), &config);
+    let create = |ip: &'static str| {
+        let app = app.clone();
+        async move {
+            let request = axum::http::Request::post("/api/v1/rooms")
+                .header("cf-connecting-ip", ip)
+                .body(axum::body::Body::empty())
+                .unwrap();
+            tower::ServiceExt::oneshot(app, request)
+                .await
+                .unwrap()
+                .status()
+        }
+    };
+    assert_eq!(create("203.0.113.1").await, StatusCode::CREATED);
+    assert_eq!(create("203.0.113.1").await, StatusCode::CREATED);
+    assert_eq!(create("203.0.113.1").await, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(create("203.0.113.2").await, StatusCode::CREATED);
+}

@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::sync::Arc;
 use std::time::Duration;
 
 use axum::Router;
@@ -8,6 +9,7 @@ use tower_http::services::{ServeDir, ServeFile};
 use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
+use crate::rate_limit::{RateLimiter, limit_writes};
 use crate::{AppState, Config, features};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
@@ -16,7 +18,7 @@ const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
 pub fn build_router(state: AppState, config: &Config) -> Router {
     let router = Router::new()
         .merge(features::health::routes())
-        .nest("/api/v1", features::api_routes());
+        .nest("/api/v1", with_write_limit(features::api_routes(), config));
     let router = match &config.web_dir {
         Some(dir) => router.fallback_service(spa(dir)),
         None => router,
@@ -29,6 +31,18 @@ pub fn build_router(state: AppState, config: &Config) -> Router {
             REQUEST_TIMEOUT,
         ))
         .layer(TraceLayer::new_for_http())
+}
+
+fn with_write_limit(routes: Router<AppState>, config: &Config) -> Router<AppState> {
+    if config.write_limit_per_minute == 0 {
+        return routes;
+    }
+    let header = config
+        .client_ip_header
+        .as_deref()
+        .and_then(|name| name.parse().ok());
+    let limiter = Arc::new(RateLimiter::new(config.write_limit_per_minute, header));
+    routes.layer(axum::middleware::from_fn_with_state(limiter, limit_writes))
 }
 
 /// Static files of the SPA build; unknown paths get the client-side router shell.

@@ -21,7 +21,9 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let router = build_router(AppState::from_config(&config), &config);
-    axum::serve(listener, router)
+    // Peer addresses feed the per-client write limit.
+    let service = router.into_make_service_with_connect_info::<std::net::SocketAddr>();
+    axum::serve(listener, service)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("server error")?;
