@@ -216,8 +216,9 @@ test('when the host ends the call everyone gets the transcript', async ({ baseUR
 		await ana.page.getByRole('button', { name: 'Leave call' }).click();
 		await ana.page.getByRole('menuitem', { name: 'End call for everyone' }).click();
 
+		// LiveKit Cloud sometimes takes 20 s+ to tell remaining participants the room is gone.
 		await expect(bob.page.getByRole('heading', { name: 'The host ended the call' })).toBeVisible({
-			timeout: 20_000
+			timeout: 40_000
 		});
 		const bobTranscript = bob.page.getByRole('region', { name: 'Transcript' });
 		await expect(bobTranscript).toContainText(/contrato/i);
