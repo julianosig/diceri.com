@@ -5,6 +5,8 @@ After=network-online.target
 [Service]
 EnvironmentFile=%h/.config/diceri/production.env
 WorkingDirectory=%h/.local/share/diceri/current
+# Database files are owner-only (AGENTS.md §14, rule 23).
+UMask=0077
 ExecStart=%h/.local/share/diceri/current/diceri-api
 Restart=always
 RestartSec=2
