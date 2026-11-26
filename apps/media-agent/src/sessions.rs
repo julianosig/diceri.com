@@ -26,13 +26,11 @@ impl Sessions {
             .running
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .insert(room.clone());
+            .insert(room);
         if inserted {
             let sessions = self.clone();
             tokio::spawn(async move {
-                if let Err(error) =
-                    room_session::run(room.clone(), sessions.providers.clone()).await
-                {
+                if let Err(error) = room_session::run(room, sessions.providers.clone()).await {
                     tracing::error!(error = ?error, %room, "room session failed");
                 }
                 sessions

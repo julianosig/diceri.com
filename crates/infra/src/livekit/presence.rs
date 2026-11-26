@@ -137,8 +137,8 @@ mod tests {
             { "identity": "diceri-translator" }
         ] }))
         .unwrap();
-        let id = RoomId::from_random_bytes([1; 16]);
-        let room = live_room(id.clone(), listed.participants);
+        let id = RoomId::from_parts(1, [1; 10]);
+        let room = live_room(id, listed.participants);
         assert_eq!(room.room, id);
         assert_eq!(room.people, 2);
         assert_eq!(room.languages, ["pt-BR".parse().unwrap()]);

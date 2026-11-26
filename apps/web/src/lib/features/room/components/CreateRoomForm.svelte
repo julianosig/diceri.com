@@ -24,8 +24,8 @@
 		failed = false;
 		try {
 			const room = await createRoom({ title: title.trim(), listed, entry });
-			saveHostKey(room.id, room.hostKey);
-			await goto(resolve('/r/[room]', { room: room.id }));
+			saveHostKey(room.code, room.hostKey);
+			await goto(resolve('/r/[room]', { room: room.code }));
 		} catch {
 			failed = true;
 		} finally {

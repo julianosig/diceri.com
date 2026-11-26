@@ -1,6 +1,7 @@
 //! Ports (driven side) that adapters must implement.
 
 mod account_repository;
+mod ids;
 mod media_access;
 mod presence;
 mod random_source;
@@ -12,6 +13,7 @@ mod translator;
 mod voice_cloner;
 
 pub use account_repository::{AccountRepository, AccountRepositoryError};
+pub use ids::{IdGenerator, IdParts};
 pub use media_access::{
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
 };

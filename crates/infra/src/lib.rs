@@ -3,6 +3,8 @@
 //! One adapter per module; provider adapters are grouped by capability:
 //! `speech/` (speech-to-text), `translation/`, `synthesis/` (text-to-speech).
 
+#[cfg(test)]
+mod account_contract;
 mod agent_dispatcher;
 mod livekit;
 mod memory_accounts;

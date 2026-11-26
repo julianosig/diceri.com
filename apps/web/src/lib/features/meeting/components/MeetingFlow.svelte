@@ -21,8 +21,9 @@
 	}
 
 	let { room, hostKey, meetingUrl }: Props = $props();
+	// Every room API path and the visible meeting code use the link code.
 	// svelte-ignore state_referenced_locally
-	const roomId = room.id;
+	const roomId = room.code;
 
 	// One flow per page visit; the route remounts this component for another room.
 	// svelte-ignore state_referenced_locally

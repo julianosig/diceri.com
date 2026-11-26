@@ -44,12 +44,12 @@
 		</p>
 	{:else}
 		<ol class="flex flex-col gap-0.5">
-			{#each snapshot.ranking as room, index (room.id)}
+			{#each snapshot.ranking as room, index (room.code)}
 				{@const dots = avatars(room)}
 				{@const tags = languageTags(room)}
 				<li>
 					<a
-						href={resolve('/r/[room]', { room: room.id })}
+						href={resolve('/r/[room]', { room: room.code })}
 						aria-label={describe(room, index + 1)}
 						class="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-tile focus-visible:bg-tile focus-visible:outline-none"
 					>

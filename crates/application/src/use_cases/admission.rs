@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
 use diceri_domain::{
-    AccessKey, JoinRequest, ParticipantProfile, RequestId, RequestStatus, Room, RoomId,
+    AccessKey, JoinRequest, ParticipantProfile, RequestId, RequestStatus, Room, RoomCode, RoomId,
     RoomRuleError,
 };
 
 use crate::ports::{
-    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
-    RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
+    IdGenerator, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
+    MediaRoomCloser, RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -49,10 +49,12 @@ pub enum KnockOutcome {
 }
 
 /// Lobby flow: the host joins directly, guests knock and wait to be admitted.
+/// Callers address rooms by their link code; media and logs use the room id.
 #[derive(Clone)]
 pub struct AdmissionService {
     rooms: Arc<dyn RoomRepository>,
     random: Arc<dyn RandomSource>,
+    ids: Arc<dyn IdGenerator>,
     media: Option<Arc<dyn MediaAccessIssuer>>,
     translation: Option<Arc<dyn TranslationDispatcher>>,
     closer: Option<Arc<dyn MediaRoomCloser>>,
@@ -71,11 +73,13 @@ impl AdmissionService {
     pub fn new(
         rooms: Arc<dyn RoomRepository>,
         random: Arc<dyn RandomSource>,
+        ids: Arc<dyn IdGenerator>,
         media: Option<Arc<dyn MediaAccessIssuer>>,
     ) -> Self {
         Self {
             rooms,
             random,
+            ids,
             media,
             translation: None,
             closer: None,
@@ -93,14 +97,15 @@ impl AdmissionService {
     /// is closed, which disconnects every participant.
     pub async fn end_call(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         host_key: &AccessKey,
     ) -> Result<(), AdmissionError> {
-        let mut room = self.load_as_host(room_id, host_key).await?;
+        let mut room = self.load_as_host(code, host_key).await?;
         room.end();
+        let room_id = room.id;
         self.rooms.update(room).await?;
         if let Some(closer) = &self.closer
-            && let Err(error) = closer.close(room_id).await
+            && let Err(error) = closer.close(&room_id).await
         {
             tracing::warn!(%error, %room_id, "media room not closed");
         }
@@ -116,53 +121,53 @@ impl AdmissionService {
 
     pub async fn join_as_host(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         host_key: &AccessKey,
         profile: &ParticipantProfile,
     ) -> Result<JoinTicket, AdmissionError> {
-        let room = self.load(room_id).await?;
+        let room = self.load(code).await?;
         if !room.is_host(host_key) {
             return Err(AdmissionError::Forbidden);
         }
         room.ensure_open()?;
         ensure_voice_belongs(&room, profile)?;
-        let ticket = self.ticket(room_id, Some(profile), MediaRole::Speaker)?;
-        self.start_translation(room_id).await;
+        let ticket = self.ticket(&room.id, Some(profile), MediaRole::Speaker)?;
+        self.start_translation(&room.id).await;
         Ok(ticket)
     }
 
     pub async fn knock(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         profile: ParticipantProfile,
     ) -> Result<Knock, AdmissionError> {
-        let mut room = self.load(room_id).await?;
+        let mut room = self.load(code).await?;
         room.ensure_open()?;
         ensure_voice_belongs(&room, &profile)?;
-        let request_id = RequestId::from_random_bytes(self.random.random_128());
+        let request_id = self.ids.request_id();
         let key = AccessKey::from_random_bytes(self.random.random_128());
-        room.knock(JoinRequest::new(request_id.clone(), profile, key.clone()))?;
+        room.knock(JoinRequest::new(request_id, profile, key.clone()))?;
         self.rooms.update(room).await?;
         Ok(Knock { request_id, key })
     }
 
     pub async fn pending(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         host_key: &AccessKey,
     ) -> Result<Vec<JoinRequest>, AdmissionError> {
-        let room = self.load_as_host(room_id, host_key).await?;
+        let room = self.load_as_host(code, host_key).await?;
         Ok(room.pending().cloned().collect())
     }
 
     pub async fn decide(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         host_key: &AccessKey,
         request_id: &RequestId,
         admit: bool,
     ) -> Result<(), AdmissionError> {
-        let mut room = self.load_as_host(room_id, host_key).await?;
+        let mut room = self.load_as_host(code, host_key).await?;
         room.decide(request_id, admit)?;
         self.rooms.update(room).await?;
         Ok(())
@@ -171,11 +176,11 @@ impl AdmissionService {
     /// Polled by the waiting guest; issues media credentials once admitted.
     pub async fn outcome(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         request_id: &RequestId,
         key: &AccessKey,
     ) -> Result<KnockOutcome, AdmissionError> {
-        let room = self.load(room_id).await?;
+        let room = self.load(code).await?;
         let request = room.request(request_id).ok_or(AdmissionError::NotFound)?;
         if &request.key != key {
             return Err(AdmissionError::Forbidden);
@@ -185,8 +190,8 @@ impl AdmissionService {
             RequestStatus::Denied => KnockOutcome::Denied,
             RequestStatus::Admitted => {
                 room.ensure_open()?;
-                let ticket = self.ticket(room_id, Some(&request.profile), MediaRole::Speaker)?;
-                self.start_translation(room_id).await;
+                let ticket = self.ticket(&room.id, Some(&request.profile), MediaRole::Speaker)?;
+                self.start_translation(&room.id).await;
                 KnockOutcome::Admitted(ticket)
             }
         })
@@ -195,30 +200,26 @@ impl AdmissionService {
     /// Hidden listener for the host or an admitted guest to hear themselves.
     pub async fn monitor(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         key: &AccessKey,
     ) -> Result<JoinTicket, AdmissionError> {
-        let room = self.load(room_id).await?;
+        let room = self.load(code).await?;
         if !room.is_member(key) {
             return Err(AdmissionError::Forbidden);
         }
         room.ensure_open()?;
-        self.ticket(room_id, None, MediaRole::Monitor)
+        self.ticket(&room.id, None, MediaRole::Monitor)
     }
 
-    async fn load(&self, room_id: &RoomId) -> Result<Room, AdmissionError> {
+    async fn load(&self, code: &RoomCode) -> Result<Room, AdmissionError> {
         self.rooms
-            .find(room_id)
+            .find_by_code(code)
             .await?
             .ok_or(AdmissionError::NotFound)
     }
 
-    async fn load_as_host(
-        &self,
-        room_id: &RoomId,
-        key: &AccessKey,
-    ) -> Result<Room, AdmissionError> {
-        let room = self.load(room_id).await?;
+    async fn load_as_host(&self, code: &RoomCode, key: &AccessKey) -> Result<Room, AdmissionError> {
+        let room = self.load(code).await?;
         if room.is_host(key) {
             Ok(room)
         } else {
@@ -250,10 +251,7 @@ impl AdmissionService {
         } else {
             "p"
         };
-        let identity = format!(
-            "{prefix}-{}",
-            RequestId::from_random_bytes(self.random.random_128())
-        );
+        let identity = format!("{prefix}-{}", self.ids.participant_id());
         let grant = media.issue(
             room_id,
             MediaParticipant {

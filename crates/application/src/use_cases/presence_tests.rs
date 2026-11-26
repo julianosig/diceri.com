@@ -6,7 +6,7 @@ use diceri_domain::{EntryPolicy, Room, RoomSettings};
 
 use super::{PresenceService, RANKING_SIZE};
 use crate::ports::{LiveRoom, MediaAccessError, MediaPresence, RoomRepository as _};
-use crate::test_support::{CountingRandom, InMemoryRooms};
+use crate::test_support::{InMemoryRooms, room_service};
 use crate::use_cases::RoomService;
 
 #[derive(Default)]
@@ -42,7 +42,7 @@ fn fixture(fail: bool) -> Fixture {
     });
     Fixture {
         presence: PresenceService::new(Some(media.clone()), repository.clone()),
-        rooms: RoomService::new(repository.clone(), Arc::new(CountingRandom::default())),
+        rooms: room_service(repository.clone()),
         media,
         repository,
     }
@@ -62,7 +62,7 @@ impl Fixture {
             .await
             .unwrap();
         self.media.rooms.lock().unwrap().push(LiveRoom {
-            room: room.id.clone(),
+            room: room.id,
             people,
             languages: languages.iter().map(|code| code.parse().unwrap()).collect(),
         });
@@ -83,7 +83,7 @@ async fn ranks_listed_rooms_by_size_and_counts_everyone() {
     let titles: Vec<&str> = snapshot.ranking.iter().map(|r| r.title.as_str()).collect();
     assert_eq!(titles, ["Big", "Small"]);
     let first = &snapshot.ranking[0];
-    assert_eq!(first.id, big.id);
+    assert_eq!(first.code, big.code);
     assert_eq!(first.entry, EntryPolicy::Open);
     let languages: Vec<&str> = first
         .languages
@@ -109,7 +109,7 @@ async fn ignores_unknown_ended_and_empty_rooms() {
     f.repository.update(ended).await.unwrap();
     f.live("Empty", true, 0, &[]).await;
     f.media.rooms.lock().unwrap().push(LiveRoom {
-        room: diceri_domain::RoomId::from_random_bytes([99; 16]),
+        room: diceri_domain::RoomId::from_parts(99, [99; 10]),
         people: 5,
         languages: Vec::new(),
     });

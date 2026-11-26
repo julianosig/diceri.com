@@ -5,7 +5,8 @@ use diceri_domain::{AccessKey, EntryPolicy, ParticipantProfile, RoomRuleError, R
 use super::{AdmissionError, AdmissionService, KnockOutcome};
 use crate::ports::{MediaAccessIssuer, MediaRole};
 use crate::test_support::{
-    CountingRandom, InMemoryRooms, RecordingDispatcher, RecordingIssuer, owner, private_room,
+    CountingRandom, InMemoryRooms, RecordingDispatcher, RecordingIssuer, SequentialIds, owner,
+    private_room,
 };
 use crate::use_cases::RoomService;
 
@@ -19,12 +20,13 @@ struct Fixture {
 fn fixture(with_media: bool) -> Fixture {
     let repository = Arc::new(InMemoryRooms::default());
     let random = Arc::new(CountingRandom::default());
+    let ids = Arc::new(SequentialIds::default());
     let issuer = Arc::new(RecordingIssuer::default());
     let media = with_media.then(|| -> Arc<dyn MediaAccessIssuer> { issuer.clone() });
     let dispatcher = Arc::new(RecordingDispatcher::default());
     Fixture {
-        rooms: RoomService::new(repository.clone(), random.clone()),
-        admission: AdmissionService::new(repository, random, media)
+        rooms: RoomService::new(repository.clone(), random.clone(), ids.clone()),
+        admission: AdmissionService::new(repository, random, ids, media)
             .with_translation(dispatcher.clone()),
         issuer,
         dispatcher,
@@ -49,7 +51,7 @@ async fn host_joins_with_name_and_wrong_key_is_forbidden() {
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
     let ticket = f
         .admission
-        .join_as_host(&room.id, room.host_key(), &name("Ana"))
+        .join_as_host(&room.code, room.host_key(), &name("Ana"))
         .await
         .unwrap();
     assert!(ticket.identity.starts_with("p-"));
@@ -57,7 +59,7 @@ async fn host_joins_with_name_and_wrong_key_is_forbidden() {
 
     let denied = f
         .admission
-        .join_as_host(&room.id, &wrong_key(), &name("Eve"))
+        .join_as_host(&room.code, &wrong_key(), &name("Eve"))
         .await;
     assert!(matches!(denied, Err(AdmissionError::Forbidden)));
 }
@@ -66,28 +68,28 @@ async fn host_joins_with_name_and_wrong_key_is_forbidden() {
 async fn guest_waits_until_admitted_then_gets_credentials() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
 
     let waiting = f
         .admission
-        .outcome(&room.id, &knock.request_id, &knock.key)
+        .outcome(&room.code, &knock.request_id, &knock.key)
         .await
         .unwrap();
     assert_eq!(waiting, KnockOutcome::Pending);
     let pending = f
         .admission
-        .pending(&room.id, room.host_key())
+        .pending(&room.code, room.host_key())
         .await
         .unwrap();
     assert_eq!(pending.len(), 1);
 
     f.admission
-        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
     let outcome = f
         .admission
-        .outcome(&room.id, &knock.request_id, &knock.key)
+        .outcome(&room.code, &knock.request_id, &knock.key)
         .await
         .unwrap();
     assert!(matches!(outcome, KnockOutcome::Admitted(_)));
@@ -98,21 +100,21 @@ async fn guest_waits_until_admitted_then_gets_credentials() {
 async fn denied_guest_learns_it_and_cannot_be_readmitted() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Eve")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Eve")).await.unwrap();
     f.admission
-        .decide(&room.id, room.host_key(), &knock.request_id, false)
+        .decide(&room.code, room.host_key(), &knock.request_id, false)
         .await
         .unwrap();
 
     let outcome = f
         .admission
-        .outcome(&room.id, &knock.request_id, &knock.key)
+        .outcome(&room.code, &knock.request_id, &knock.key)
         .await
         .unwrap();
     assert_eq!(outcome, KnockOutcome::Denied);
     let again = f
         .admission
-        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await;
     assert!(matches!(
         again,
@@ -124,14 +126,14 @@ async fn denied_guest_learns_it_and_cannot_be_readmitted() {
 async fn only_the_host_can_list_or_decide() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Eve")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Eve")).await.unwrap();
     assert!(matches!(
-        f.admission.pending(&room.id, &knock.key).await,
+        f.admission.pending(&room.code, &knock.key).await,
         Err(AdmissionError::Forbidden)
     ));
     assert!(matches!(
         f.admission
-            .decide(&room.id, &knock.key, &knock.request_id, true)
+            .decide(&room.code, &knock.key, &knock.request_id, true)
             .await,
         Err(AdmissionError::Forbidden)
     ));
@@ -141,10 +143,10 @@ async fn only_the_host_can_list_or_decide() {
 async fn polling_requires_the_request_key() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     let outcome = f
         .admission
-        .outcome(&room.id, &knock.request_id, &wrong_key())
+        .outcome(&room.code, &knock.request_id, &wrong_key())
         .await;
     assert!(matches!(outcome, Err(AdmissionError::Forbidden)));
 }
@@ -153,17 +155,17 @@ async fn polling_requires_the_request_key() {
 async fn monitor_is_only_for_members() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     assert!(matches!(
-        f.admission.monitor(&room.id, &knock.key).await,
+        f.admission.monitor(&room.code, &knock.key).await,
         Err(AdmissionError::Forbidden)
     ));
 
     f.admission
-        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
-    let ticket = f.admission.monitor(&room.id, &knock.key).await.unwrap();
+    let ticket = f.admission.monitor(&room.code, &knock.key).await.unwrap();
     assert!(ticket.identity.starts_with("monitor-"));
     assert_eq!(
         f.issuer.0.lock().unwrap().last().unwrap().2,
@@ -177,7 +179,7 @@ async fn joining_without_media_server_is_unavailable() {
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
     let result = f
         .admission
-        .join_as_host(&room.id, room.host_key(), &name("Ana"))
+        .join_as_host(&room.code, room.host_key(), &name("Ana"))
         .await;
     assert!(matches!(result, Err(AdmissionError::MediaUnavailable)));
 }
@@ -187,21 +189,21 @@ async fn joining_starts_translation_for_the_room() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
     f.admission
-        .join_as_host(&room.id, room.host_key(), &name("Ana"))
+        .join_as_host(&room.code, room.host_key(), &name("Ana"))
         .await
         .unwrap();
-    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     f.admission
-        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
     f.admission
-        .outcome(&room.id, &knock.request_id, &knock.key)
+        .outcome(&room.code, &knock.request_id, &knock.key)
         .await
         .unwrap();
     assert_eq!(
         f.dispatcher.0.lock().unwrap().as_slice(),
-        [room.id.clone(), room.id]
+        [room.id, room.id]
     );
 }
 
@@ -215,11 +217,11 @@ async fn a_voice_from_outside_the_room_is_forbidden() {
     };
     let result = f
         .admission
-        .join_as_host(&room.id, room.host_key(), &stolen)
+        .join_as_host(&room.code, room.host_key(), &stolen)
         .await;
     assert!(matches!(result, Err(AdmissionError::Forbidden)));
     assert!(matches!(
-        f.admission.knock(&room.id, stolen).await,
+        f.admission.knock(&room.code, stolen).await,
         Err(AdmissionError::Forbidden)
     ));
 }
@@ -232,26 +234,26 @@ fn ended<T>(result: &Result<T, AdmissionError>) -> bool {
 async fn after_the_host_ends_the_call_nobody_can_join() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     f.admission
-        .decide(&room.id, room.host_key(), &knock.request_id, true)
+        .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
 
     f.admission
-        .end_call(&room.id, room.host_key())
+        .end_call(&room.code, room.host_key())
         .await
         .unwrap();
 
     assert!(ended(
         &f.admission
-            .join_as_host(&room.id, room.host_key(), &name("Ana"))
+            .join_as_host(&room.code, room.host_key(), &name("Ana"))
             .await
     ));
-    assert!(ended(&f.admission.knock(&room.id, name("Eve")).await));
+    assert!(ended(&f.admission.knock(&room.code, name("Eve")).await));
     assert!(ended(
         &f.admission
-            .outcome(&room.id, &knock.request_id, &knock.key)
+            .outcome(&room.code, &knock.request_id, &knock.key)
             .await
             .map(|_| ())
     ));
@@ -261,7 +263,7 @@ async fn after_the_host_ends_the_call_nobody_can_join() {
 async fn only_the_host_can_end_the_call() {
     let f = fixture(true);
     let room = f.rooms.create(owner(), private_room()).await.unwrap();
-    let result = f.admission.end_call(&room.id, &wrong_key()).await;
+    let result = f.admission.end_call(&room.code, &wrong_key()).await;
     assert!(matches!(result, Err(AdmissionError::Forbidden)));
 }
 
@@ -273,10 +275,10 @@ async fn in_an_open_room_people_get_in_without_waiting() {
         ..private_room()
     };
     let room = f.rooms.create(owner(), settings).await.unwrap();
-    let knock = f.admission.knock(&room.id, name("Bruno")).await.unwrap();
+    let knock = f.admission.knock(&room.code, name("Bruno")).await.unwrap();
     let outcome = f
         .admission
-        .outcome(&room.id, &knock.request_id, &knock.key)
+        .outcome(&room.code, &knock.request_id, &knock.key)
         .await
         .unwrap();
     assert!(matches!(outcome, KnockOutcome::Admitted(_)));

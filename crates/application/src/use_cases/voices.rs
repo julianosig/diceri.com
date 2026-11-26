@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_domain::{RoomId, RoomRuleError};
+use diceri_domain::{RoomCode, RoomRuleError};
 
 use crate::ports::{
     RoomRepository, RoomRepositoryError, VoiceCloneError, VoiceCloner, VoiceId, VoiceSample,
@@ -63,7 +63,7 @@ impl VoiceService {
 
     pub async fn clone_voice(
         &self,
-        room_id: &RoomId,
+        code: &RoomCode,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
         if !(MIN_SAMPLE_BYTES..=MAX_SAMPLE_BYTES).contains(&sample.bytes.len()) {
@@ -71,16 +71,17 @@ impl VoiceService {
         }
         let mut room = self
             .rooms
-            .find(room_id)
+            .find_by_code(code)
             .await?
             .ok_or(VoiceError::NotFound)?;
         // Check before the paid provider call; registering re-checks afterwards.
         if !room.has_voice_capacity() {
             return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
         }
+        // Named by the room id: the provider never sees the room's link code.
         let voice = self
             .cloner
-            .create(&format!("{}{room_id}", self.name_prefix), sample)
+            .create(&format!("{}{}", self.name_prefix, room.id), sample)
             .await?;
         room.register_voice(voice.0.clone())?;
         self.rooms.update(room).await?;
@@ -95,8 +96,7 @@ mod tests {
     use async_trait::async_trait;
 
     use super::*;
-    use crate::test_support::{CountingRandom, InMemoryRooms, owner, private_room};
-    use crate::use_cases::RoomService;
+    use crate::test_support::{InMemoryRooms, owner, private_room, room_service};
 
     #[derive(Default)]
     struct FakeCloner(Mutex<u32>);
@@ -125,14 +125,14 @@ mod tests {
         }
     }
 
-    async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomId) {
+    async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomCode) {
         let repository = Arc::new(InMemoryRooms::default());
-        let rooms = RoomService::new(repository.clone(), Arc::new(CountingRandom::default()));
+        let rooms = room_service(repository.clone());
         let room = rooms.create(owner(), private_room()).await.unwrap();
         (
             VoiceService::new(repository.clone(), Arc::new(FakeCloner::default()), "test"),
             repository,
-            room.id,
+            room.code,
         )
     }
 
@@ -140,7 +140,7 @@ mod tests {
     async fn cloned_voice_is_owned_by_the_room() {
         let (service, repository, room_id) = setup().await;
         let voice = service.clone_voice(&room_id, sample(20_000)).await.unwrap();
-        let room = repository.find(&room_id).await.unwrap().unwrap();
+        let room = repository.find_by_code(&room_id).await.unwrap().unwrap();
         assert!(room.owns_voice(&voice.0));
     }
 
@@ -169,7 +169,7 @@ mod tests {
     #[tokio::test]
     async fn unknown_room_is_not_found() {
         let (service, _, _) = setup().await;
-        let unknown = RoomId::from_random_bytes([200; 16]);
+        let unknown = RoomCode::from_random_bytes([200; 16]);
         assert!(matches!(
             service.clone_voice(&unknown, sample(20_000)).await,
             Err(VoiceError::NotFound)

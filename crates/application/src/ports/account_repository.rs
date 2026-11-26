@@ -1,4 +1,4 @@
-use diceri_domain::{AccessKey, Username};
+use diceri_domain::{AccessKey, AccountId, Username};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AccountRepositoryError {
@@ -15,6 +15,7 @@ pub trait AccountRepository: Send + Sync {
     /// Fails with `Taken` when the username already exists.
     async fn create(
         &self,
+        id: &AccountId,
         username: &Username,
         key: &AccessKey,
     ) -> Result<(), AccountRepositoryError>;

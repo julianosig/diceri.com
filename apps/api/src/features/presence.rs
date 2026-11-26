@@ -37,7 +37,8 @@ struct PresenceDto {
 
 #[derive(Debug, Serialize)]
 struct RankedRoomDto {
-    id: String,
+    /// Link code of a listed room (its host chose to publish it).
+    code: String,
     title: String,
     owner: String,
     entry: EntryDto,
@@ -62,7 +63,7 @@ impl From<PresenceSnapshot> for PresenceDto {
 impl From<RankedRoom> for RankedRoomDto {
     fn from(room: RankedRoom) -> Self {
         Self {
-            id: room.id.to_string(),
+            code: room.code.to_string(),
             title: room.title.to_string(),
             owner: room.owner.to_string(),
             entry: room.entry.into(),

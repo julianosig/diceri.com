@@ -19,12 +19,17 @@ async fn health_check_responds_ok() {
 #[tokio::test]
 async fn created_room_returns_host_key_once() {
     let app = app(false);
-    let (id, host_key) = create_room(&app).await;
-    assert_eq!(id.len(), 22);
+    let (code, host_key) = create_room(&app).await;
+    assert_eq!(code.len(), 22);
     assert_eq!(host_key.len(), 22);
 
-    let (status, fetched) = send(&app, "GET", &format!("/api/v1/rooms/{id}"), None, None).await;
+    let uri = format!("/api/v1/rooms/{code}");
+    let (status, fetched) = send(&app, "GET", &uri, None, None).await;
     assert_eq!(status, StatusCode::OK);
+    let id = fetched["id"].as_str().unwrap();
+    assert_eq!(id.len(), 36);
+    assert_eq!(id.as_bytes()[14], b'7', "ids are UUIDv7");
+    assert_eq!(fetched["code"], code.as_str());
     assert_eq!(fetched["maxParticipants"], 2);
     assert_eq!(fetched["title"], "Test room");
     assert_eq!(fetched["entry"], "approval");

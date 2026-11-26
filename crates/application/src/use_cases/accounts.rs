@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use diceri_domain::{AccessKey, Username};
 
-use crate::ports::{AccountRepository, AccountRepositoryError, RandomSource};
+use crate::ports::{AccountRepository, AccountRepositoryError, IdGenerator, RandomSource};
 
 #[derive(Debug, thiserror::Error)]
 pub enum AccountError {
@@ -29,6 +29,7 @@ impl From<AccountRepositoryError> for AccountError {
 pub struct AccountService {
     accounts: Arc<dyn AccountRepository>,
     random: Arc<dyn RandomSource>,
+    ids: Arc<dyn IdGenerator>,
 }
 
 impl std::fmt::Debug for AccountService {
@@ -41,14 +42,24 @@ impl std::fmt::Debug for AccountService {
 
 impl AccountService {
     #[must_use]
-    pub fn new(accounts: Arc<dyn AccountRepository>, random: Arc<dyn RandomSource>) -> Self {
-        Self { accounts, random }
+    pub fn new(
+        accounts: Arc<dyn AccountRepository>,
+        random: Arc<dyn RandomSource>,
+        ids: Arc<dyn IdGenerator>,
+    ) -> Self {
+        Self {
+            accounts,
+            random,
+            ids,
+        }
     }
 
     /// Claims `username`; the returned key must be handed to its owner once.
     pub async fn register(&self, username: &Username) -> Result<AccessKey, AccountError> {
         let key = AccessKey::from_random_bytes(self.random.random_128());
-        self.accounts.create(username, &key).await?;
+        self.accounts
+            .create(&self.ids.account_id(), username, &key)
+            .await?;
         Ok(key)
     }
 
@@ -64,12 +75,13 @@ impl AccountService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{CountingRandom, InMemoryAccounts};
+    use crate::test_support::{CountingRandom, InMemoryAccounts, SequentialIds};
 
     fn service() -> AccountService {
         AccountService::new(
             Arc::new(InMemoryAccounts::default()),
             Arc::new(CountingRandom::default()),
+            Arc::new(SequentialIds::default()),
         )
     }
 

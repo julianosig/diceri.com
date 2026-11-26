@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::Context as _;
 use diceri_application::ports::{
-    AccountRepository, MediaAccessIssuer, MediaPresence, RandomSource, RoomRepository,
+    AccountRepository, IdGenerator, MediaAccessIssuer, MediaPresence, RandomSource, RoomRepository,
     TranslationDispatcher, VoiceCloner,
 };
 use diceri_application::use_cases::{
@@ -58,7 +58,7 @@ impl AppState {
                 .await
                 .context("cannot open the accounts database")?,
         );
-        state.accounts = AccountService::new(accounts, Arc::new(OsRandom));
+        state.accounts = AccountService::new(accounts, Arc::new(OsRandom), Arc::new(OsRandom));
         state.secure_cookies = config.secure_cookies;
         if let Some(livekit) = &config.livekit {
             let room_closer = Arc::new(LiveKitRoomCloser::new(
@@ -104,16 +104,18 @@ impl AppState {
     ) -> Self {
         let repository: Arc<dyn RoomRepository> = Arc::new(MemoryRoomRepository::default());
         let random: Arc<dyn RandomSource> = Arc::new(OsRandom);
+        let ids: Arc<dyn IdGenerator> = Arc::new(OsRandom);
         Self {
-            rooms: RoomService::new(repository.clone(), random.clone()),
+            rooms: RoomService::new(repository.clone(), random.clone(), ids.clone()),
             voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner, deployment)),
             presence: PresenceService::new(None, repository.clone()),
             accounts: AccountService::new(
                 Arc::new(MemoryAccountRepository::default()),
                 random.clone(),
+                ids.clone(),
             ),
             secure_cookies: false,
-            admission: AdmissionService::new(repository, random, media),
+            admission: AdmissionService::new(repository, random, ids, media),
         }
     }
 }

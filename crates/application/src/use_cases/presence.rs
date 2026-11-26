@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use diceri_domain::{EntryPolicy, LanguageCode, Room, RoomId, RoomTitle, Username};
+use diceri_domain::{EntryPolicy, LanguageCode, Room, RoomCode, RoomTitle, Username};
 use tokio::sync::Mutex;
 use tokio::time::Instant;
 
@@ -25,7 +25,8 @@ pub struct PresenceSnapshot {
 /// One listed room: what it is, who hosts it, how to get in, and how busy it is.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RankedRoom {
-    pub id: RoomId,
+    /// The room's link: listing a room publishes it, by the host's choice.
+    pub code: RoomCode,
     pub title: RoomTitle,
     /// The account that owns the room.
     pub owner: Username,
@@ -100,7 +101,7 @@ impl PresenceService {
     async fn known(&self, live: Vec<LiveRoom>) -> Vec<(Room, LiveRoom)> {
         let mut known = Vec::new();
         for live_room in live.into_iter().filter(|room| room.people > 0) {
-            if let Ok(Some(room)) = self.rooms.find(&live_room.room).await
+            if let Ok(Some(room)) = self.rooms.find_by_id(&live_room.room).await
                 && !room.is_ended()
             {
                 known.push((room, live_room));
@@ -121,7 +122,7 @@ fn summarize(mut rooms: Vec<(Room, LiveRoom)>) -> PresenceSnapshot {
             .take(RANKING_SIZE)
             .map(|(room, live)| RankedRoom {
                 owner: room.owner,
-                id: room.id,
+                code: room.code,
                 title: room.settings.title,
                 entry: room.settings.entry,
                 people: live.people,

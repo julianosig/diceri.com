@@ -61,7 +61,10 @@ impl CreateRoomRequest {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RoomResponse {
+    /// UUIDv7; identifies the room, grants nothing.
     pub id: String,
+    /// The shareable link code (`/r/<code>`): whoever has it can reach the room.
+    pub code: String,
     pub max_participants: u8,
     pub title: String,
     /// Username of the account that owns (hosts) the room.
@@ -73,6 +76,7 @@ impl From<&Room> for RoomResponse {
     fn from(room: &Room) -> Self {
         Self {
             id: room.id.to_string(),
+            code: room.code.to_string(),
             max_participants: room.max_participants,
             title: room.settings.title.to_string(),
             owner: room.owner.to_string(),

@@ -10,6 +10,8 @@ publish.workspace = true
 [dependencies]
 serde.workspace = true
 thiserror.workspace = true
+# Only parsing and holding ids; generation (clock + randomness) lives in infra.
+uuid.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

@@ -7,7 +7,7 @@ use axum::http::{HeaderMap, StatusCode, header};
 use diceri_application::ports::VoiceSample;
 
 use super::dto::VoiceResponse;
-use super::handlers::parse_room_id;
+use super::handlers::parse_room_code;
 use crate::{ApiError, AppState};
 
 /// Upload limit for a recording (the use case enforces the real bounds).
@@ -15,7 +15,7 @@ pub(crate) const MAX_UPLOAD_BYTES: usize = 6 * 1024 * 1024;
 
 pub(crate) async fn record_voice(
     State(state): State<AppState>,
-    Path(room_id): Path<String>,
+    Path(code): Path<String>,
     headers: HeaderMap,
     body: Bytes,
 ) -> Result<(StatusCode, Json<VoiceResponse>), ApiError> {
@@ -29,13 +29,12 @@ pub(crate) async fn record_voice(
         .filter(|value| value.starts_with("audio/"))
         .ok_or_else(|| ApiError::Validation("Content-Type must be an audio type".to_owned()))?
         .to_owned();
-    let room_id = parse_room_id(&room_id)?;
     let sample = VoiceSample {
         bytes: body.to_vec(),
         content_type,
     };
-    let voice = voices.clone_voice(&room_id, sample).await?;
-    tracing::info!(%room_id, "voice recorded");
+    let voice = voices.clone_voice(&parse_room_code(&code)?, sample).await?;
+    tracing::info!("voice recorded");
     Ok((
         StatusCode::CREATED,
         Json(VoiceResponse { voice_id: voice.0 }),

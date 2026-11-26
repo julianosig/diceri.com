@@ -5,7 +5,7 @@ import type { RankedRoom } from '../types.ts';
 import LiveRooms from './LiveRooms.svelte';
 
 const open = {
-	id: 'aaaaaaaaaaaaaaaaaaaaaa',
+	code: 'aaaaaaaaaaaaaaaaaaaaaa',
 	title: 'Spanish practice',
 	owner: 'ana',
 	entry: 'open',
@@ -13,7 +13,7 @@ const open = {
 	languages: ['pt-BR', 'en']
 } satisfies RankedRoom;
 const approval = {
-	id: 'bbbbbbbbbbbbbbbbbbbbbb',
+	code: 'bbbbbbbbbbbbbbbbbbbbbb',
 	title: 'Coffee chat',
 	owner: 'bob',
 	entry: 'approval',

@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use async_trait::async_trait;
 use diceri_application::ports::{AccountRepository, AccountRepositoryError};
-use diceri_domain::{AccessKey, Username};
+use diceri_domain::{AccessKey, AccountId, Username};
 use sha2::{Digest as _, Sha256};
 
 /// In-memory accounts for tests and quick local runs; hashes keys like the real store.
@@ -23,6 +23,7 @@ fn poisoned<T>(_: T) -> AccountRepositoryError {
 impl AccountRepository for MemoryAccountRepository {
     async fn create(
         &self,
+        _: &AccountId,
         username: &Username,
         key: &AccessKey,
     ) -> Result<(), AccountRepositoryError> {
@@ -44,5 +45,16 @@ impl AccountRepository for MemoryAccountRepository {
             .iter()
             .find(|(_, stored)| *stored == hash)
             .map(|(name, _)| name.clone()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::account_contract;
+
+    #[tokio::test]
+    async fn honours_the_account_repository_contract() {
+        account_contract::check(&MemoryAccountRepository::default()).await;
     }
 }

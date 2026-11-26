@@ -3,7 +3,10 @@ export type RoomEntry = 'open' | 'approval';
 
 /** Mirrors `RoomResponse` in apps/api/src/features/rooms/dto.rs. */
 export interface Room {
+	/** UUIDv7: identifies the room, grants nothing. */
 	id: string;
+	/** The shareable link code (`/r/<code>`); every room API path takes it. */
+	code: string;
 	maxParticipants: number;
 	title: string;
 	/** Username of the account that owns (hosts) the room. */

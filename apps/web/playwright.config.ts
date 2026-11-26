@@ -53,7 +53,9 @@ export default defineConfig({
 				DICERI_AGENT_URL: `http://127.0.0.1:${String(AGENT_PORT)}`,
 				// Parallel tests share one IP; the limit has its own router test.
 				DICERI_WRITE_LIMIT_PER_MINUTE: '0',
-				DICERI_DEPLOYMENT: 'e2e'
+				DICERI_DEPLOYMENT: 'e2e',
+				// A fresh database per run, never the dev file.
+				DICERI_DATABASE_URL: 'sqlite::memory:'
 			},
 			timeout: 180_000,
 			reuseExistingServer: false

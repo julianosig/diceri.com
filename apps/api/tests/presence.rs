@@ -1,5 +1,9 @@
 //! `GET /presence`: totals for every room, names only for listed rooms.
-#![allow(clippy::unwrap_used, reason = "tests fail loudly")]
+#![allow(
+    clippy::unwrap_used,
+    clippy::indexing_slicing,
+    reason = "tests fail loudly"
+)]
 
 mod support;
 
@@ -30,20 +34,22 @@ fn app() -> (Router, Arc<FakePresence>) {
     (build_router(state, &Config::for_tests()), media)
 }
 
-/// Creates a room (owned by a fresh account) and puts `people` in its media room.
+/// Creates a room (owned by a fresh account), puts `people` in its media room
+/// (named by the room id, like LiveKit) and returns the room's link code.
 async fn live_room(
     app: &Router,
     media: &FakePresence,
     body: serde_json::Value,
     people: usize,
 ) -> String {
-    let (id, _) = create_room_with(app, body).await;
+    let (code, _) = create_room_with(app, body).await;
+    let (_, room) = send(app, "GET", &format!("/api/v1/rooms/{code}"), None, None).await;
     media.0.lock().unwrap().push(LiveRoom {
-        room: id.parse().unwrap(),
+        room: room["id"].as_str().unwrap().parse().unwrap(),
         people,
         languages: vec!["pt-BR".parse().unwrap(), "es".parse().unwrap()],
     });
-    id
+    code
 }
 
 #[tokio::test]
@@ -63,7 +69,7 @@ async fn ranks_listed_rooms_with_title_host_and_entry() {
             "online": 5,
             "liveRooms": 2,
             "ranking": [{
-                "id": id,
+                "code": id,
                 "title": "Spanish practice",
                 "owner": owner,
                 "entry": "open",

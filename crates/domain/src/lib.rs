@@ -5,21 +5,23 @@
 mod access_key;
 mod base62;
 mod display_name;
+mod ids;
 mod join_request;
 mod language;
 mod participant_profile;
 mod room;
-mod room_id;
+mod room_code;
 mod room_settings;
 mod short_text;
 mod username;
 
 pub use access_key::{AccessKey, AccessKeyError};
 pub use display_name::{DisplayName, DisplayNameError};
-pub use join_request::{JoinRequest, RequestId, RequestIdError, RequestStatus};
+pub use ids::{AccountId, IdError, ParticipantId, RequestId, RoomId};
+pub use join_request::{JoinRequest, RequestStatus};
 pub use language::{LanguageCode, LanguageCodeError};
 pub use participant_profile::ParticipantProfile;
 pub use room::{Room, RoomRuleError};
-pub use room_id::{RoomId, RoomIdError};
+pub use room_code::{RoomCode, RoomCodeError};
 pub use room_settings::{EntryPolicy, RoomSettings, RoomTitle, RoomTitleError};
 pub use username::{Username, UsernameError};

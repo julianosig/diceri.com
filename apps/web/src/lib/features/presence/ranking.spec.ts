@@ -13,7 +13,7 @@ describe('ranking', () => {
 	});
 
 	it('gives stable, distinct avatar hues per room', () => {
-		const room = { id: 'abcdefghijklmnopqrstuv' };
+		const room = { code: 'abcdefghijklmnopqrstuv' };
 		expect(avatarHue(room, 0)).toBe(avatarHue(room, 0));
 		expect(avatarHue(room, 0)).not.toBe(avatarHue(room, 1));
 	});

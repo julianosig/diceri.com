@@ -33,7 +33,7 @@ impl TranslationDispatcher for HttpTranslationDispatcher {
             .http
             .post(format!("{}/sessions", self.base_url.trim_end_matches('/')))
             .header(AGENT_KEY_HEADER, self.key.expose_secret())
-            .json(&json!({ "room": room.as_str() }))
+            .json(&json!({ "room": room.to_string() }))
             .send()
             .await
             .map_err(|error| DispatchError(error.to_string()))?;

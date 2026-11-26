@@ -19,8 +19,8 @@ export function avatars(room: Pick<RankedRoom, 'people'>): { shown: number; hidd
 }
 
 /** Stable hue (0–359) for the n-th avatar of a room, so dots differ but never flicker. */
-export function avatarHue(room: Pick<RankedRoom, 'id'>, index: number): number {
-	const name = room.id;
+export function avatarHue(room: Pick<RankedRoom, 'code'>, index: number): number {
+	const name = room.code;
 	let seed = 0;
 	for (let i = 0; i < name.length; i++) seed += name.charCodeAt(i);
 	return (seed * 37 + index * 67) % 360;

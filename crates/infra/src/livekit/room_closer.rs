@@ -36,7 +36,11 @@ impl MediaRoomCloser for LiveKitRoomCloser {
             ..VideoGrants::default()
         };
         self.twirp
-            .call::<serde::de::IgnoredAny>("DeleteRoom", grants, &json!({ "room": room.as_str() }))
+            .call::<serde::de::IgnoredAny>(
+                "DeleteRoom",
+                grants,
+                &json!({ "room": room.to_string() }),
+            )
             .await
             .map(|_| ())
     }

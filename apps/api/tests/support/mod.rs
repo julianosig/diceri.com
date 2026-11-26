@@ -167,13 +167,13 @@ pub(crate) async fn sign_up(app: &Router, username: &str) -> String {
     cookie.unwrap().split(';').next().unwrap().to_owned()
 }
 
-/// Creates a private, host-approved room and returns `(room_id, host_key)`.
+/// Creates a private, host-approved room and returns `(room_code, host_key)`.
 pub(crate) async fn create_room(app: &Router) -> (String, String) {
     create_room_with(app, serde_json::json!({ "title": "Test room" })).await
 }
 
 /// Signs up a fresh account, creates a room from a `POST /rooms` body with it and
-/// returns `(room_id, host_key)`.
+/// returns `(room_code, host_key)`; room paths take the code.
 pub(crate) async fn create_room_with(app: &Router, body: Value) -> (String, String) {
     static ACCOUNTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let n = ACCOUNTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
@@ -182,7 +182,7 @@ pub(crate) async fn create_room_with(app: &Router, body: Value) -> (String, Stri
     let (status, _, body) = exchange(app, "POST", "/api/v1/rooms", &headers, Some(body)).await;
     assert_eq!(status, StatusCode::CREATED);
     (
-        body["id"].as_str().unwrap().to_owned(),
+        body["code"].as_str().unwrap().to_owned(),
         body["hostKey"].as_str().unwrap().to_owned(),
     )
 }

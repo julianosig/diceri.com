@@ -105,7 +105,7 @@ mod tests {
     use super::*;
 
     fn room() -> RoomId {
-        RoomId::from_random_bytes([5; 16])
+        RoomId::from_parts(5, [5; 10])
     }
 
     #[test]

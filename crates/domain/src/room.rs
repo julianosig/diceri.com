@@ -1,5 +1,6 @@
 use crate::{
-    AccessKey, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomId, RoomSettings, Username,
+    AccessKey, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomCode, RoomId, RoomSettings,
+    Username,
 };
 
 /// Business rule violations on a room.
@@ -22,6 +23,8 @@ pub enum RoomRuleError {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Room {
     pub id: RoomId,
+    /// The shareable link; a secret-like value, unlike `id`.
+    pub code: RoomCode,
     pub max_participants: u8,
     pub settings: RoomSettings,
     /// The account that created the room, shown as its host.
@@ -43,9 +46,16 @@ impl Room {
     pub const MAX_VOICES: usize = 10;
 
     #[must_use]
-    pub fn new(id: RoomId, host_key: AccessKey, owner: Username, settings: RoomSettings) -> Self {
+    pub fn new(
+        id: RoomId,
+        code: RoomCode,
+        host_key: AccessKey,
+        owner: Username,
+        settings: RoomSettings,
+    ) -> Self {
         Self {
             id,
+            code,
             max_participants: Self::DEFAULT_MAX_PARTICIPANTS,
             settings,
             owner,
@@ -170,14 +180,15 @@ mod tests {
             output_language: "en".parse().unwrap(),
             voice_id: None,
         };
-        JoinRequest::new(RequestId::from_random_bytes([seed; 16]), profile, key(seed))
+        JoinRequest::new(RequestId::from_parts(1, [seed; 10]), profile, key(seed))
     }
 
     fn room() -> Room {
         let settings = RoomSettings::private("Chat".parse().unwrap());
         let owner = "ana".parse().unwrap();
         Room::new(
-            RoomId::from_random_bytes([1; 16]),
+            RoomId::from_parts(1, [1; 10]),
+            RoomCode::from_random_bytes([1; 16]),
             key(100),
             owner,
             settings,

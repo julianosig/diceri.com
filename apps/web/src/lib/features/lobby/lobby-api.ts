@@ -1,7 +1,8 @@
 import { requestJson, requestVoid } from '#lib/api/http-client.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 
-const room = (id: string) => `/rooms/${encodeURIComponent(id)}`;
+// Room paths take the link code.
+const room = (code: string) => `/rooms/${encodeURIComponent(code)}`;
 
 export interface Knock {
 	requestId: string;

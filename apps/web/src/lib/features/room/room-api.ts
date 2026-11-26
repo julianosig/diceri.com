@@ -5,6 +5,6 @@ export function createRoom(room: NewRoom, fetchFn?: typeof fetch): Promise<Creat
 	return requestJson<CreatedRoom>('/rooms', { method: 'POST', body: room, fetchFn });
 }
 
-export function getRoom(id: string, fetchFn?: typeof fetch): Promise<Room> {
-	return requestJson<Room>(`/rooms/${encodeURIComponent(id)}`, { fetchFn });
+export function getRoom(code: string, fetchFn?: typeof fetch): Promise<Room> {
+	return requestJson<Room>(`/rooms/${encodeURIComponent(code)}`, { fetchFn });
 }

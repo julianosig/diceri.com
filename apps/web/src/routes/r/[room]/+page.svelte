@@ -5,13 +5,13 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const hostKey = $derived(loadHostKey(data.room.id));
+	const hostKey = $derived(loadHostKey(data.room.code));
 </script>
 
 <svelte:head>
 	<title>{data.room.title} · Diceri</title>
 </svelte:head>
 
-{#key data.room.id}
+{#key data.room.code}
 	<MeetingFlow room={data.room} {hostKey} meetingUrl={page.url.href} />
 {/key}

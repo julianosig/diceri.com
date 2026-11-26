@@ -5,4 +5,4 @@ type-complexity-threshold = 250
 allow-unwrap-in-tests = true
 allow-expect-in-tests = true
 allow-indexing-slicing-in-tests = true
-doc-valid-idents = ["LiveKit", "WebRTC", "WebSocket", "OpenAPI", "ElevenLabs", ".."]
+doc-valid-idents = ["LiveKit", "WebRTC", "WebSocket", "OpenAPI", "ElevenLabs", "UUIDv7", "SQLite", ".."]

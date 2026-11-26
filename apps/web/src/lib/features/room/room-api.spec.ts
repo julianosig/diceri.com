@@ -3,7 +3,8 @@ import { ApiError } from '#lib/api/http-client.ts';
 import { createRoom, getRoom } from './room-api.ts';
 
 const room = {
-	id: 'abcdefghijklmnopqrstuv',
+	id: '01936f2e-7b4c-7d2a-9c1e-3f5a6b7c8d9e',
+	code: 'abcdefghijklmnopqrstuv',
 	maxParticipants: 2,
 	title: 'Coffee chat',
 	owner: 'ana',
@@ -27,10 +28,10 @@ describe('room api', () => {
 
 	it('throws ApiError with the problem title on failure', async () => {
 		const fetchFn = fakeFetch(404, { title: 'Not Found', status: 404 });
-		await expect(getRoom(room.id, fetchFn)).rejects.toMatchObject({
+		await expect(getRoom(room.code, fetchFn)).rejects.toMatchObject({
 			status: 404,
 			title: 'Not Found'
 		});
-		await expect(getRoom(room.id, fetchFn)).rejects.toBeInstanceOf(ApiError);
+		await expect(getRoom(room.code, fetchFn)).rejects.toBeInstanceOf(ApiError);
 	});
 });
