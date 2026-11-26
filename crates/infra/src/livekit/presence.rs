@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use async_trait::async_trait;
 use diceri_application::ports::{LiveRoom, MediaAccessError, MediaPresence};
+use diceri_domain::RoomId;
 use futures_util::future::join_all;
 use livekit_api::access_token::VideoGrants;
 use secrecy::SecretString;
@@ -67,10 +68,20 @@ impl LiveKitPresence {
 #[async_trait]
 impl MediaPresence for LiveKitPresence {
     async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError> {
-        let names = self.room_names().await?;
-        let lists = join_all(names.into_iter().map(|name| self.participants(name))).await;
+        // Media rooms are named after the room id; anything else is not ours.
+        let rooms: Vec<RoomId> = self
+            .room_names()
+            .await?
+            .iter()
+            .filter_map(|name| name.parse().ok())
+            .collect();
+        let lists = join_all(rooms.iter().map(|room| self.participants(room.to_string()))).await;
         // A room closing between the two calls is not an error for the whole snapshot.
-        Ok(lists.into_iter().flatten().map(live_room).collect())
+        Ok(rooms
+            .into_iter()
+            .zip(lists)
+            .filter_map(|(room, list)| Some(live_room(room, list.ok()?)))
+            .collect())
     }
 }
 
@@ -98,12 +109,13 @@ struct Participant {
     attributes: HashMap<String, String>,
 }
 
-fn live_room(participants: Vec<Participant>) -> LiveRoom {
+fn live_room(room: RoomId, participants: Vec<Participant>) -> LiveRoom {
     let people: Vec<Participant> = participants
         .into_iter()
         .filter(|p| p.identity.starts_with(PERSON_PREFIX))
         .collect();
     LiveRoom {
+        room,
         people: people.len(),
         languages: people
             .iter()
@@ -125,7 +137,9 @@ mod tests {
             { "identity": "diceri-translator" }
         ] }))
         .unwrap();
-        let room = live_room(listed.participants);
+        let id = RoomId::from_random_bytes([1; 16]);
+        let room = live_room(id.clone(), listed.participants);
+        assert_eq!(room.room, id);
         assert_eq!(room.people, 2);
         assert_eq!(room.languages, ["pt-BR".parse().unwrap()]);
     }

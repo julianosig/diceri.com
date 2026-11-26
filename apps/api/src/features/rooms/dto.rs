@@ -1,15 +1,72 @@
 use diceri_application::use_cases::{JoinTicket, Knock, KnockOutcome};
-use diceri_domain::{JoinRequest, ParticipantProfile, Room};
+use diceri_domain::{EntryPolicy, JoinRequest, ParticipantProfile, Room, RoomSettings};
 use serde::{Deserialize, Serialize};
 
 use crate::ApiError;
 
-/// Public representation of a room.
+/// How people get in: `open` (straight in) or `approval` (the host decides).
+#[derive(Debug, Clone, Copy, Default, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) enum EntryDto {
+    Open,
+    #[default]
+    Approval,
+}
+
+impl From<EntryPolicy> for EntryDto {
+    fn from(entry: EntryPolicy) -> Self {
+        match entry {
+            EntryPolicy::Open => Self::Open,
+            EntryPolicy::Approval => Self::Approval,
+        }
+    }
+}
+
+impl From<EntryDto> for EntryPolicy {
+    fn from(entry: EntryDto) -> Self {
+        match entry {
+            EntryDto::Open => Self::Open,
+            EntryDto::Approval => Self::Approval,
+        }
+    }
+}
+
+/// `POST /rooms`: the host names the room and picks who sees it and who gets in.
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct CreateRoomRequest {
+    pub title: String,
+    /// Show on the public live board; private by default.
+    #[serde(default)]
+    pub listed: bool,
+    #[serde(default)]
+    pub entry: EntryDto,
+}
+
+impl CreateRoomRequest {
+    pub(crate) fn settings(&self) -> Result<RoomSettings, ApiError> {
+        let title = self
+            .title
+            .parse()
+            .map_err(|error| ApiError::Validation(format!("{error}")))?;
+        Ok(RoomSettings {
+            title,
+            listed: self.listed,
+            entry: self.entry.into(),
+        })
+    }
+}
+
+/// Public representation of a room (anyone with the link sees it).
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct RoomResponse {
     pub id: String,
     pub max_participants: u8,
+    pub title: String,
+    /// Known once the host has joined.
+    pub host_name: Option<String>,
+    pub entry: EntryDto,
 }
 
 impl From<&Room> for RoomResponse {
@@ -17,6 +74,9 @@ impl From<&Room> for RoomResponse {
         Self {
             id: room.id.to_string(),
             max_participants: room.max_participants,
+            title: room.settings.title.to_string(),
+            host_name: room.host_name().map(ToString::to_string),
+            entry: room.settings.entry.into(),
         }
     }
 }

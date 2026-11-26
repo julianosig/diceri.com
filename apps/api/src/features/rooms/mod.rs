@@ -1,8 +1,8 @@
-//! Anonymous rooms and their lobby.
+//! Rooms and their lobby.
 //!
 //! | Method | Path | Key (`x-diceri-key`) |
 //! | --- | --- | --- |
-//! | POST | `/rooms` | — (returns the host key once) |
+//! | POST | `/rooms` | — (title, listing, entry; returns the host key once) |
 //! | GET | `/rooms/{room}` | — |
 //! | POST | `/rooms/{room}/host-session` | host |
 //! | POST | `/rooms/{room}/requests` | — (returns a request key) |
@@ -15,7 +15,7 @@
 
 mod access_key;
 mod admission;
-mod dto;
+pub(crate) mod dto;
 mod handlers;
 mod voices;
 

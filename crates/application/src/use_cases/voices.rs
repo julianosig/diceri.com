@@ -95,7 +95,7 @@ mod tests {
     use async_trait::async_trait;
 
     use super::*;
-    use crate::test_support::{CountingRandom, InMemoryRooms};
+    use crate::test_support::{CountingRandom, InMemoryRooms, private_room};
     use crate::use_cases::RoomService;
 
     #[derive(Default)]
@@ -128,7 +128,7 @@ mod tests {
     async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomId) {
         let repository = Arc::new(InMemoryRooms::default());
         let rooms = RoomService::new(repository.clone(), Arc::new(CountingRandom::default()));
-        let room = rooms.create().await.unwrap();
+        let room = rooms.create(private_room()).await.unwrap();
         (
             VoiceService::new(repository.clone(), Arc::new(FakeCloner::default()), "test"),
             repository,

@@ -62,7 +62,7 @@ impl AppState {
                 livekit.api_secret.clone(),
                 reqwest::Client::new(),
             ));
-            state.presence = PresenceService::new(Some(presence));
+            state.presence = state.presence.with_source(presence);
         }
         if let Some(agent) = &config.agent {
             let dispatcher: Arc<dyn TranslationDispatcher> =
@@ -95,8 +95,8 @@ impl AppState {
         Self {
             rooms: RoomService::new(repository.clone(), random.clone()),
             voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner, deployment)),
+            presence: PresenceService::new(None, repository.clone()),
             admission: AdmissionService::new(repository, random, media),
-            presence: PresenceService::new(None),
         }
     }
 }

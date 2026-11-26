@@ -10,6 +10,7 @@ mod language;
 mod participant_profile;
 mod room;
 mod room_id;
+mod room_settings;
 mod short_text;
 
 pub use access_key::{AccessKey, AccessKeyError};
@@ -19,3 +20,4 @@ pub use language::{LanguageCode, LanguageCodeError};
 pub use participant_profile::ParticipantProfile;
 pub use room::{Room, RoomRuleError};
 pub use room_id::{RoomId, RoomIdError};
+pub use room_settings::{EntryPolicy, RoomSettings, RoomTitle, RoomTitleError};

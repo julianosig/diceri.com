@@ -2,7 +2,7 @@
 
 pub(crate) mod health;
 mod presence;
-mod rooms;
+pub(crate) mod rooms;
 
 use axum::Router;
 

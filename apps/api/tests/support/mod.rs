@@ -130,9 +130,14 @@ pub(crate) async fn send(
     )
 }
 
-/// Creates a room and returns `(room_id, host_key)`.
+/// Creates a private, host-approved room and returns `(room_id, host_key)`.
 pub(crate) async fn create_room(app: &Router) -> (String, String) {
-    let (status, body) = send(app, "POST", "/api/v1/rooms", None, None).await;
+    create_room_with(app, serde_json::json!({ "title": "Test room" })).await
+}
+
+/// Creates a room from a `POST /rooms` body and returns `(room_id, host_key)`.
+pub(crate) async fn create_room_with(app: &Router, body: Value) -> (String, String) {
+    let (status, body) = send(app, "POST", "/api/v1/rooms", None, Some(body)).await;
     assert_eq!(status, StatusCode::CREATED);
     (
         body["id"].as_str().unwrap().to_owned(),

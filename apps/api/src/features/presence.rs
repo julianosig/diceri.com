@@ -1,4 +1,5 @@
-//! `GET /presence`: anonymous live activity for the home page.
+//! `GET /presence`: live activity for the home page. Totals cover every room;
+//! only rooms their hosts listed appear by name.
 
 use axum::extract::State;
 use axum::http::header;
@@ -8,6 +9,7 @@ use axum::{Json, Router};
 use diceri_application::use_cases::{PresenceSnapshot, RankedRoom};
 use serde::Serialize;
 
+use super::rooms::dto::EntryDto;
 use crate::AppState;
 
 /// Browsers and edges may reuse a snapshot as long as the server does.
@@ -35,6 +37,10 @@ struct PresenceDto {
 
 #[derive(Debug, Serialize)]
 struct RankedRoomDto {
+    id: String,
+    title: String,
+    host: Option<String>,
+    entry: EntryDto,
     people: usize,
     languages: Vec<String>,
 }
@@ -56,6 +62,10 @@ impl From<PresenceSnapshot> for PresenceDto {
 impl From<RankedRoom> for RankedRoomDto {
     fn from(room: RankedRoom) -> Self {
         Self {
+            id: room.id.to_string(),
+            title: room.title.to_string(),
+            host: room.host.map(|name| name.to_string()),
+            entry: room.entry.into(),
             people: room.people,
             languages: room
                 .languages

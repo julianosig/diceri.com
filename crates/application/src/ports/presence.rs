@@ -1,11 +1,11 @@
-use diceri_domain::LanguageCode;
+use diceri_domain::{LanguageCode, RoomId};
 
 use super::MediaAccessError;
 
-/// A media room as seen right now, reduced to what is safe to show publicly:
-/// no room id, no names, only how many people are in and what they listen in.
+/// A media room as seen right now: how many people are in and what they listen in.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct LiveRoom {
+    pub room: RoomId,
     pub people: usize,
     /// Output language of each person that has one (duplicates kept).
     pub languages: Vec<LanguageCode>,

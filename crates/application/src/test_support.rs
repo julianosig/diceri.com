@@ -5,12 +5,17 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU8, Ordering};
 
 use async_trait::async_trait;
-use diceri_domain::{Room, RoomId};
+use diceri_domain::{Room, RoomId, RoomSettings};
 
 use crate::ports::{
     DispatchError, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
     RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
 };
+
+/// A private, host-approved room titled "Test room".
+pub(crate) fn private_room() -> RoomSettings {
+    RoomSettings::private("Test room".parse().unwrap())
+}
 
 /// Deterministic randomness: every call returns the next byte value.
 #[derive(Default)]

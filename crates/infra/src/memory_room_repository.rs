@@ -42,7 +42,7 @@ impl RoomRepository for MemoryRoomRepository {
 
 #[cfg(test)]
 mod tests {
-    use diceri_domain::AccessKey;
+    use diceri_domain::{AccessKey, RoomSettings};
 
     use super::*;
 
@@ -50,6 +50,7 @@ mod tests {
         Room::new(
             RoomId::from_random_bytes([1; 16]),
             AccessKey::from_random_bytes([2; 16]),
+            RoomSettings::private("Test".parse().unwrap()),
         )
     }
 
