@@ -12,7 +12,8 @@ The lockup is one SVG: the mark, the wordmark **Diceri** and its meaning underne
 opentype.js into `apps/web/src/lib/components/ui/logo-paths.ts`), so it renders the same
 everywhere without fonts. `Logo.svelte` inlines it and follows the theme (text in the ink
 colour, facet gaps in the surface colour); `static/logo.svg` (light) and
-`static/logo-dark.svg` (dark) are standalone copies for sharing.
+`static/logo-dark.svg` (dark) are standalone copies for sharing. `layout="stacked"`
+puts the wordmark centred under the mark (used in the home banner).
 
 ## Themes
 
@@ -23,13 +24,16 @@ wins. An inline script in `app.html` applies it before first paint.
 
 ## Home illustration
 
-A 6:1 strip (`HeroAnimation.svelte`): the scene is a text-free image generated with
-Codex, one per theme, `src/lib/assets/hero/scene-{light,dark}.webp` (~50 kB each, imported so the build hashes their names), with a
-transparent background so it sits on the page. Diceri's glow is a CSS halo behind the
-image plus sparkles. The speech is HTML on top: a line said on the left travels into Diceri, Diceri
-glows, and the same line arrives translated at the listener, labelled with each
-language. Pairs live in `language-pairs.ts`; add one there, no new image needed. Reduced
-motion shows both lines at once.
+A 6:1 strip (`HeroAnimation.svelte`), all vector or code, so it has no background and stays
+sharp at any size. The two people are Codex drawings with a transparent background,
+traced to SVG with `vtracer` (`src/lib/assets/hero/{left,right}-person.svg`, ~18 kB each
+gzipped, imported so the build hashes their names); one pair serves both themes. The
+middle is the real mark with the wordmark under it (`Logo layout="stacked"`), with a CSS
+halo, sparkles and dotted SVG links that flow. The speech (`HeroSpeech.svelte`) is HTML
+on top: a line said on the left travels into Diceri, Diceri glows, and the same line
+arrives translated at the listener, labelled with each language. Pairs live in
+`language-pairs.ts`; add one there, no new art needed. Reduced motion shows both lines
+at once.
 
 ## Promise
 
