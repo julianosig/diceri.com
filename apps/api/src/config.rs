@@ -1,5 +1,6 @@
 use std::env;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 
 use anyhow::Context as _;
 use secrecy::SecretString;
@@ -38,6 +39,8 @@ pub struct Config {
     pub agent: Option<AgentConfig>,
     /// ElevenLabs key for voice cloning; `None` disables recording your voice.
     pub elevenlabs_api_key: Option<SecretString>,
+    /// Built SPA (`apps/web/build`) served for non-API paths; `None` serves only the API.
+    pub web_dir: Option<PathBuf>,
 }
 
 impl Config {
@@ -68,6 +71,7 @@ impl Config {
             elevenlabs_api_key: env::var("DICERI_ELEVENLABS_API_KEY")
                 .ok()
                 .map(SecretString::from),
+            web_dir: env::var_os("DICERI_WEB_DIR").map(PathBuf::from),
         })
     }
 
@@ -81,6 +85,7 @@ impl Config {
             livekit: None,
             agent: None,
             elevenlabs_api_key: None,
+            web_dir: None,
         }
     }
 }
