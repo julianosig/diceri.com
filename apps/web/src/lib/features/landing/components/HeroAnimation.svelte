@@ -17,7 +17,7 @@
 	let { class: className }: Props = $props();
 
 	/** Where the voice shows on each drawing (% of its box): the speaker's mouth, the listener's ear cup. */
-	const LEFT_MOUTH = { x: 63.9, y: 48 } as const;
+	const LEFT_MOUTH = { x: 63.9, y: 48.1 } as const;
 	const RIGHT_EAR = { x: 58.6, y: 43 } as const;
 
 	/** Twinkles around the mark while Diceri translates (positions in % of the banner). */

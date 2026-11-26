@@ -30,7 +30,8 @@ traced to SVG with `vtracer` (`src/lib/assets/hero/{left,right}-person.svg`, ~18
 gzipped, imported so the build hashes their names); one pair serves both themes. The
 middle is the real mark with the wordmark under it (`Logo layout="stacked"`), with a CSS
 halo, sparkles and dotted SVG links that flow. The speech (`HeroSpeech.svelte`) is HTML
-on top: the speaker talks (a mouth and voice waves drawn in code over the drawing,
+on top: the speaker talks (the drawing has no mouth; a resting smile and an open,
+moving mouth plus voice waves are drawn in code,
 `HeroPerson.svelte`), a line said on the left travels into Diceri, Diceri glows, and the same line
 arrives translated at the listener, labelled with each language. Pairs live in
 `language-pairs.ts`; add one there, no new art needed. Reduced motion shows both lines

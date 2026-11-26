@@ -25,7 +25,8 @@
 	<img {src} alt="" class="h-full w-auto" />
 	{#key cycle}
 		{#if cue === 'talk'}
-			<span class="cue talk" style:left="{x}%" style:top="{y}%" aria-hidden="true">
+			<span class="cue mouth-spot" style:left="{x}%" style:top="{y}%" aria-hidden="true">
+				<svg class="smile" viewBox="0 0 24 10"><path d="M 2 2 Q 12 11 22 2" /></svg>
 				<span class="mouth"></span>
 			</span>
 			<svg
@@ -66,16 +67,55 @@
 		animation: listening 6s ease both;
 	}
 
-	/* An open mouth over the drawn smile, chattering while the person speaks. */
+	/* The drawing has no mouth: a resting smile, swapped for an open, chattering mouth while
+	   the person speaks. Both are centred on the same spot. */
+	.mouth-spot {
+		opacity: 1;
+	}
+
+	.smile,
+	.mouth {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		translate: -50% -50%;
+	}
+
+	.smile {
+		width: 1.7cqw;
+		fill: none;
+		stroke: #181410;
+		stroke-width: 2.4;
+		stroke-linecap: round;
+		animation: resting 6s ease both;
+	}
+
 	.mouth {
 		display: block;
-		width: 2.4cqw;
+		width: 2cqw;
 		aspect-ratio: 1.4;
 		border: 0.25cqw solid #1a0d10;
 		border-radius: 30% 30% 50% 50% / 25% 25% 75% 75%;
 		background: radial-gradient(ellipse at 50% 95%, #e86a7a 0 38%, #5a1d26 40%);
 		transform-origin: top;
-		animation: chatter 0.2s ease-in-out infinite alternate;
+		animation:
+			talking 6s ease both,
+			chatter 0.2s ease-in-out infinite alternate;
+	}
+
+	@keyframes resting {
+		0%,
+		2% {
+			opacity: 1;
+		}
+		5%,
+		32% {
+			opacity: 0;
+		}
+		36%,
+		100% {
+			opacity: 1;
+		}
 	}
 
 	.waves {
@@ -173,9 +213,15 @@
 		}
 	}
 
+	/* Reduced motion: only the resting smile, so the face is never left without a mouth. */
 	@media (prefers-reduced-motion: reduce) {
-		.cue {
+		.cue:not(.mouth-spot),
+		.mouth {
 			display: none;
+		}
+
+		.smile {
+			animation: none;
 		}
 	}
 </style>
