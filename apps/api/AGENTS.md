@@ -51,6 +51,8 @@ in responses.
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
 | `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |
 | `DICERI_LIVEKIT_API_SECRET` | unset | LiveKit API secret (secret) |
+| `DICERI_ELEVENLABS_API_KEY` | unset | voice cloning (secret); recording a voice also needs the Soniox key |
+| `DICERI_SONIOX_API_KEY` | unset | checks a voice recording holds words before it is cloned (secret) |
 | `RUST_LOG` | `info,tower_http=debug` | tracing filter |
 
 Copy `.env.example` to `.env` for local development (loaded with `dotenvy`).

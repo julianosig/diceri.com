@@ -14,9 +14,10 @@ use axum::body::Body;
 use axum::http::{Request, StatusCode, header};
 use diceri_api::{AppState, Config, build_router};
 use diceri_application::ports::{
-    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, VoiceCloneError,
-    VoiceCloner, VoiceId, VoiceSample,
+    MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, SpeechStream, SpeechToText,
+    SpeechToTextError, TranscriptEvent, VoiceCloneError, VoiceCloner, VoiceId, VoiceSample,
 };
+use diceri_domain::LanguageCode;
 use diceri_domain::RoomId;
 use http_body_util::BodyExt as _;
 use serde_json::Value;
@@ -63,17 +64,73 @@ impl VoiceCloner for FakeCloner {
     }
 }
 
+/// Hears the same sentence in any recording, like a recognizer finalizing at the end.
+pub(crate) struct FakeRecognizer;
+
+#[async_trait]
+impl SpeechToText for FakeRecognizer {
+    async fn open(&self, _: &[LanguageCode]) -> Result<SpeechStream, SpeechToTextError> {
+        let (audio, mut incoming) = tokio::sync::mpsc::channel::<Vec<i16>>(8);
+        let (events, receiver) = tokio::sync::mpsc::channel(8);
+        tokio::spawn(async move {
+            while incoming.recv().await.is_some() {}
+            let heard = TranscriptEvent::Final {
+                text: "The quick brown fox jumps".to_owned(),
+                language: None,
+            };
+            let _ = events.send(Ok(heard)).await;
+        });
+        Ok(SpeechStream {
+            audio,
+            events: receiver,
+        })
+    }
+}
+
+/// `ms` of 16 kHz mono 16-bit WAV: a loud square wave (speech-like level) or near silence.
+pub(crate) fn wav(ms: usize, loud: bool) -> Vec<u8> {
+    let amplitude: i16 = if loud { 4_000 } else { 30 };
+    let data: Vec<u8> = (0..ms * 16)
+        .map(|i| {
+            if (i / 20) % 2 == 0 {
+                amplitude
+            } else {
+                -amplitude
+            }
+        })
+        .flat_map(i16::to_le_bytes)
+        .collect();
+    let data_len = u32::try_from(data.len()).unwrap();
+    let mut out = b"RIFF".to_vec();
+    out.extend_from_slice(&(36 + data_len).to_le_bytes());
+    out.extend_from_slice(b"WAVEfmt ");
+    for field in [16_u32.to_le_bytes(), [1, 0, 1, 0], 16_000_u32.to_le_bytes()] {
+        out.extend_from_slice(&field);
+    }
+    out.extend_from_slice(&32_000_u32.to_le_bytes());
+    out.extend_from_slice(&[2, 0, 16, 0]);
+    out.extend_from_slice(b"data");
+    out.extend_from_slice(&data_len.to_le_bytes());
+    out.extend_from_slice(&data);
+    out
+}
+
 pub(crate) fn app(media: bool) -> Router {
     let issuer = media.then(|| -> Arc<dyn MediaAccessIssuer> { Arc::new(FakeIssuer) });
     build_router(AppState::in_memory(issuer), &Config::for_tests())
 }
 
-/// App with media and a fake voice cloner.
+/// App with media, a fake voice cloner and a recognizer that always hears words.
 pub(crate) fn app_with_voices() -> Router {
     let issuer: Arc<dyn MediaAccessIssuer> = Arc::new(FakeIssuer);
     let cloner: Arc<dyn VoiceCloner> = Arc::new(FakeCloner::default());
     build_router(
-        AppState::in_memory_with(Some(issuer), Some(cloner), "test"),
+        AppState::in_memory_with(
+            Some(issuer),
+            Some(cloner),
+            Some(Arc::new(FakeRecognizer)),
+            "test",
+        ),
         &Config::for_tests(),
     )
 }

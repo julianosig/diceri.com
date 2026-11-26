@@ -3,11 +3,12 @@ use std::sync::Arc;
 use anyhow::Context as _;
 use diceri_application::ports::{
     AccountRepository, IdGenerator, MediaAccessIssuer, MediaPresence, RandomSource, RoomRepository,
-    TranslationDispatcher, VoiceCloner,
+    SpeechToText, TranslationDispatcher, VoiceCloner,
 };
 use diceri_application::use_cases::{
     AccountService, AdmissionService, PresenceService, RoomService, VoiceService,
 };
+use diceri_infra::speech::{SonioxConfig, SonioxSpeechToText};
 use diceri_infra::synthesis::ElevenLabsVoiceCloner;
 use diceri_infra::{
     Argon2Hasher, HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence,
@@ -64,7 +65,13 @@ impl AppState {
                     reqwest::Client::new(),
                 ))
             });
-        let mut state = Self::in_memory_with(media, cloner, &config.deployment);
+        let recognizer = config
+            .soniox_api_key
+            .as_ref()
+            .map(|key| -> Arc<dyn SpeechToText> {
+                Arc::new(SonioxSpeechToText::new(SonioxConfig::new(key.clone())))
+            });
+        let mut state = Self::in_memory_with(media, cloner, recognizer, &config.deployment);
         let accounts: Arc<dyn AccountRepository> = Arc::new(
             SqliteAccountRepository::connect(&config.database_url)
                 .await
@@ -103,15 +110,17 @@ impl AppState {
     /// In-memory storage with an optional media issuer (also used by tests).
     #[must_use]
     pub fn in_memory(media: Option<Arc<dyn MediaAccessIssuer>>) -> Self {
-        Self::in_memory_with(media, None, "test")
+        Self::in_memory_with(media, None, None, "test")
     }
 
-    /// In-memory storage with optional media issuer and voice cloner; `deployment`
-    /// names voice clones (see `clone_name_prefix`).
+    /// In-memory storage with optional media issuer, voice cloner and the recognizer that
+    /// checks recordings are speech (voices need both); `deployment` names voice clones
+    /// (see `clone_name_prefix`).
     #[must_use]
     pub fn in_memory_with(
         media: Option<Arc<dyn MediaAccessIssuer>>,
         cloner: Option<Arc<dyn VoiceCloner>>,
+        recognizer: Option<Arc<dyn SpeechToText>>,
         deployment: &str,
     ) -> Self {
         let repository: Arc<dyn RoomRepository> = Arc::new(MemoryRoomRepository::default());
@@ -119,7 +128,9 @@ impl AppState {
         let ids: Arc<dyn IdGenerator> = Arc::new(OsRandom);
         Self {
             rooms: RoomService::new(repository.clone(), random.clone(), ids.clone()),
-            voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner, deployment)),
+            voices: cloner.zip(recognizer).map(|(cloner, recognizer)| {
+                VoiceService::new(repository.clone(), cloner, recognizer, deployment)
+            }),
             presence: PresenceService::new(None, repository.clone()),
             accounts: account_service(Arc::new(MemoryAccountRepository::default())),
             secure_cookies: false,

@@ -42,6 +42,9 @@ pub struct Config {
     pub agent: Option<AgentConfig>,
     /// ElevenLabs key for voice cloning; `None` disables recording your voice.
     pub elevenlabs_api_key: Option<SecretString>,
+    /// Soniox key: checks a voice recording is clear speech before it is cloned, so
+    /// recording your voice also needs it.
+    pub soniox_api_key: Option<SecretString>,
     /// Built SPA (`apps/web/build`) served for non-API paths; `None` serves only the API.
     pub web_dir: Option<PathBuf>,
     /// POSTs allowed per client per minute; `0` disables the limit.
@@ -84,6 +87,9 @@ impl Config {
             elevenlabs_api_key: env::var("DICERI_ELEVENLABS_API_KEY")
                 .ok()
                 .map(SecretString::from),
+            soniox_api_key: env::var("DICERI_SONIOX_API_KEY")
+                .ok()
+                .map(SecretString::from),
             web_dir: env::var_os("DICERI_WEB_DIR").map(PathBuf::from),
             write_limit_per_minute: env::var("DICERI_WRITE_LIMIT_PER_MINUTE")
                 .map_or(Ok(DEFAULT_WRITE_LIMIT), |raw| raw.parse())
@@ -106,6 +112,7 @@ impl Config {
             livekit: None,
             agent: None,
             elevenlabs_api_key: None,
+            soniox_api_key: None,
             web_dir: None,
             write_limit_per_minute: 0,
             client_ip_header: None,

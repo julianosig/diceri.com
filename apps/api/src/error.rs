@@ -131,15 +131,30 @@ impl From<VoiceError> for ApiError {
         match error {
             VoiceError::NotFound => Self::NotFound,
             VoiceError::InvalidSample => Self::Validation(error.to_string()),
-            VoiceError::Rule(rule) => Self::TooManyRequests(rule.to_string()),
-            VoiceError::Clone(VoiceCloneError::Rejected(detail)) => {
-                tracing::warn!(%detail, "voice sample rejected by provider");
-                Self::Validation(
-                    "the recording could not be used; try again in a quieter place".to_owned(),
-                )
+            VoiceError::NoSpeech => Self::Validation(
+                "we could not hear you clearly; read the sentence out loud and try again"
+                    .to_owned(),
+            ),
+            VoiceError::SpeechCheck(source) => {
+                tracing::warn!(error = %source, "voice sample could not be checked");
+                Self::Unavailable("voice check unavailable, try again shortly")
             }
-            VoiceError::Clone(source) => Self::Internal(source.into()),
+            VoiceError::Rule(rule) => Self::TooManyRequests(rule.to_string()),
+            VoiceError::Clone(source) => clone_failed(source),
             VoiceError::Repository(source) => Self::Internal(source.into()),
         }
+    }
+}
+
+/// The cloning provider refused or failed: a refused sample is the caller's to redo.
+fn clone_failed(error: VoiceCloneError) -> ApiError {
+    match error {
+        VoiceCloneError::Rejected(detail) => {
+            tracing::warn!(%detail, "voice sample rejected by provider");
+            ApiError::Validation(
+                "the recording could not be used; try again in a quieter place".to_owned(),
+            )
+        }
+        source @ VoiceCloneError::Request(_) => ApiError::Internal(source.into()),
     }
 }

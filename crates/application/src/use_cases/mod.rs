@@ -4,6 +4,8 @@ mod accounts;
 mod admission;
 mod presence;
 mod rooms;
+mod speech_check;
+mod voice_sample;
 mod voices;
 
 pub use accounts::{AccountError, AccountService, Registration, SESSION_TTL_MS, SignedIn};

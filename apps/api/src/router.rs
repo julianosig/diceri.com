@@ -3,17 +3,22 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use axum::Router;
+use axum::extract::Request;
 use axum::http::{HeaderValue, Method, StatusCode};
+use axum::middleware::Next;
+use axum::response::{IntoResponse as _, Response};
 use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
-use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::rate_limit::{RateLimiter, limit_writes};
 use crate::web_cache::cache_web_assets;
 use crate::{AppState, Config, features};
 
+/// Most requests answer in milliseconds; this bounds a stuck one.
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
+/// Recording a voice first transcribes it (is it speech?) and then clones it.
+const VOICE_TIMEOUT: Duration = Duration::from_secs(45);
 
 /// Builds the full HTTP router with middleware. Used by `main` and tests.
 pub fn build_router(state: AppState, config: &Config) -> Router {
@@ -29,10 +34,7 @@ pub fn build_router(state: AppState, config: &Config) -> Router {
     router
         .with_state(state)
         .layer(cors_layer(&config.allowed_origins))
-        .layer(TimeoutLayer::with_status_code(
-            StatusCode::REQUEST_TIMEOUT,
-            REQUEST_TIMEOUT,
-        ))
+        .layer(axum::middleware::from_fn(limit_time))
         .layer(TraceLayer::new_for_http())
 }
 
@@ -68,4 +70,16 @@ fn cors_layer(origins: &[String]) -> CorsLayer {
             axum::http::header::CONTENT_TYPE,
             axum::http::HeaderName::from_static(features::ACCESS_KEY_HEADER),
         ])
+}
+
+/// Answers 408 when a request runs past its time limit (dropping it cancels the work).
+async fn limit_time(request: Request, next: Next) -> Response {
+    let limit = if request.method() == Method::POST && request.uri().path().ends_with("/voices") {
+        VOICE_TIMEOUT
+    } else {
+        REQUEST_TIMEOUT
+    };
+    tokio::time::timeout(limit, next.run(request))
+        .await
+        .unwrap_or_else(|_| StatusCode::REQUEST_TIMEOUT.into_response())
 }
