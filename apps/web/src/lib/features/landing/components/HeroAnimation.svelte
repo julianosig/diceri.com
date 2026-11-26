@@ -10,6 +10,14 @@
 
 	let { class: className }: Props = $props();
 
+	/** Twinkles around Diceri while it translates (positions in % of the banner). */
+	const SPARKLES = [
+		{ left: '43%', top: '14%', delay: '0s' },
+		{ left: '57%', top: '18%', delay: '0.12s' },
+		{ left: '41%', top: '80%', delay: '0.24s' },
+		{ left: '58%', top: '76%', delay: '0.06s' }
+	] as const;
+
 	let index = $state(0);
 	const pair = $derived(LANGUAGE_PAIRS[index] ?? LANGUAGE_PAIRS[0]);
 	const scene = $derived(theme.current === 'dark' ? 'dark' : 'light');
@@ -33,20 +41,34 @@
 	translated, travels on and is heard by the right person.
 -->
 <div
-	class={cn('banner relative w-full overflow-hidden rounded-tile', className)}
+	class={cn('banner relative w-full overflow-hidden', className)}
 	role="img"
 	aria-label="Illustration: one person speaks, Diceri translates in the middle, and the other person hears it in their own language."
 >
+	<!-- The scene has a transparent background, so this halo shines through around Diceri. -->
+	{#key index}
+		<span class="halo" aria-hidden="true"></span>
+	{/key}
 	<img
 		src="/hero/scene-{scene}.webp"
 		width="1200"
 		height="197"
 		alt=""
-		class="block h-auto w-full"
+		class="relative block h-auto w-full"
 		fetchpriority="high"
 	/>
 	{#key `${String(index)}-${scene}`}
-		<img src="/hero/scene-{scene}-glow.webp" alt="" class="glow absolute inset-0 h-full w-full" />
+		{#each SPARKLES as sparkle (sparkle.left)}
+			<span
+				class="sparkle"
+				style:left={sparkle.left}
+				style:top={sparkle.top}
+				style:animation-delay={sparkle.delay}
+				aria-hidden="true"
+			>
+				✦
+			</span>
+		{/each}
 		<div class="said bubble" lang={pair.said.lang} aria-hidden="true">
 			<span class="label">{pair.said.language}</span>
 			<span class="text">{pair.said.text}</span>
@@ -138,7 +160,29 @@
 		animation: travel-out 6s ease-in-out both;
 	}
 
-	.glow {
+	/* Behind the transparent scene: a violet halo around Diceri while it translates. */
+	.halo {
+		position: absolute;
+		left: 50%;
+		top: 50%;
+		width: 17cqw;
+		aspect-ratio: 1;
+		translate: -50% -50%;
+		border-radius: 999px;
+		background: radial-gradient(
+			circle,
+			color-mix(in oklch, var(--color-brand-violet) 55%, transparent) 0%,
+			transparent 65%
+		);
+		opacity: 0;
+		animation: glow 6s ease both;
+	}
+
+	.sparkle {
+		position: absolute;
+		translate: -50% -50%;
+		color: var(--color-gold);
+		font-size: min(2cqw, 22px);
 		opacity: 0;
 		animation: glow 6s ease both;
 	}
@@ -255,7 +299,8 @@
 		}
 
 		.token,
-		.glow {
+		.halo,
+		.sparkle {
 			display: none;
 		}
 	}
