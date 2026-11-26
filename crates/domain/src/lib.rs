@@ -10,6 +10,7 @@ mod language;
 mod participant_profile;
 mod room;
 mod room_id;
+mod short_text;
 
 pub use access_key::{AccessKey, AccessKeyError};
 pub use display_name::{DisplayName, DisplayNameError};

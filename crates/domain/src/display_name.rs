@@ -1,6 +1,8 @@
 use std::fmt;
 use std::str::FromStr;
 
+use crate::short_text::{ShortTextIssue, clean};
+
 const MAX_CHARS: usize = 40;
 
 /// Name shown to other participants: trimmed, 1–40 characters, no control characters.
@@ -28,17 +30,13 @@ impl FromStr for DisplayName {
     type Err = DisplayNameError;
 
     fn from_str(raw: &str) -> Result<Self, Self::Err> {
-        let trimmed = raw.trim();
-        if trimmed.is_empty() {
-            return Err(DisplayNameError::Empty);
-        }
-        if trimmed.chars().count() > MAX_CHARS {
-            return Err(DisplayNameError::TooLong);
-        }
-        if trimmed.chars().any(char::is_control) {
-            return Err(DisplayNameError::ControlCharacter);
-        }
-        Ok(Self(trimmed.to_owned()))
+        clean(raw, MAX_CHARS)
+            .map(|text| Self(text.to_owned()))
+            .map_err(|issue| match issue {
+                ShortTextIssue::Empty => DisplayNameError::Empty,
+                ShortTextIssue::TooLong => DisplayNameError::TooLong,
+                ShortTextIssue::ControlCharacter => DisplayNameError::ControlCharacter,
+            })
     }
 }
 
