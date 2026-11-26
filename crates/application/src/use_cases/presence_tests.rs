@@ -56,7 +56,11 @@ impl Fixture {
             entry: EntryPolicy::Open,
             ..RoomSettings::private(title.parse().unwrap())
         };
-        let room = self.rooms.create(settings).await.unwrap();
+        let room = self
+            .rooms
+            .create("ana".parse().unwrap(), settings)
+            .await
+            .unwrap();
         self.media.rooms.lock().unwrap().push(LiveRoom {
             room: room.id.clone(),
             people,
@@ -90,19 +94,11 @@ async fn ranks_listed_rooms_by_size_and_counts_everyone() {
 }
 
 #[tokio::test]
-async fn shows_the_host_name_once_known() {
+async fn shows_who_owns_each_room() {
     let f = fixture(false);
-    let mut room = f.live("Chat", true, 1, &["en"]).await;
-    room.set_host_name("Ana".parse().unwrap());
-    f.repository.update(room).await.unwrap();
+    f.live("Chat", true, 1, &["en"]).await;
     let snapshot = f.presence.snapshot().await;
-    assert_eq!(
-        snapshot.ranking[0]
-            .host
-            .as_ref()
-            .map(diceri_domain::DisplayName::as_str),
-        Some("Ana")
-    );
+    assert_eq!(snapshot.ranking[0].owner.as_str(), "ana");
 }
 
 #[tokio::test]

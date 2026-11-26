@@ -120,15 +120,13 @@ impl AdmissionService {
         host_key: &AccessKey,
         profile: &ParticipantProfile,
     ) -> Result<JoinTicket, AdmissionError> {
-        let mut room = self.load(room_id).await?;
+        let room = self.load(room_id).await?;
         if !room.is_host(host_key) {
             return Err(AdmissionError::Forbidden);
         }
         room.ensure_open()?;
         ensure_voice_belongs(&room, profile)?;
         let ticket = self.ticket(room_id, Some(profile), MediaRole::Speaker)?;
-        room.set_host_name(profile.name.clone());
-        self.rooms.update(room).await?;
         self.start_translation(room_id).await;
         Ok(ticket)
     }

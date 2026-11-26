@@ -5,9 +5,11 @@
 
 mod agent_dispatcher;
 mod livekit;
+mod memory_accounts;
 mod memory_room_repository;
 mod os_random;
 pub mod speech;
+mod sqlite_accounts;
 pub mod synthesis;
 pub mod translation;
 
@@ -16,8 +18,10 @@ pub use livekit::{
     LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser, OUTPUT_LANGUAGE_ATTRIBUTE,
     VOICE_ATTRIBUTE,
 };
+pub use memory_accounts::MemoryAccountRepository;
 pub use memory_room_repository::MemoryRoomRepository;
 pub use os_random::OsRandom;
+pub use sqlite_accounts::SqliteAccountRepository;
 
 /// Selects the process-wide TLS crypto provider. Dependencies enable both
 /// `ring` and `aws-lc-rs`, so rustls cannot pick one by itself; call this once

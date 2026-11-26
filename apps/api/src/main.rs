@@ -20,7 +20,8 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("LiveKit not configured: joining rooms will return 503");
     }
 
-    let router = build_router(AppState::from_config(&config), &config);
+    let state = AppState::from_config(&config).await?;
+    let router = build_router(state, &config);
     // Peer addresses feed the per-client write limit.
     let service = router.into_make_service_with_connect_info::<std::net::SocketAddr>();
     axum::serve(listener, service)

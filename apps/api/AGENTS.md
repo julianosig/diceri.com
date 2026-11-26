@@ -46,6 +46,8 @@ in responses.
 | `DICERI_WRITE_LIMIT_PER_MINUTE` | `60` | POSTs per client IP per minute (`0` disables) |
 | `DICERI_CLIENT_IP_HEADER` | unset | client IP header behind a proxy (`cf-connecting-ip` for Cloudflare) |
 | `DICERI_DEPLOYMENT` | `dev` | names voice clones `diceri-<deployment>-…`; API and agent must match |
+| `DICERI_DATABASE_URL` | `sqlite://diceri.db` | SQLite file for accounts (the only durable data) |
+| `DICERI_SECURE_COOKIES` | `false` | `true` marks the session cookie `Secure` (HTTPS); on in production |
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
 | `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |
 | `DICERI_LIVEKIT_API_SECRET` | unset | LiveKit API secret (secret) |

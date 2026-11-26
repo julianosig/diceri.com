@@ -12,6 +12,7 @@ mod room;
 mod room_id;
 mod room_settings;
 mod short_text;
+mod username;
 
 pub use access_key::{AccessKey, AccessKeyError};
 pub use display_name::{DisplayName, DisplayNameError};
@@ -21,3 +22,4 @@ pub use participant_profile::ParticipantProfile;
 pub use room::{Room, RoomRuleError};
 pub use room_id::{RoomId, RoomIdError};
 pub use room_settings::{EntryPolicy, RoomSettings, RoomTitle, RoomTitleError};
+pub use username::{Username, UsernameError};

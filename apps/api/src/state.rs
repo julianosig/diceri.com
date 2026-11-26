@@ -1,14 +1,17 @@
 use std::sync::Arc;
 
+use anyhow::Context as _;
 use diceri_application::ports::{
-    MediaAccessIssuer, MediaPresence, RandomSource, RoomRepository, TranslationDispatcher,
-    VoiceCloner,
+    AccountRepository, MediaAccessIssuer, MediaPresence, RandomSource, RoomRepository,
+    TranslationDispatcher, VoiceCloner,
 };
-use diceri_application::use_cases::{AdmissionService, PresenceService, RoomService, VoiceService};
+use diceri_application::use_cases::{
+    AccountService, AdmissionService, PresenceService, RoomService, VoiceService,
+};
 use diceri_infra::synthesis::ElevenLabsVoiceCloner;
 use diceri_infra::{
     HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser,
-    MemoryRoomRepository, OsRandom,
+    MemoryAccountRepository, MemoryRoomRepository, OsRandom, SqliteAccountRepository,
 };
 
 use crate::Config;
@@ -22,12 +25,14 @@ pub struct AppState {
     pub voices: Option<VoiceService>,
     /// Who is online now; empty when media is not configured.
     pub presence: PresenceService,
+    pub accounts: AccountService,
+    /// Session cookies are `Secure` (HTTPS only).
+    pub secure_cookies: bool,
 }
 
 impl AppState {
     /// Composition root: wires adapters chosen by configuration.
-    #[must_use]
-    pub fn from_config(config: &Config) -> Self {
+    pub async fn from_config(config: &Config) -> anyhow::Result<Self> {
         let media = config
             .livekit
             .as_ref()
@@ -48,6 +53,13 @@ impl AppState {
                 ))
             });
         let mut state = Self::in_memory_with(media, cloner, &config.deployment);
+        let accounts: Arc<dyn AccountRepository> = Arc::new(
+            SqliteAccountRepository::connect(&config.database_url)
+                .await
+                .context("cannot open the accounts database")?,
+        );
+        state.accounts = AccountService::new(accounts, Arc::new(OsRandom));
+        state.secure_cookies = config.secure_cookies;
         if let Some(livekit) = &config.livekit {
             let room_closer = Arc::new(LiveKitRoomCloser::new(
                 &livekit.url,
@@ -73,7 +85,7 @@ impl AppState {
                 ));
             state.admission = state.admission.with_translation(dispatcher);
         }
-        state
+        Ok(state)
     }
 
     /// In-memory storage with an optional media issuer (also used by tests).
@@ -96,6 +108,11 @@ impl AppState {
             rooms: RoomService::new(repository.clone(), random.clone()),
             voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner, deployment)),
             presence: PresenceService::new(None, repository.clone()),
+            accounts: AccountService::new(
+                Arc::new(MemoryAccountRepository::default()),
+                random.clone(),
+            ),
+            secure_cookies: false,
             admission: AdmissionService::new(repository, random, media),
         }
     }

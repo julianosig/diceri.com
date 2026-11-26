@@ -110,9 +110,33 @@ pub(crate) async fn send(
     key: Option<&str>,
     body: Option<Value>,
 ) -> (StatusCode, Value) {
-    let mut builder = Request::builder().method(method).uri(uri);
+    let (status, _, body) = exchange(app, method, uri, &headers(key, None), body).await;
+    (status, body)
+}
+
+/// Request headers: an access key and/or a session cookie.
+pub(crate) fn headers(key: Option<&str>, cookie: Option<&str>) -> Vec<(&'static str, String)> {
+    let mut headers = Vec::new();
     if let Some(key) = key {
-        builder = builder.header("x-diceri-key", key);
+        headers.push(("x-diceri-key", key.to_owned()));
+    }
+    if let Some(cookie) = cookie {
+        headers.push(("cookie", cookie.to_owned()));
+    }
+    headers
+}
+
+/// Sends a request with arbitrary headers; returns status, `Set-Cookie` and JSON body.
+pub(crate) async fn exchange(
+    app: &Router,
+    method: &str,
+    uri: &str,
+    headers: &[(&'static str, String)],
+    body: Option<Value>,
+) -> (StatusCode, Option<String>, Value) {
+    let mut builder = Request::builder().method(method).uri(uri);
+    for (name, value) in headers {
+        builder = builder.header(*name, value);
     }
     let request = match body {
         Some(json) => builder
@@ -123,11 +147,24 @@ pub(crate) async fn send(
     .unwrap();
     let response = app.clone().oneshot(request).await.unwrap();
     let status = response.status();
+    let cookie = response
+        .headers()
+        .get(header::SET_COOKIE)
+        .map(|value| value.to_str().unwrap().to_owned());
     let bytes = response.into_body().collect().await.unwrap().to_bytes();
     (
         status,
+        cookie,
         serde_json::from_slice(&bytes).unwrap_or(Value::Null),
     )
+}
+
+/// Signs `username` up and returns the `Cookie` header that carries its session.
+pub(crate) async fn sign_up(app: &Router, username: &str) -> String {
+    let body = serde_json::json!({ "username": username });
+    let (status, cookie, _) = exchange(app, "POST", "/api/v1/accounts", &[], Some(body)).await;
+    assert_eq!(status, StatusCode::CREATED);
+    cookie.unwrap().split(';').next().unwrap().to_owned()
 }
 
 /// Creates a private, host-approved room and returns `(room_id, host_key)`.
@@ -135,9 +172,14 @@ pub(crate) async fn create_room(app: &Router) -> (String, String) {
     create_room_with(app, serde_json::json!({ "title": "Test room" })).await
 }
 
-/// Creates a room from a `POST /rooms` body and returns `(room_id, host_key)`.
+/// Signs up a fresh account, creates a room from a `POST /rooms` body with it and
+/// returns `(room_id, host_key)`.
 pub(crate) async fn create_room_with(app: &Router, body: Value) -> (String, String) {
-    let (status, body) = send(app, "POST", "/api/v1/rooms", None, Some(body)).await;
+    static ACCOUNTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = ACCOUNTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let cookie = sign_up(app, &format!("host{n}")).await;
+    let headers = headers(None, Some(&cookie));
+    let (status, _, body) = exchange(app, "POST", "/api/v1/rooms", &headers, Some(body)).await;
     assert_eq!(status, StatusCode::CREATED);
     (
         body["id"].as_str().unwrap().to_owned(),

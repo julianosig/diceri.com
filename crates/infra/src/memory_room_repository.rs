@@ -50,6 +50,7 @@ mod tests {
         Room::new(
             RoomId::from_random_bytes([1; 16]),
             AccessKey::from_random_bytes([2; 16]),
+            "ana".parse().unwrap(),
             RoomSettings::private("Test".parse().unwrap()),
         )
     }

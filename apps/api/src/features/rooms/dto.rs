@@ -64,8 +64,8 @@ pub(crate) struct RoomResponse {
     pub id: String,
     pub max_participants: u8,
     pub title: String,
-    /// Known once the host has joined.
-    pub host_name: Option<String>,
+    /// Username of the account that owns (hosts) the room.
+    pub owner: String,
     pub entry: EntryDto,
 }
 
@@ -75,7 +75,7 @@ impl From<&Room> for RoomResponse {
             id: room.id.to_string(),
             max_participants: room.max_participants,
             title: room.settings.title.to_string(),
-            host_name: room.host_name().map(ToString::to_string),
+            owner: room.owner.to_string(),
             entry: room.settings.entry.into(),
         }
     }

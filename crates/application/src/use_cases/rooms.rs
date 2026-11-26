@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, Room, RoomId, RoomSettings};
+use diceri_domain::{AccessKey, Room, RoomId, RoomSettings, Username};
 
 use crate::ports::{RandomSource, RoomRepository, RoomRepositoryError};
 
@@ -33,11 +33,12 @@ impl RoomService {
         Self { repository, random }
     }
 
-    /// Creates a room; the returned room's host key must be handed to the creator once.
-    pub async fn create(&self, settings: RoomSettings) -> Result<Room, RoomError> {
+    /// Creates a room owned by `owner`; the returned room's host key must be handed
+    /// to the creator once.
+    pub async fn create(&self, owner: Username, settings: RoomSettings) -> Result<Room, RoomError> {
         let id = RoomId::from_random_bytes(self.random.random_128());
         let host_key = AccessKey::from_random_bytes(self.random.random_128());
-        let room = Room::new(id, host_key, settings);
+        let room = Room::new(id, host_key, owner, settings);
         self.repository.insert(room.clone()).await?;
         Ok(room)
     }
@@ -50,7 +51,7 @@ impl RoomService {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_support::{CountingRandom, InMemoryRooms, private_room};
+    use crate::test_support::{CountingRandom, InMemoryRooms, owner, private_room};
 
     fn service() -> RoomService {
         RoomService::new(
@@ -62,13 +63,13 @@ mod tests {
     #[tokio::test]
     async fn creates_room_that_can_be_fetched() {
         let service = service();
-        let room = service.create(private_room()).await.unwrap();
+        let room = service.create(owner(), private_room()).await.unwrap();
         assert_eq!(service.get(&room.id).await.unwrap(), room);
     }
 
     #[tokio::test]
     async fn host_key_differs_from_room_id() {
-        let room = service().create(private_room()).await.unwrap();
+        let room = service().create(owner(), private_room()).await.unwrap();
         assert_ne!(room.host_key().expose(), room.id.as_str());
     }
 

@@ -50,6 +50,10 @@ pub struct Config {
     pub client_ip_header: Option<String>,
     /// Names this deployment's voice clones (`prod`, `dev`, `e2e`); see `clone_name_prefix`.
     pub deployment: String,
+    /// SQLite database for accounts, e.g. `sqlite://diceri.db`.
+    pub database_url: String,
+    /// Mark the session cookie `Secure` (HTTPS only); on in production.
+    pub secure_cookies: bool,
 }
 
 impl Config {
@@ -86,6 +90,9 @@ impl Config {
                 .context("DICERI_WRITE_LIMIT_PER_MINUTE must be a whole number")?,
             client_ip_header: env::var("DICERI_CLIENT_IP_HEADER").ok(),
             deployment: deployment_from_env(),
+            database_url: env::var("DICERI_DATABASE_URL")
+                .unwrap_or_else(|_| "sqlite://diceri.db".to_owned()),
+            secure_cookies: env::var("DICERI_SECURE_COOKIES").is_ok_and(|value| value == "true"),
         })
     }
 
@@ -103,6 +110,8 @@ impl Config {
             write_limit_per_minute: 0,
             client_ip_header: None,
             deployment: "test".to_owned(),
+            database_url: "sqlite::memory:".to_owned(),
+            secure_cookies: false,
         }
     }
 }

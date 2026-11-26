@@ -1,6 +1,5 @@
 use crate::{
-    AccessKey, DisplayName, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomId,
-    RoomSettings,
+    AccessKey, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomId, RoomSettings, Username,
 };
 
 /// Business rule violations on a room.
@@ -18,16 +17,16 @@ pub enum RoomRuleError {
     Ended,
 }
 
-/// A meeting room joined through a shared link. The creator holds the host key,
-/// names the room and decides who gets in (or lets everyone in).
+/// A meeting room joined through a shared link. Its owner (the account that
+/// created it) holds the host key, names the room and decides who gets in.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Room {
     pub id: RoomId,
     pub max_participants: u8,
     pub settings: RoomSettings,
+    /// The account that created the room, shown as its host.
+    pub owner: Username,
     host_key: AccessKey,
-    /// The host's display name, known once they join.
-    host_name: Option<DisplayName>,
     requests: Vec<JoinRequest>,
     /// Voice clones recorded for this room (provider ids), deleted when people leave.
     voices: Vec<String>,
@@ -44,13 +43,13 @@ impl Room {
     pub const MAX_VOICES: usize = 10;
 
     #[must_use]
-    pub fn new(id: RoomId, host_key: AccessKey, settings: RoomSettings) -> Self {
+    pub fn new(id: RoomId, host_key: AccessKey, owner: Username, settings: RoomSettings) -> Self {
         Self {
             id,
             max_participants: Self::DEFAULT_MAX_PARTICIPANTS,
             settings,
+            owner,
             host_key,
-            host_name: None,
             requests: Vec::new(),
             voices: Vec::new(),
             ended: false,
@@ -60,16 +59,6 @@ impl Room {
     #[must_use]
     pub fn host_key(&self) -> &AccessKey {
         &self.host_key
-    }
-
-    #[must_use]
-    pub fn host_name(&self) -> Option<&DisplayName> {
-        self.host_name.as_ref()
-    }
-
-    /// Remembers how the host presents themselves (the latest join wins).
-    pub fn set_host_name(&mut self, name: DisplayName) {
-        self.host_name = Some(name);
     }
 
     #[must_use]
@@ -186,7 +175,13 @@ mod tests {
 
     fn room() -> Room {
         let settings = RoomSettings::private("Chat".parse().unwrap());
-        Room::new(RoomId::from_random_bytes([1; 16]), key(100), settings)
+        let owner = "ana".parse().unwrap();
+        Room::new(
+            RoomId::from_random_bytes([1; 16]),
+            key(100),
+            owner,
+            settings,
+        )
     }
 
     #[test]
@@ -196,14 +191,6 @@ mod tests {
         room.knock(request(1)).unwrap();
         assert!(room.is_member(&key(1)));
         assert_eq!(room.pending().count(), 0);
-    }
-
-    #[test]
-    fn the_host_name_is_known_after_they_join() {
-        let mut room = room();
-        assert_eq!(room.host_name(), None);
-        room.set_host_name("Ana".parse().unwrap());
-        assert_eq!(room.host_name().map(DisplayName::as_str), Some("Ana"));
     }
 
     #[test]

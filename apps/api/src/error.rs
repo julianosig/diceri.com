@@ -2,7 +2,7 @@ use axum::Json;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use diceri_application::ports::VoiceCloneError;
-use diceri_application::use_cases::{AdmissionError, RoomError, VoiceError};
+use diceri_application::use_cases::{AccountError, AdmissionError, RoomError, VoiceError};
 use diceri_domain::RoomRuleError;
 use serde::Serialize;
 
@@ -82,6 +82,16 @@ impl IntoResponse for ApiError {
             HeaderValue::from_static("application/problem+json"),
         );
         response
+    }
+}
+
+impl From<AccountError> for ApiError {
+    fn from(error: AccountError) -> Self {
+        match error {
+            AccountError::Taken => Self::Conflict(error.to_string()),
+            AccountError::Unauthorized => Self::Unauthorized,
+            AccountError::Repository(source) => Self::Internal(source.into()),
+        }
     }
 }
 

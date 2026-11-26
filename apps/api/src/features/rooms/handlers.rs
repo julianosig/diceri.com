@@ -4,13 +4,15 @@ use axum::http::StatusCode;
 use diceri_domain::{RequestId, RoomId};
 
 use super::dto::{CreateRoomRequest, CreatedRoomResponse, RoomResponse};
+use crate::features::CurrentAccount;
 use crate::{ApiError, AppState};
 
 pub(crate) async fn create_room(
     State(state): State<AppState>,
+    CurrentAccount(owner): CurrentAccount,
     Json(body): Json<CreateRoomRequest>,
 ) -> Result<(StatusCode, Json<CreatedRoomResponse>), ApiError> {
-    let room = state.rooms.create(body.settings()?).await?;
+    let room = state.rooms.create(owner, body.settings()?).await?;
     tracing::info!(room_id = %room.id, "room created");
     let body = CreatedRoomResponse {
         room: RoomResponse::from(&room),

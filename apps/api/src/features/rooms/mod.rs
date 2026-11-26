@@ -2,7 +2,7 @@
 //!
 //! | Method | Path | Key (`x-diceri-key`) |
 //! | --- | --- | --- |
-//! | POST | `/rooms` | — (title, listing, entry; returns the host key once) |
+//! | POST | `/rooms` | account session (title, listing, entry; returns the host key once) |
 //! | GET | `/rooms/{room}` | — |
 //! | POST | `/rooms/{room}/host-session` | host |
 //! | POST | `/rooms/{room}/requests` | — (returns a request key) |

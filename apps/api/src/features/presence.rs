@@ -39,7 +39,7 @@ struct PresenceDto {
 struct RankedRoomDto {
     id: String,
     title: String,
-    host: Option<String>,
+    owner: String,
     entry: EntryDto,
     people: usize,
     languages: Vec<String>,
@@ -64,7 +64,7 @@ impl From<RankedRoom> for RankedRoomDto {
         Self {
             id: room.id.to_string(),
             title: room.title.to_string(),
-            host: room.host.map(|name| name.to_string()),
+            owner: room.owner.to_string(),
             entry: room.entry.into(),
             people: room.people,
             languages: room

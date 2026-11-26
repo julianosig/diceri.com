@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use diceri_domain::{DisplayName, EntryPolicy, LanguageCode, Room, RoomId, RoomTitle};
+use diceri_domain::{EntryPolicy, LanguageCode, Room, RoomId, RoomTitle, Username};
 use tokio::sync::Mutex;
 use tokio::time::Instant;
 
@@ -27,7 +27,8 @@ pub struct PresenceSnapshot {
 pub struct RankedRoom {
     pub id: RoomId,
     pub title: RoomTitle,
-    pub host: Option<DisplayName>,
+    /// The account that owns the room.
+    pub owner: Username,
     pub entry: EntryPolicy,
     pub people: usize,
     /// Most listened first.
@@ -119,7 +120,7 @@ fn summarize(mut rooms: Vec<(Room, LiveRoom)>) -> PresenceSnapshot {
             .filter(|(room, _)| room.settings.listed)
             .take(RANKING_SIZE)
             .map(|(room, live)| RankedRoom {
-                host: room.host_name().cloned(),
+                owner: room.owner,
                 id: room.id,
                 title: room.settings.title,
                 entry: room.settings.entry,

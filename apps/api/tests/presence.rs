@@ -30,17 +30,14 @@ fn app() -> (Router, Arc<FakePresence>) {
     (build_router(state, &Config::for_tests()), media)
 }
 
-/// Creates a room, joins as host "Ana" and puts `people` in its media room.
+/// Creates a room (owned by a fresh account) and puts `people` in its media room.
 async fn live_room(
     app: &Router,
     media: &FakePresence,
     body: serde_json::Value,
     people: usize,
 ) -> String {
-    let (id, host_key) = create_room_with(app, body).await;
-    let profile = json!({ "name": "Ana", "outputLanguage": "pt-BR" });
-    let join = format!("/api/v1/rooms/{id}/host-session");
-    send(app, "POST", &join, Some(&host_key), Some(profile)).await;
+    let (id, _) = create_room_with(app, body).await;
     media.0.lock().unwrap().push(LiveRoom {
         room: id.parse().unwrap(),
         people,
@@ -58,6 +55,8 @@ async fn ranks_listed_rooms_with_title_host_and_entry() {
 
     let (status, body) = send(&app, "GET", "/api/v1/presence", None, None).await;
     assert_eq!(status, StatusCode::OK);
+    let (_, room) = send(&app, "GET", &format!("/api/v1/rooms/{id}"), None, None).await;
+    let owner = room["owner"].clone();
     assert_eq!(
         body,
         json!({
@@ -66,7 +65,7 @@ async fn ranks_listed_rooms_with_title_host_and_entry() {
             "ranking": [{
                 "id": id,
                 "title": "Spanish practice",
-                "host": "Ana",
+                "owner": owner,
                 "entry": "open",
                 "people": 2,
                 "languages": ["pt-BR", "es"]

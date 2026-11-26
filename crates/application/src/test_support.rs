@@ -5,16 +5,53 @@ use std::sync::Mutex;
 use std::sync::atomic::{AtomicU8, Ordering};
 
 use async_trait::async_trait;
-use diceri_domain::{Room, RoomId, RoomSettings};
+use diceri_domain::{AccessKey, Room, RoomId, RoomSettings, Username};
 
 use crate::ports::{
-    DispatchError, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
-    RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
+    AccountRepository, AccountRepositoryError, DispatchError, MediaAccessError, MediaAccessIssuer,
+    MediaGrant, MediaParticipant, MediaRole, RandomSource, RoomRepository, RoomRepositoryError,
+    TranslationDispatcher,
 };
 
 /// A private, host-approved room titled "Test room".
 pub(crate) fn private_room() -> RoomSettings {
     RoomSettings::private("Test room".parse().unwrap())
+}
+
+/// The account that owns test rooms.
+pub(crate) fn owner() -> Username {
+    "owner".parse().unwrap()
+}
+
+/// Accounts keyed by the raw key (fine for tests; real adapters store hashes).
+#[derive(Default)]
+pub(crate) struct InMemoryAccounts(Mutex<Vec<(Username, AccessKey)>>);
+
+#[async_trait]
+impl AccountRepository for InMemoryAccounts {
+    async fn create(
+        &self,
+        username: &Username,
+        key: &AccessKey,
+    ) -> Result<(), AccountRepositoryError> {
+        let mut accounts = self.0.lock().unwrap();
+        if accounts.iter().any(|(name, _)| name == username) {
+            return Err(AccountRepositoryError::Taken);
+        }
+        accounts.push((username.clone(), key.clone()));
+        Ok(())
+    }
+
+    async fn find_by_key(
+        &self,
+        key: &AccessKey,
+    ) -> Result<Option<Username>, AccountRepositoryError> {
+        let accounts = self.0.lock().unwrap();
+        Ok(accounts
+            .iter()
+            .find(|(_, k)| k == key)
+            .map(|(name, _)| name.clone()))
+    }
 }
 
 /// Deterministic randomness: every call returns the next byte value.
