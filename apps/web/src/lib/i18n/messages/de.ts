@@ -58,8 +58,6 @@ export const de: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `Dein Raum ist unter diceri.com/@${username}`,
-		listed: 'Auf der Live-Tafel zeigen',
-		listedHint: 'Alle auf der Startseite sehen deinen Raum und können ihn öffnen.',
 		whoGetsIn: 'Wer kommt rein',
 		approval: 'Ich lasse jede Person einzeln rein',
 		open: 'Alle können beitreten',

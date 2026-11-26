@@ -58,8 +58,6 @@ export const ko: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `내 방 주소: diceri.com/@${username}`,
-		listed: '라이브 보드에 표시',
-		listedHint: '홈페이지의 누구나 내 방을 보고 열 수 있습니다.',
 		whoGetsIn: '입장 방식',
 		approval: '한 명씩 승인',
 		open: '누구나 참여 가능',

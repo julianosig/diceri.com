@@ -57,8 +57,6 @@ export const ja: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `あなたのルーム：diceri.com/@${username}`,
-		listed: 'ライブボードに表示',
-		listedHint: 'ホームページの誰もがあなたのルームを見て、開くことができます。',
 		whoGetsIn: '入室できる人',
 		approval: '一人ずつ承認する',
 		open: '誰でも参加できる',

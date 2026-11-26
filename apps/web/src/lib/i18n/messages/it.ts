@@ -58,8 +58,6 @@ export const it: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `La tua stanza è su diceri.com/@${username}`,
-		listed: 'Mostra nella bacheca live',
-		listedHint: 'Chiunque sulla home vede la tua stanza e può aprirla.',
 		whoGetsIn: 'Chi entra',
 		approval: 'Approvo ogni persona',
 		open: 'Chiunque può entrare',

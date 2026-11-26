@@ -58,8 +58,6 @@ export const ru: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `Ваша комната: diceri.com/@${username}`,
-		listed: 'Показывать на живой доске',
-		listedHint: 'Все на главной странице видят вашу комнату и могут её открыть.',
 		whoGetsIn: 'Кто может войти',
 		approval: 'Я одобряю каждого',
 		open: 'Входить может любой',

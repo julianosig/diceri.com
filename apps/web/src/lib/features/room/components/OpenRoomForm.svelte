@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { DoorOpen, LoaderCircle, ShieldCheck, Video } from '@lucide/svelte';
-	import { Button, Toggle } from '#lib/components/ui/index.ts';
+	import { Button } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { saveHostKey } from '../host-keys.ts';
 	import { openRoom } from '../room-api.ts';
@@ -23,7 +23,6 @@
 		{ value: 'open' as RoomEntry, label: t.open, icon: DoorOpen }
 	]);
 
-	let listed = $state(false);
 	let entry = $state<RoomEntry>('approval');
 	let pending = $state(false);
 	let failed = $state(false);
@@ -33,7 +32,8 @@
 		pending = true;
 		failed = false;
 		try {
-			const room = await openRoom({ listed, entry });
+			// Rooms stay off the live board while it is hidden; the API keeps the option.
+			const room = await openRoom({ listed: false, entry });
 			saveHostKey(room.code, room.hostKey);
 			await goto(resolve('/@[username]', { username: room.owner }));
 		} catch {
@@ -52,12 +52,6 @@
 			<p class="text-sm text-ink-muted">{t.livesAt(username)}</p>
 		</div>
 	</div>
-	<Toggle
-		checked={listed}
-		label={t.listed}
-		description={t.listedHint}
-		onchange={(value: boolean) => (listed = value)}
-	/>
 	<fieldset class="flex flex-col gap-2">
 		<legend class="mb-1 text-base font-semibold">{t.whoGetsIn}</legend>
 		<div class="grid grid-cols-2 gap-2">

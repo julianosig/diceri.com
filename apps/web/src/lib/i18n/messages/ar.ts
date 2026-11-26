@@ -63,8 +63,6 @@ export const ar: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `غرفتك على ${ltr(`diceri.com/@${username}`)}`,
-		listed: 'اعرضها على اللوحة المباشرة',
-		listedHint: 'يرى أي شخص في الصفحة الرئيسية غرفتك ويمكنه فتحها.',
 		whoGetsIn: 'من يدخل',
 		approval: 'أوافق على كل شخص',
 		open: 'يمكن لأي شخص الانضمام',

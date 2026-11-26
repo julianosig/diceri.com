@@ -58,8 +58,6 @@ export const pt: Messages = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `Sua sala fica em diceri.com/@${username}`,
-		listed: 'Mostrar no painel ao vivo',
-		listedHint: 'Quem estiver na página inicial vê sua sala e pode entrar.',
 		whoGetsIn: 'Quem entra',
 		approval: 'Eu aprovo cada pessoa',
 		open: 'Qualquer um pode entrar',

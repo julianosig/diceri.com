@@ -61,8 +61,6 @@ export const en = {
 	},
 	openRoom: {
 		livesAt: (username: string) => `Your room lives at diceri.com/@${username}`,
-		listed: 'Show on the live board',
-		listedHint: 'Anyone on the home page sees your room and can open it.',
 		whoGetsIn: 'Who gets in',
 		approval: 'I approve each person',
 		open: 'Anyone can join',
