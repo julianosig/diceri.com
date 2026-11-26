@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onDestroy } from 'svelte';
-	import { Check, Lock, Mic, RotateCcw } from '@lucide/svelte';
+	import { Check, Mic, RotateCcw } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
@@ -47,10 +47,6 @@
 			</span>
 		</div>
 		<p class="text-xs text-ink-muted">{t.paidSoon}</p>
-		<Button size="sm" variant="secondary" disabled>
-			<Lock class="size-4" aria-hidden="true" />
-			{t.record(RECORD_SECONDS)}
-		</Button>
 	{:else if recorder.step === 'recording'}
 		<div class="flex items-center justify-between text-sm font-medium">
 			<span class="flex items-center gap-2 text-red-600">
