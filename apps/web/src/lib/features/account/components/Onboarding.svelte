@@ -2,12 +2,7 @@
 	import { CircleCheck, CircleX, LoaderCircle } from '@lucide/svelte';
 	import { ApiError } from '#lib/api/http-client.ts';
 	import { Button } from '#lib/components/ui/index.ts';
-	import {
-		MascotAvatar,
-		MascotPicker,
-		randomMascot,
-		type MascotId
-	} from '#lib/features/room/index.ts';
+	import { MascotPicker, randomMascot, type MascotId } from '#lib/features/room/index.ts';
 	import type { AccountSession } from '../account-session.svelte.ts';
 	import { MAX_PASSWORD_LENGTH, passwordProblem } from '../password.ts';
 	import { UsernameCheck } from '../username-check.svelte.ts';
@@ -74,28 +69,10 @@
 </script>
 
 <form class="flex w-full max-w-md flex-col gap-5 text-left" onsubmit={submit}>
-	<div class="flex items-center gap-3">
-		{#if creating}
-			<MascotAvatar {mascot} size={56} />
-		{/if}
-		<div class="flex flex-col">
-			<h2 class="text-xl font-bold">
-				{creating ? 'Claim your room' : 'Welcome back'}
-			</h2>
-			<p class="text-sm text-ink-muted">
-				{#if creating}
-					Your @ is your room: <span class="font-medium">
-						diceri.com/@{normalizeUsername(username) || 'you'}
-					</span>
-				{:else}
-					Sign in to open your room.
-				{/if}
-			</p>
-		</div>
-	</div>
-
 	<label class="flex flex-col gap-2">
-		<span class="text-base font-semibold">Username</span>
+		<span class="text-xl font-bold">
+			{creating ? 'Claim your room username' : 'Username'}
+		</span>
 		<span
 			class="flex items-center rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500"
 		>

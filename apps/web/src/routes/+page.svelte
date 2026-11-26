@@ -38,10 +38,6 @@
 				Now in every language.
 			</span>
 		</h1>
-		<p class="max-w-xl text-lg text-pretty text-ink-muted">
-			Talk the way you always do. Everyone hears you live in their own language —
-			<strong class="font-semibold text-ink">in your own voice</strong>.
-		</p>
 		{#if account.account}
 			<OpenRoomForm username={account.account.username} mascot={account.account.mascot} />
 		{:else if account.account === null}
