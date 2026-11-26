@@ -31,7 +31,7 @@
 			</span>
 			<svg
 				class="cue talk waves"
-				style:left="{x + 9}%"
+				style:left="{x + 16}%"
 				style:top="{y - 1}%"
 				viewBox="0 0 30 40"
 				aria-hidden="true"
@@ -121,8 +121,9 @@
 	.waves {
 		width: 2.6cqw;
 		fill: none;
-		stroke: var(--color-brand-violet);
-		stroke-width: 3.5;
+		/* Violet pulled towards the ink: deep on light, bright lilac on dark, always contrasted. */
+		stroke: color-mix(in oklch, var(--color-brand-violet) 45%, var(--color-ink));
+		stroke-width: 4;
 		stroke-linecap: round;
 	}
 
@@ -192,13 +193,13 @@
 
 	@keyframes wave {
 		0% {
-			opacity: 0.2;
+			opacity: 0.5;
 		}
 		40% {
 			opacity: 1;
 		}
 		100% {
-			opacity: 0.2;
+			opacity: 0.5;
 		}
 	}
 
