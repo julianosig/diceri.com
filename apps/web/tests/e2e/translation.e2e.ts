@@ -210,7 +210,9 @@ test('when the host ends the call everyone gets the transcript', async ({ baseUR
 			timeout: 20_000
 		});
 		await admit(ana.page, bob);
+		// Both phrases must be in before ending, or the transcripts can miss one.
 		await expectCaption(bob, 'Ana', /contract/i);
+		await expectCaption(ana, 'Bob', /tempo/i);
 
 		await ana.page.getByRole('button', { name: 'Leave call' }).click();
 		await ana.page.getByRole('menuitem', { name: 'End call for everyone' }).click();
