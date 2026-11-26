@@ -42,10 +42,10 @@
 	}
 </script>
 
-<form class="flex w-full max-w-md flex-col gap-5 text-left" onsubmit={submit}>
-	<div class="flex items-center gap-3">
+<form class="flex w-full max-w-md flex-col gap-5 text-center" onsubmit={submit}>
+	<div class="flex flex-col items-center gap-2">
 		<MascotAvatar {mascot} size={56} />
-		<div class="flex flex-col">
+		<div class="flex flex-col items-center">
 			<h2 class="text-xl font-bold">@{username}</h2>
 			<p class="text-sm text-ink-muted">Your room lives at diceri.com/@{username}</p>
 		</div>
@@ -57,7 +57,7 @@
 		onchange={(value: boolean) => (listed = value)}
 	/>
 	<fieldset class="flex flex-col gap-2">
-		<legend class="mb-1 text-base font-semibold">Who gets in</legend>
+		<legend class="mx-auto mb-1 text-base font-semibold">Who gets in</legend>
 		<div class="grid grid-cols-2 gap-2">
 			{#each ENTRIES as option (option.value)}
 				{@const Icon = option.icon}
