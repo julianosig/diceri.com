@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { DoorOpen, ShieldCheck } from '@lucide/svelte';
+	import { DoorOpen, LoaderCircle, ShieldCheck, Video } from '@lucide/svelte';
 	import { Button, Toggle } from '#lib/components/ui/index.ts';
 	import { saveHostKey } from '../host-keys.ts';
 	import { openRoom } from '../room-api.ts';
@@ -42,10 +42,10 @@
 	}
 </script>
 
-<form class="flex w-full max-w-md flex-col gap-5 text-center" onsubmit={submit}>
-	<div class="flex flex-col items-center gap-2">
+<form class="flex w-full max-w-md flex-col gap-5 text-left" onsubmit={submit}>
+	<div class="flex items-center gap-3">
 		<MascotAvatar {mascot} size={56} />
-		<div class="flex flex-col items-center">
+		<div class="flex flex-col">
 			<h2 class="text-xl font-bold">@{username}</h2>
 			<p class="text-sm text-ink-muted">Your room lives at diceri.com/@{username}</p>
 		</div>
@@ -57,7 +57,7 @@
 		onchange={(value: boolean) => (listed = value)}
 	/>
 	<fieldset class="flex flex-col gap-2">
-		<legend class="mx-auto mb-1 text-base font-semibold">Who gets in</legend>
+		<legend class="mb-1 text-base font-semibold">Who gets in</legend>
 		<div class="grid grid-cols-2 gap-2">
 			{#each ENTRIES as option (option.value)}
 				{@const Icon = option.icon}
@@ -82,7 +82,13 @@
 		{/if}
 	</fieldset>
 	<Button size="lg" type="submit" disabled={pending}>
-		{pending ? 'Opening…' : 'Open my room'}
+		{#if pending}
+			<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
+			Opening…
+		{:else}
+			<Video class="size-5" aria-hidden="true" />
+			Open my room
+		{/if}
 	</Button>
 	{#if failed}
 		<p role="alert" class="text-sm text-red-600">Could not open your room. Try again.</p>

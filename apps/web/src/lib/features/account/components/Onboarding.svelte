@@ -1,5 +1,13 @@
 <script lang="ts">
-	import { CircleCheck, LoaderCircle, LogIn } from '@lucide/svelte';
+	import {
+		AtSign,
+		CircleCheck,
+		LoaderCircle,
+		Lock,
+		LockKeyhole,
+		LogIn,
+		UserPlus
+	} from '@lucide/svelte';
 	import { ApiError } from '#lib/api/http-client.ts';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { MascotPicker, randomMascot, type MascotId } from '#lib/features/room/index.ts';
@@ -65,19 +73,27 @@
 		}
 	}
 
-	const inputClass =
-		'rounded-xl border-2 border-ink-muted/25 bg-surface px-4 py-3.5 text-center text-xl font-semibold outline-none focus:border-brand-500';
+	/** Before a name is resolved only the @ field shows, centred; the open form reads left. */
+	const open = $derived(mode !== null);
+
+	const fieldClass =
+		'flex items-center gap-3 rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500';
+	const inputClass = 'w-full bg-transparent py-3.5 text-xl font-semibold outline-none';
 </script>
 
-<form class="flex w-full max-w-md flex-col gap-5 text-center" onsubmit={submit}>
+<form
+	class={['flex w-full max-w-md flex-col gap-5', open ? 'text-left' : 'text-center']}
+	onsubmit={submit}
+>
 	<label class="flex flex-col gap-2">
 		<span class="text-xl font-bold">Login or claim your room username</span>
-		<span
-			class="flex items-center justify-center rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500"
-		>
-			<span class="text-xl font-bold text-ink-muted" aria-hidden="true">@</span>
+		<span class={[fieldClass, !open && 'justify-center']}>
+			<AtSign class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 			<input
-				class="field-sizing-content min-w-[9ch] bg-transparent py-3.5 pl-1 text-xl font-semibold outline-none"
+				class={[
+					'bg-transparent py-3.5 text-xl font-semibold outline-none',
+					open ? 'w-full' : 'field-sizing-content min-w-[9ch]'
+				]}
 				bind:value={username}
 				oninput={() => {
 					usernames.update(username);
@@ -94,7 +110,7 @@
 
 	{#if usernames.status !== 'empty'}
 		<p
-			class="-mt-2 flex items-center justify-center gap-1.5 text-sm font-medium"
+			class={['-mt-2 flex items-center gap-1.5 text-sm font-medium', !open && 'justify-center']}
 			aria-live="polite"
 		>
 			{#if usernames.status === 'checking'}
@@ -117,25 +133,34 @@
 	{#if mode}
 		<label class="flex flex-col gap-2">
 			<span class="text-base font-semibold">Password</span>
-			<input
-				type="password"
-				class={inputClass}
-				bind:value={password}
-				maxlength={MAX_PASSWORD_LENGTH}
-				autocomplete={mode === 'create' ? 'new-password' : 'current-password'}
-			/>
+			<span class={fieldClass}>
+				<Lock class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+				<input
+					type="password"
+					class={inputClass}
+					bind:value={password}
+					maxlength={MAX_PASSWORD_LENGTH}
+					autocomplete={mode === 'create' ? 'new-password' : 'current-password'}
+				/>
+			</span>
 		</label>
 	{/if}
 	{#if mode === 'create'}
 		<label class="flex flex-col gap-2">
 			<span class="text-base font-semibold">Repeat password</span>
-			<input
-				type="password"
-				class={inputClass}
-				bind:value={repeat}
-				maxlength={MAX_PASSWORD_LENGTH}
-				autocomplete="new-password"
-			/>
+			<span class={fieldClass}>
+				<LockKeyhole class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
+				<input
+					type="password"
+					class={inputClass}
+					bind:value={repeat}
+					maxlength={MAX_PASSWORD_LENGTH}
+					autocomplete="new-password"
+				/>
+				{#if repeat.length > 0 && repeat === password}
+					<CircleCheck class="size-5 shrink-0 text-online" aria-label="Passwords match" />
+				{/if}
+			</span>
 		</label>
 		{#if password.length > 0 && problem}
 			<p class="-mt-2 text-sm font-medium text-red-600" aria-live="polite">{problem}</p>
@@ -150,9 +175,16 @@
 
 	{#if mode}
 		<Button size="lg" type="submit" disabled={!canSubmit}>
-			{#if pending}{mode === 'create' ? 'Creating…' : 'Signing in…'}{:else}{mode === 'create'
-					? 'Create my room'
-					: 'Sign in'}{/if}
+			{#if pending}
+				<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
+				{mode === 'create' ? 'Creating…' : 'Signing in…'}
+			{:else if mode === 'create'}
+				<UserPlus class="size-5" aria-hidden="true" />
+				Create my room
+			{:else}
+				<LogIn class="size-5" aria-hidden="true" />
+				Sign in
+			{/if}
 		</Button>
 	{/if}
 	{#if error}<p role="alert" class="text-sm font-medium text-red-600">{error}</p>{/if}
