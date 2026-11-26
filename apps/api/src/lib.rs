@@ -7,6 +7,7 @@ pub mod backup;
 mod config;
 mod error;
 mod features;
+mod log_path;
 mod rate_limit;
 mod router;
 mod shutdown;

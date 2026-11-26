@@ -11,6 +11,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::services::{ServeDir, ServeFile};
 use tower_http::trace::TraceLayer;
 
+use crate::log_path::redacted_path;
 use crate::rate_limit::{RateLimiter, limit_writes};
 use crate::web_cache::cache_web_assets;
 use crate::{AppState, Config, features};
@@ -35,7 +36,7 @@ pub fn build_router(state: AppState, config: &Config) -> Router {
         .with_state(state)
         .layer(cors_layer(&config.allowed_origins))
         .layer(axum::middleware::from_fn(limit_time))
-        .layer(TraceLayer::new_for_http())
+        .layer(TraceLayer::new_for_http().make_span_with(request_span))
 }
 
 fn with_write_limit(routes: Router<AppState>, config: &Config) -> Router<AppState> {
@@ -82,4 +83,14 @@ async fn limit_time(request: Request, next: Next) -> Response {
     tokio::time::timeout(limit, next.run(request))
         .await
         .unwrap_or_else(|_| StatusCode::REQUEST_TIMEOUT.into_response())
+}
+
+/// One span per request with the method and a path safe to log (no codes, usernames or
+/// query string): the default span would record the full URI.
+fn request_span(request: &Request) -> tracing::Span {
+    tracing::info_span!(
+        "request",
+        method = %request.method(),
+        path = %redacted_path(request.uri().path()),
+    )
 }
