@@ -47,7 +47,7 @@ impl AppState {
                     reqwest::Client::new(),
                 ))
             });
-        let mut state = Self::in_memory_with(media, cloner);
+        let mut state = Self::in_memory_with(media, cloner, &config.deployment);
         if let Some(livekit) = &config.livekit {
             let room_closer = Arc::new(LiveKitRoomCloser::new(
                 &livekit.url,
@@ -79,20 +79,22 @@ impl AppState {
     /// In-memory storage with an optional media issuer (also used by tests).
     #[must_use]
     pub fn in_memory(media: Option<Arc<dyn MediaAccessIssuer>>) -> Self {
-        Self::in_memory_with(media, None)
+        Self::in_memory_with(media, None, "test")
     }
 
-    /// In-memory storage with optional media issuer and voice cloner.
+    /// In-memory storage with optional media issuer and voice cloner; `deployment`
+    /// names voice clones (see `clone_name_prefix`).
     #[must_use]
     pub fn in_memory_with(
         media: Option<Arc<dyn MediaAccessIssuer>>,
         cloner: Option<Arc<dyn VoiceCloner>>,
+        deployment: &str,
     ) -> Self {
         let repository: Arc<dyn RoomRepository> = Arc::new(MemoryRoomRepository::default());
         let random: Arc<dyn RandomSource> = Arc::new(OsRandom);
         Self {
             rooms: RoomService::new(repository.clone(), random.clone()),
-            voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner)),
+            voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner, deployment)),
             admission: AdmissionService::new(repository, random, media),
             presence: PresenceService::new(None),
         }

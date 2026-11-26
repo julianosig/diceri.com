@@ -36,6 +36,8 @@ pub(crate) struct AgentConfig {
     pub(crate) gemini_api_key: SecretString,
     pub(crate) elevenlabs_api_key: SecretString,
     pub(crate) voices: Vec<VoiceId>,
+    /// `DICERI_DEPLOYMENT` (default `dev`): whose orphaned voice clones to sweep.
+    pub(crate) deployment: String,
 }
 
 fn required(name: &str) -> anyhow::Result<String> {
@@ -78,6 +80,7 @@ impl AgentConfig {
             gemini_api_key: secret("DICERI_GEMINI_API_KEY")?,
             elevenlabs_api_key: secret("DICERI_ELEVENLABS_API_KEY")?,
             voices,
+            deployment: env::var("DICERI_DEPLOYMENT").unwrap_or_else(|_| "dev".to_owned()),
         })
     }
 }

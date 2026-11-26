@@ -48,6 +48,8 @@ pub struct Config {
     pub write_limit_per_minute: u32,
     /// Header carrying the client IP behind a proxy (e.g. `cf-connecting-ip`).
     pub client_ip_header: Option<String>,
+    /// Names this deployment's voice clones (`prod`, `dev`, `e2e`); see `clone_name_prefix`.
+    pub deployment: String,
 }
 
 impl Config {
@@ -83,6 +85,7 @@ impl Config {
                 .map_or(Ok(DEFAULT_WRITE_LIMIT), |raw| raw.parse())
                 .context("DICERI_WRITE_LIMIT_PER_MINUTE must be a whole number")?,
             client_ip_header: env::var("DICERI_CLIENT_IP_HEADER").ok(),
+            deployment: deployment_from_env(),
         })
     }
 
@@ -99,8 +102,15 @@ impl Config {
             web_dir: None,
             write_limit_per_minute: 0,
             client_ip_header: None,
+            deployment: "test".to_owned(),
         }
     }
+}
+
+/// `DICERI_DEPLOYMENT`, default `dev`. Shared with the media agent's orphan sweep.
+#[must_use]
+fn deployment_from_env() -> String {
+    env::var("DICERI_DEPLOYMENT").unwrap_or_else(|_| "dev".to_owned())
 }
 
 fn livekit_from_env() -> anyhow::Result<Option<LiveKitConfig>> {

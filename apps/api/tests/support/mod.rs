@@ -73,7 +73,7 @@ pub(crate) fn app_with_voices() -> Router {
     let issuer: Arc<dyn MediaAccessIssuer> = Arc::new(FakeIssuer);
     let cloner: Arc<dyn VoiceCloner> = Arc::new(FakeCloner::default());
     build_router(
-        AppState::in_memory_with(Some(issuer), Some(cloner)),
+        AppState::in_memory_with(Some(issuer), Some(cloner), "test"),
         &Config::for_tests(),
     )
 }

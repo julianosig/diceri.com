@@ -6,8 +6,12 @@ use crate::ports::{
     RoomRepository, RoomRepositoryError, VoiceCloneError, VoiceCloner, VoiceId, VoiceSample,
 };
 
-/// Every clone is named with this prefix so orphans can be found and deleted.
-pub const CLONE_NAME_PREFIX: &str = "diceri-";
+/// Every clone is named `diceri-<deployment>-…` so each deployment (prod, dev, e2e)
+/// can find and delete its own orphans without touching the others' live clones.
+#[must_use]
+pub fn clone_name_prefix(deployment: &str) -> String {
+    format!("diceri-{deployment}-")
+}
 
 /// Bounds on an uploaded sample: ~5–15 s of compressed speech fits easily.
 const MIN_SAMPLE_BYTES: usize = 8 * 1024;
@@ -32,6 +36,7 @@ pub enum VoiceError {
 pub struct VoiceService {
     rooms: Arc<dyn RoomRepository>,
     cloner: Arc<dyn VoiceCloner>,
+    name_prefix: String,
 }
 
 impl std::fmt::Debug for VoiceService {
@@ -44,8 +49,16 @@ impl std::fmt::Debug for VoiceService {
 
 impl VoiceService {
     #[must_use]
-    pub fn new(rooms: Arc<dyn RoomRepository>, cloner: Arc<dyn VoiceCloner>) -> Self {
-        Self { rooms, cloner }
+    pub fn new(
+        rooms: Arc<dyn RoomRepository>,
+        cloner: Arc<dyn VoiceCloner>,
+        deployment: &str,
+    ) -> Self {
+        Self {
+            rooms,
+            cloner,
+            name_prefix: clone_name_prefix(deployment),
+        }
     }
 
     pub async fn clone_voice(
@@ -67,7 +80,7 @@ impl VoiceService {
         }
         let voice = self
             .cloner
-            .create(&format!("diceri-{room_id}"), sample)
+            .create(&format!("{}{room_id}", self.name_prefix), sample)
             .await?;
         room.register_voice(voice.0.clone())?;
         self.rooms.update(room).await?;
@@ -90,10 +103,11 @@ mod tests {
 
     #[async_trait]
     impl VoiceCloner for FakeCloner {
-        async fn create(&self, _: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
+        /// Echoes the clone name into the id so tests can see how clones are named.
+        async fn create(&self, name: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
             let mut count = self.0.lock().unwrap();
             *count += 1;
-            Ok(VoiceId(format!("voice-{count}")))
+            Ok(VoiceId(format!("{name}#{count}")))
         }
         async fn delete(&self, _: &VoiceId) -> Result<(), VoiceCloneError> {
             Ok(())
@@ -116,7 +130,7 @@ mod tests {
         let rooms = RoomService::new(repository.clone(), Arc::new(CountingRandom::default()));
         let room = rooms.create().await.unwrap();
         (
-            VoiceService::new(repository.clone(), Arc::new(FakeCloner::default())),
+            VoiceService::new(repository.clone(), Arc::new(FakeCloner::default()), "test"),
             repository,
             room.id,
         )
@@ -128,6 +142,14 @@ mod tests {
         let voice = service.clone_voice(&room_id, sample(20_000)).await.unwrap();
         let room = repository.find(&room_id).await.unwrap().unwrap();
         assert!(room.owns_voice(&voice.0));
+    }
+
+    #[tokio::test]
+    async fn clones_are_named_after_their_deployment() {
+        let (service, _, room_id) = setup().await;
+        let voice = service.clone_voice(&room_id, sample(20_000)).await.unwrap();
+        assert!(voice.0.starts_with(&clone_name_prefix("test")));
+        assert_eq!(clone_name_prefix("prod"), "diceri-prod-");
     }
 
     #[tokio::test]

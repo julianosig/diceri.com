@@ -15,7 +15,7 @@ mod voices;
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use diceri_application::use_cases::CLONE_NAME_PREFIX;
+use diceri_application::use_cases::clone_name_prefix;
 use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
@@ -31,8 +31,10 @@ async fn main() -> anyhow::Result<()> {
         .init();
     let config = config::AgentConfig::from_env().context("invalid agent configuration")?;
     let providers = Arc::new(providers::Providers::from_config(&config)?);
-    // No call is active yet, so any existing clone was orphaned by a crash or restart.
-    match providers.cloner.delete_all_named(CLONE_NAME_PREFIX).await {
+    // No call of this deployment is active yet, so its existing clones were orphaned by a
+    // crash or restart. Other deployments (prod, dev, e2e) share the account: only ours go.
+    let prefix = clone_name_prefix(&config.deployment);
+    match providers.cloner.delete_all_named(&prefix).await {
         Ok(count) => tracing::info!(count, "deleted orphaned voice clones"),
         Err(error) => tracing::warn!(%error, "could not delete orphaned voice clones"),
     }

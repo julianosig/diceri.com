@@ -34,7 +34,11 @@ export default defineConfig({
 			command: 'cargo run -q -p diceri-media-agent',
 			cwd: repoRoot,
 			url: `http://127.0.0.1:${String(AGENT_PORT)}/healthz`,
-			env: { DICERI_AGENT_BIND_ADDRESS: `127.0.0.1:${String(AGENT_PORT)}` },
+			env: {
+				DICERI_AGENT_BIND_ADDRESS: `127.0.0.1:${String(AGENT_PORT)}`,
+				// Own voice-clone namespace: the agent's startup sweep must not touch dev or prod.
+				DICERI_DEPLOYMENT: 'e2e'
+			},
 			// Surfaces per-phrase latency logs in the test output.
 			stdout: 'pipe',
 			timeout: 600_000,
@@ -48,7 +52,8 @@ export default defineConfig({
 				DICERI_BIND_ADDRESS: `127.0.0.1:${String(API_PORT)}`,
 				DICERI_AGENT_URL: `http://127.0.0.1:${String(AGENT_PORT)}`,
 				// Parallel tests share one IP; the limit has its own router test.
-				DICERI_WRITE_LIMIT_PER_MINUTE: '0'
+				DICERI_WRITE_LIMIT_PER_MINUTE: '0',
+				DICERI_DEPLOYMENT: 'e2e'
 			},
 			timeout: 180_000,
 			reuseExistingServer: false
