@@ -2,6 +2,7 @@
 	import { LanguageSelect, ThemeToggle } from '#lib/components/ui/index.ts';
 	import { AccountBadge, AccountSession } from '#lib/features/account/index.ts';
 	import HeroAnimation from './HeroAnimation.svelte';
+	import OpenSourceBadge from './OpenSourceBadge.svelte';
 
 	interface Props {
 		/** The page's account session when it already has one (the home page shares it). */
@@ -18,13 +19,14 @@
 </script>
 
 <!--
-	The top of every page outside a call: language on the left, the signed-in @ and the
-	theme on the right, then the banner with the Diceri mark as the site's masthead.
+	The top of every page outside a call: language on the left, open source in the middle, the
+	signed-in @ and the theme on the right, then the banner with the Diceri mark as the site's masthead.
 -->
 <header class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pt-4 pb-6 sm:gap-10 sm:pb-10">
-	<div class="flex items-center justify-between gap-4">
-		<LanguageSelect class="-ms-2" />
-		<div class="flex items-center gap-2">
+	<div class="grid grid-cols-[1fr_auto_1fr] items-center gap-2">
+		<LanguageSelect class="-ms-2 justify-self-start" />
+		<OpenSourceBadge />
+		<div class="flex items-center gap-2 justify-self-end">
 			<AccountBadge session={account} />
 			<ThemeToggle />
 		</div>

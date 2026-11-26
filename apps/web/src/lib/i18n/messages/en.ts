@@ -15,7 +15,7 @@ export const en = {
 		headline: 'The Google Meet alternative',
 		promise: 'where you talk and listen in your own language.',
 		voice: 'They hear you in their language — in your own voice.',
-		openSource: 'Open source on GitHub',
+		openSource: 'We are open-source',
 		illustration:
 			'Illustration: one person speaks, Diceri translates in the middle, and the other person hears it in their own language.'
 	},

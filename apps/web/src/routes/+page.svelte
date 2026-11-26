@@ -1,12 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { AccountSession, Onboarding } from '#lib/features/account/index.ts';
-	import {
-		Headline,
-		OpenSourceBadge,
-		SiteFooter,
-		SiteHeader
-	} from '#lib/features/landing/index.ts';
+	import { Headline, SiteFooter, SiteHeader } from '#lib/features/landing/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
 
@@ -28,10 +23,7 @@
 	class="mx-auto flex min-h-[calc(100dvh-14rem)] max-w-5xl flex-col items-center gap-10 px-4 pt-6 pb-6 text-center sm:pt-8"
 >
 	<div class="flex max-w-3xl flex-col items-center gap-8">
-		<div class="flex flex-col items-center gap-5">
-			<OpenSourceBadge />
-			<Headline />
-		</div>
+		<Headline />
 		{#if account.account}
 			<OpenRoomForm />
 		{:else if account.account === null}

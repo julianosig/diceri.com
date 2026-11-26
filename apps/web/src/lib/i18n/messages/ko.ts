@@ -12,7 +12,7 @@ export const ko: Messages = {
 		headline: 'Google Meet의 대안,',
 		promise: '내 언어로 말하고, 내 언어로 듣는 곳.',
 		voice: '상대는 자신의 언어로, 당신의 목소리로 듣습니다.',
-		openSource: 'GitHub에 공개된 오픈 소스',
+		openSource: '우리는 오픈 소스입니다',
 		illustration:
 			'일러스트: 한 사람이 말하면 가운데에서 Diceri가 번역하고, 다른 사람은 자신의 언어로 듣습니다.'
 	},
