@@ -7,7 +7,7 @@ import type { Messages } from './en.ts';
 const ltr = (text: string) => `\u2068${text}\u2069`;
 
 export const ar: Messages = {
-	meta: { title: 'Diceri — المكالمة التي تعرفها، بكل اللغات' },
+	meta: { title: 'Diceri — بديل Google Meet مع ترجمة صوتية في الاتجاهين' },
 	header: {
 		signOut: 'تسجيل الخروج',
 		language: 'اللغة',
@@ -15,8 +15,9 @@ export const ar: Messages = {
 		toLight: 'التبديل إلى السمة الفاتحة'
 	},
 	hero: {
-		headline: 'مكالمة الفيديو التي تعرفها.',
-		promise: 'الآن بكل اللغات.',
+		headline: 'البديل لـ Google Meet',
+		promise: 'حيث تتحدث وتستمع بلغتك أنت.',
+		voice: 'يسمعونك بلغتهم — بصوتك أنت.',
 		illustration: 'رسم توضيحي: شخص يتحدث، وDiceri يترجم في المنتصف، والشخص الآخر يسمعه بلغته.'
 	},
 	onboarding: {

@@ -1,7 +1,7 @@
 import type { Messages } from './en.ts';
 
 export const ja: Messages = {
-	meta: { title: 'Diceri — いつものビデオ通話を、すべての言語で' },
+	meta: { title: 'Diceri — 双方向の音声翻訳ができる Google Meet の代わり' },
 	header: {
 		signOut: 'ログアウト',
 		language: '言語',
@@ -9,8 +9,9 @@ export const ja: Messages = {
 		toLight: 'ライトテーマに切り替え'
 	},
 	hero: {
-		headline: 'いつものビデオ通話。',
-		promise: 'これからは、すべての言語で。',
+		headline: 'Google Meet の代わりに。',
+		promise: '自分の言語で話して、自分の言語で聞ける。',
+		voice: '相手には、相手の言語で、あなた自身の声で届きます。',
 		illustration: 'イラスト：一人が話し、真ん中で Diceri が翻訳し、もう一人が自分の言語で聞きます。'
 	},
 	onboarding: {

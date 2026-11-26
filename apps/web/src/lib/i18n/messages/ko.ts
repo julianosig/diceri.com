@@ -1,7 +1,7 @@
 import type { Messages } from './en.ts';
 
 export const ko: Messages = {
-	meta: { title: 'Diceri — 익숙한 영상 통화를 모든 언어로' },
+	meta: { title: 'Diceri — 양방향 음성 번역이 되는 Google Meet 대안' },
 	header: {
 		signOut: '로그아웃',
 		language: '언어',
@@ -9,8 +9,9 @@ export const ko: Messages = {
 		toLight: '라이트 테마로 전환'
 	},
 	hero: {
-		headline: '이미 익숙한 그 영상 통화.',
-		promise: '이제 모든 언어로.',
+		headline: 'Google Meet의 대안,',
+		promise: '내 언어로 말하고, 내 언어로 듣는 곳.',
+		voice: '상대는 자신의 언어로, 당신의 목소리로 듣습니다.',
 		illustration:
 			'일러스트: 한 사람이 말하면 가운데에서 Diceri가 번역하고, 다른 사람은 자신의 언어로 듣습니다.'
 	},

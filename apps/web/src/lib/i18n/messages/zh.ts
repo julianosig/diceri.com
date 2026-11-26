@@ -2,7 +2,7 @@ import type { Messages } from './en.ts';
 
 /** Simplified Chinese. */
 export const zh: Messages = {
-	meta: { title: 'Diceri — 你熟悉的视频通话，支持所有语言' },
+	meta: { title: 'Diceri — 支持双向语音翻译的 Google Meet 替代方案' },
 	header: {
 		signOut: '退出登录',
 		language: '语言',
@@ -10,8 +10,9 @@ export const zh: Messages = {
 		toLight: '切换到浅色主题'
 	},
 	hero: {
-		headline: '你早已熟悉的视频通话。',
-		promise: '如今支持所有语言。',
+		headline: 'Google Meet 的替代方案',
+		promise: '用自己的语言说，也用自己的语言听。',
+		voice: '对方用他们的语言听到你——用你自己的声音。',
 		illustration: '插图：一个人说话，Diceri 在中间翻译，另一个人用自己的语言听到。'
 	},
 	onboarding: {

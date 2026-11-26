@@ -9,8 +9,8 @@ describe('headline fit', () => {
 	});
 
 	it('sizes the text by its widest line, capped at the maximum', () => {
-		const size = fitFontSize(['The call you already know.', 'Now in every language.'], 60, 768);
-		const scale = (1 / lineWidthEm('The call you already know.')).toFixed(4);
+		const size = fitFontSize(['The Google Meet alternative', 'Talk and listen.'], 60, 768);
+		const scale = (1 / lineWidthEm('The Google Meet alternative')).toFixed(4);
 		expect(size).toBe(`min(60px, calc((min(100vw, 768px) - 2rem) * ${scale}))`);
 	});
 });

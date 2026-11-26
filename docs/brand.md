@@ -41,12 +41,16 @@ at once.
 
 ## Promise
 
-> The call you already know. **Now in every language.**
-> Talk the way you always do. Everyone hears you live in their own language — in your
-> own voice.
+> **The Google Meet alternative**
+> **where you talk and listen in your own language.**
+> They hear you in their language — in your own voice.
 
-It anchors on something everyone has used (a video call) and names the moat: live
-translation spoken back in the speaker's own (consented, cloned) voice.
+Written to the ICP in the second person. The first line is what people already search
+for and compare against (a nominative, comparative use of the name: no Google logo,
+colours or implied affiliation); the second says the mechanism both ways in words a
+first call proves; the line under it names the moat, live translation spoken in the
+speaker's own (consented, cloned) voice. Each line stays on one line in every language
+(`Headline.svelte` sizes it from its width).
 
 ## Mark
 

@@ -1,7 +1,7 @@
 import type { Messages } from './en.ts';
 
 export const pt: Messages = {
-	meta: { title: 'Diceri — a chamada que você conhece, em todos os idiomas' },
+	meta: { title: 'Diceri — alternativa ao Google Meet com tradução de voz nos dois sentidos' },
 	header: {
 		signOut: 'Sair',
 		language: 'Idioma',
@@ -9,8 +9,9 @@ export const pt: Messages = {
 		toLight: 'Mudar para o tema claro'
 	},
 	hero: {
-		headline: 'A chamada que você já conhece.',
-		promise: 'Agora em todos os idiomas.',
+		headline: 'A alternativa ao Google Meet',
+		promise: 'onde você fala e ouve no seu próprio idioma.',
+		voice: 'Eles ouvem você no idioma deles — com a sua própria voz.',
 		illustration:
 			'Ilustração: uma pessoa fala, o Diceri traduz no meio e a outra pessoa ouve no próprio idioma.'
 	},

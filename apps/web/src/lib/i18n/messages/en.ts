@@ -4,7 +4,7 @@
  * values they interpolate.
  */
 export const en = {
-	meta: { title: 'Diceri — the call you know, in every language' },
+	meta: { title: 'Diceri — Google Meet alternative with two-way voice translation' },
 	header: {
 		signOut: 'Sign out',
 		language: 'Language',
@@ -12,8 +12,9 @@ export const en = {
 		toLight: 'Switch to light theme'
 	},
 	hero: {
-		headline: 'The call you already know.',
-		promise: 'Now in every language.',
+		headline: 'The Google Meet alternative',
+		promise: 'where you talk and listen in your own language.',
+		voice: 'They hear you in their language — in your own voice.',
 		illustration:
 			'Illustration: one person speaks, Diceri translates in the middle, and the other person hears it in their own language.'
 	},
