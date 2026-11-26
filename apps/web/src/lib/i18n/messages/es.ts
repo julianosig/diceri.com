@@ -79,6 +79,7 @@ export const es: Messages = {
 		home: 'Volver al inicio'
 	},
 	lobby: {
+		joinTitle: 'Unirse a la reunión',
 		yourName: 'Tu nombre',
 		hearEveryoneIn: 'Escuchar a todos en',
 		microphone: 'Micrófono',

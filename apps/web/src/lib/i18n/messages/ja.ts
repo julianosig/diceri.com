@@ -78,6 +78,7 @@ export const ja: Messages = {
 		home: 'ホームに戻る'
 	},
 	lobby: {
+		joinTitle: '会議に参加',
 		yourName: 'あなたの名前',
 		hearEveryoneIn: '全員の声を聞く言語',
 		microphone: 'マイク',

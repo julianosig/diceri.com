@@ -82,6 +82,7 @@ export const en = {
 		home: 'Back to home'
 	},
 	lobby: {
+		joinTitle: 'Join the meeting',
 		yourName: 'Your name',
 		hearEveryoneIn: 'Hear everyone in',
 		microphone: 'Microphone',

@@ -79,6 +79,7 @@ export const de: Messages = {
 		home: 'Zur Startseite'
 	},
 	lobby: {
+		joinTitle: 'Dem Meeting beitreten',
 		yourName: 'Dein Name',
 		hearEveryoneIn: 'Alle hören auf',
 		microphone: 'Mikrofon',

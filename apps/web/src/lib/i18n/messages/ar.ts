@@ -84,6 +84,7 @@ export const ar: Messages = {
 		home: 'العودة إلى الصفحة الرئيسية'
 	},
 	lobby: {
+		joinTitle: 'انضم إلى الاجتماع',
 		yourName: 'اسمك',
 		hearEveryoneIn: 'اسمع الجميع بلغة',
 		microphone: 'الميكروفون',

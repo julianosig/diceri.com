@@ -79,6 +79,7 @@ export const hi: Messages = {
 		home: 'होम पर वापस जाएँ'
 	},
 	lobby: {
+		joinTitle: 'मीटिंग में शामिल हों',
 		yourName: 'आपका नाम',
 		hearEveryoneIn: 'सबको इस भाषा में सुनें',
 		microphone: 'माइक्रोफ़ोन',

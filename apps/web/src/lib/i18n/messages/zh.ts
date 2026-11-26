@@ -79,6 +79,7 @@ export const zh: Messages = {
 		home: '返回首页'
 	},
 	lobby: {
+		joinTitle: '加入会议',
 		yourName: '你的名字',
 		hearEveryoneIn: '用以下语言听所有人',
 		microphone: '麦克风',

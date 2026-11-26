@@ -79,6 +79,7 @@ export const pt: Messages = {
 		home: 'Voltar para o início'
 	},
 	lobby: {
+		joinTitle: 'Entrar na reunião',
 		yourName: 'Seu nome',
 		hearEveryoneIn: 'Ouvir todos em',
 		microphone: 'Microfone',

@@ -79,6 +79,7 @@ export const ru: Messages = {
 		home: 'На главную'
 	},
 	lobby: {
+		joinTitle: 'Присоединиться к встрече',
 		yourName: 'Ваше имя',
 		hearEveryoneIn: 'Слышать всех на языке',
 		microphone: 'Микрофон',

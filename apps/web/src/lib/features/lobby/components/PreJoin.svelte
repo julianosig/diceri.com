@@ -78,6 +78,9 @@
 	class="mx-auto flex w-full max-w-md flex-col items-center gap-5 px-4 text-center"
 	onsubmit={submit}
 >
+	<h1 class="w-full text-center text-3xl font-semibold tracking-tight">
+		{isHost ? i18n.t.openRoom.submit : i18n.t.lobby.joinTitle}
+	</h1>
 	<label class="w-full text-start text-sm">
 		<span class="mb-1 block text-ink-muted">{i18n.t.lobby.yourName}</span>
 		<span class={fieldClass}>

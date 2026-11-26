@@ -79,6 +79,7 @@ export const ko: Messages = {
 		home: '홈으로 돌아가기'
 	},
 	lobby: {
+		joinTitle: '회의 참여하기',
 		yourName: '이름',
 		hearEveryoneIn: '모두의 말을 들을 언어',
 		microphone: '마이크',
