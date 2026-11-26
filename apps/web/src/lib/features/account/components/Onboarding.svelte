@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { CircleCheck, CircleX, LoaderCircle } from '@lucide/svelte';
 	import { ApiError } from '#lib/api/http-client.ts';
 	import { Button } from '#lib/components/ui/index.ts';
 	import {
@@ -9,6 +10,7 @@
 	} from '#lib/features/room/index.ts';
 	import type { AccountSession } from '../account-session.svelte.ts';
 	import { MAX_PASSWORD_LENGTH, passwordProblem } from '../password.ts';
+	import { UsernameCheck } from '../username-check.svelte.ts';
 	import { isValidUsername, normalizeUsername } from '../username.ts';
 
 	interface Props {
@@ -16,6 +18,11 @@
 	}
 
 	let { session }: Props = $props();
+
+	const usernames = new UsernameCheck();
+	$effect(() => () => {
+		usernames.dispose();
+	});
 
 	let mode = $state<'create' | 'signin'>('create');
 	let username = $state('');
@@ -26,10 +33,13 @@
 	let error = $state<string | null>(null);
 
 	const creating = $derived(mode === 'create');
+	/** New accounts see the rest of the form only once their @ is free. */
+	const showDetails = $derived(!creating || usernames.status === 'available');
 	const problem = $derived(creating ? passwordProblem(password, repeat) : null);
 	const canSubmit = $derived(
 		!pending &&
 			isValidUsername(username) &&
+			showDetails &&
 			password.length > 0 &&
 			(!creating || (problem === null && repeat === password))
 	);
@@ -94,6 +104,9 @@
 			<input
 				class="w-full bg-transparent py-2 pl-1 text-base outline-none"
 				bind:value={username}
+				oninput={() => {
+					usernames.update(username);
+				}}
 				maxlength={21}
 				autocomplete="username"
 				autocapitalize="none"
@@ -102,17 +115,37 @@
 			/>
 		</span>
 	</label>
-	<label class="flex flex-col gap-1 text-sm">
-		<span class="text-ink-muted">Password</span>
-		<input
-			type="password"
-			class="rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
-			bind:value={password}
-			maxlength={MAX_PASSWORD_LENGTH}
-			autocomplete={creating ? 'new-password' : 'current-password'}
-		/>
-	</label>
-	{#if creating}
+	{#if creating && usernames.status !== 'empty'}
+		<p class="-mt-2 flex items-center gap-1.5 text-xs" aria-live="polite">
+			{#if usernames.status === 'checking'}
+				<LoaderCircle class="size-3.5 animate-spin text-ink-muted" aria-hidden="true" />
+				<span class="text-ink-muted">Checking @{normalizeUsername(username)}…</span>
+			{:else if usernames.status === 'available'}
+				<CircleCheck class="size-3.5 text-online" aria-hidden="true" />
+				<span class="text-ink">@{normalizeUsername(username)} is available</span>
+			{:else if usernames.status === 'taken'}
+				<CircleX class="size-3.5 text-red-600" aria-hidden="true" />
+				<span class="text-red-600">@{normalizeUsername(username)} is taken</span>
+			{:else if usernames.status === 'invalid'}
+				<span class="text-ink-muted">3–20 letters, numbers or _, starting with a letter.</span>
+			{:else}
+				<span class="text-red-600">Could not check the name. Try again.</span>
+			{/if}
+		</p>
+	{/if}
+	{#if showDetails}
+		<label class="flex flex-col gap-1 text-sm">
+			<span class="text-ink-muted">Password</span>
+			<input
+				type="password"
+				class="rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
+				bind:value={password}
+				maxlength={MAX_PASSWORD_LENGTH}
+				autocomplete={creating ? 'new-password' : 'current-password'}
+			/>
+		</label>
+	{/if}
+	{#if creating && showDetails}
 		<label class="flex flex-col gap-1 text-sm">
 			<span class="text-ink-muted">Repeat password</span>
 			<input
@@ -134,11 +167,13 @@
 		/>
 	{/if}
 
-	<Button size="lg" type="submit" disabled={!canSubmit}>
-		{#if pending}{creating ? 'Creating…' : 'Signing in…'}{:else}{creating
-				? 'Create my room'
-				: 'Sign in'}{/if}
-	</Button>
+	{#if showDetails}
+		<Button size="lg" type="submit" disabled={!canSubmit}>
+			{#if pending}{creating ? 'Creating…' : 'Signing in…'}{:else}{creating
+					? 'Create my room'
+					: 'Sign in'}{/if}
+		</Button>
+	{/if}
 	{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
 	<button type="button" class="self-center text-xs text-ink-muted underline" onclick={switchMode}>
 		{creating ? 'I already have an account' : 'Create a new account'}

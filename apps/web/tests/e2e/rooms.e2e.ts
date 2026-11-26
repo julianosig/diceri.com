@@ -4,7 +4,9 @@ import { openMyRoom, PASSWORD, signUp, uniqueUsername } from './support/accounts
 test('one onboarding step creates the account, its room name and mascot', async ({ page }) => {
 	const username = uniqueUsername();
 	await page.goto('/');
+	await expect(page.getByLabel('Password', { exact: true })).toBeHidden();
 	await page.getByPlaceholder('yourname').fill(username);
+	await expect(page.getByText(`@${username} is available`)).toBeVisible();
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByLabel('Repeat password').fill('not the same');
 	await expect(page.getByText('The passwords do not match.')).toBeVisible();
@@ -23,6 +25,16 @@ test('one onboarding step creates the account, its room name and mascot', async 
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByRole('button', { name: 'Sign in' }).click();
 	await expect(page.getByRole('button', { name: 'Open my room' })).toBeVisible();
+});
+
+test('a taken username keeps the rest of the form hidden', async ({ page, browser }) => {
+	const taken = await signUp(page);
+	const visitor = await (await browser.newContext()).newPage();
+	await visitor.goto('/');
+	await visitor.getByPlaceholder('yourname').fill(taken);
+	await expect(visitor.getByText(`@${taken} is taken`)).toBeVisible();
+	await expect(visitor.getByLabel('Password', { exact: true })).toBeHidden();
+	await expect(visitor.getByRole('button', { name: 'Create my room' })).toBeHidden();
 });
 
 test('the owner opens their room at /@username as host', async ({ page }) => {

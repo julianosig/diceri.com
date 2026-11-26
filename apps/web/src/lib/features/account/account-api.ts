@@ -14,6 +14,16 @@ export function signIn(credentials: Credentials, fetchFn?: typeof fetch): Promis
 	});
 }
 
+/** Whether a username is still free; `username` comes back as it would be stored. */
+export function checkAvailability(
+	username: string,
+	fetchFn?: typeof fetch
+): Promise<{ username: string; available: boolean }> {
+	return requestJson(`/accounts/available?username=${encodeURIComponent(username)}`, {
+		fetchFn
+	});
+}
+
 /** The signed-in account, or `null` when there is no session. */
 export async function currentAccount(fetchFn?: typeof fetch): Promise<Account | null> {
 	try {
