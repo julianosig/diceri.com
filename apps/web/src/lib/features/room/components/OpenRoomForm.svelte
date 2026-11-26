@@ -42,15 +42,12 @@
 	}
 </script>
 
-<form
-	class="flex w-full max-w-md flex-col gap-4 rounded-tile bg-surface-raised p-4 text-left"
-	onsubmit={submit}
->
+<form class="flex w-full max-w-md flex-col gap-5 text-left" onsubmit={submit}>
 	<div class="flex items-center gap-3">
 		<MascotAvatar {mascot} size={56} />
 		<div class="flex flex-col">
-			<h2 class="text-base font-semibold">@{username}</h2>
-			<p class="text-xs text-ink-muted">Your room lives at diceri.com/@{username}</p>
+			<h2 class="text-xl font-bold">@{username}</h2>
+			<p class="text-sm text-ink-muted">Your room lives at diceri.com/@{username}</p>
 		</div>
 	</div>
 	<Toggle
@@ -60,7 +57,7 @@
 		onchange={(value: boolean) => (listed = value)}
 	/>
 	<fieldset class="flex flex-col gap-2">
-		<legend class="mb-1 text-sm font-medium">Who gets in</legend>
+		<legend class="mb-1 text-base font-semibold">Who gets in</legend>
 		<div class="grid grid-cols-2 gap-2">
 			{#each ENTRIES as option (option.value)}
 				{@const Icon = option.icon}

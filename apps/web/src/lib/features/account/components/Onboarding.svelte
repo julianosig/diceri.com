@@ -73,19 +73,16 @@
 	}
 </script>
 
-<form
-	class="flex w-full max-w-md flex-col gap-4 rounded-tile bg-surface-raised p-4 text-left"
-	onsubmit={submit}
->
+<form class="flex w-full max-w-md flex-col gap-5 text-left" onsubmit={submit}>
 	<div class="flex items-center gap-3">
 		{#if creating}
 			<MascotAvatar {mascot} size={56} />
 		{/if}
 		<div class="flex flex-col">
-			<h2 class="text-base font-semibold">
+			<h2 class="text-xl font-bold">
 				{creating ? 'Claim your room' : 'Welcome back'}
 			</h2>
-			<p class="text-xs text-ink-muted">
+			<p class="text-sm text-ink-muted">
 				{#if creating}
 					Your @ is your room: <span class="font-medium">
 						diceri.com/@{normalizeUsername(username) || 'you'}
@@ -97,12 +94,14 @@
 		</div>
 	</div>
 
-	<label class="flex flex-col gap-1 text-sm">
-		<span class="text-ink-muted">Username</span>
-		<span class="flex items-center rounded-lg border border-ink-muted/30 bg-surface px-3">
-			<span class="text-ink-muted" aria-hidden="true">@</span>
+	<label class="flex flex-col gap-2">
+		<span class="text-base font-semibold">Username</span>
+		<span
+			class="flex items-center rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500"
+		>
+			<span class="text-xl font-bold text-ink-muted" aria-hidden="true">@</span>
 			<input
-				class="w-full bg-transparent py-2 pl-1 text-base outline-none"
+				class="w-full bg-transparent py-3.5 pl-1 text-xl font-semibold outline-none"
 				bind:value={username}
 				oninput={() => {
 					usernames.update(username);
@@ -116,7 +115,7 @@
 		</span>
 	</label>
 	{#if creating && usernames.status !== 'empty'}
-		<p class="-mt-2 flex items-center gap-1.5 text-xs" aria-live="polite">
+		<p class="-mt-2 flex items-center gap-1.5 text-sm font-medium" aria-live="polite">
 			{#if usernames.status === 'checking'}
 				<LoaderCircle class="size-3.5 animate-spin text-ink-muted" aria-hidden="true" />
 				<span class="text-ink-muted">Checking @{normalizeUsername(username)}…</span>
@@ -134,11 +133,11 @@
 		</p>
 	{/if}
 	{#if showDetails}
-		<label class="flex flex-col gap-1 text-sm">
-			<span class="text-ink-muted">Password</span>
+		<label class="flex flex-col gap-2">
+			<span class="text-base font-semibold">Password</span>
 			<input
 				type="password"
-				class="rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
+				class="rounded-xl border-2 border-ink-muted/25 bg-surface px-4 py-3.5 text-xl font-semibold outline-none focus:border-brand-500"
 				bind:value={password}
 				maxlength={MAX_PASSWORD_LENGTH}
 				autocomplete={creating ? 'new-password' : 'current-password'}
@@ -146,18 +145,18 @@
 		</label>
 	{/if}
 	{#if creating && showDetails}
-		<label class="flex flex-col gap-1 text-sm">
-			<span class="text-ink-muted">Repeat password</span>
+		<label class="flex flex-col gap-2">
+			<span class="text-base font-semibold">Repeat password</span>
 			<input
 				type="password"
-				class="rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
+				class="rounded-xl border-2 border-ink-muted/25 bg-surface px-4 py-3.5 text-xl font-semibold outline-none focus:border-brand-500"
 				bind:value={repeat}
 				maxlength={MAX_PASSWORD_LENGTH}
 				autocomplete="new-password"
 			/>
 		</label>
 		{#if password.length > 0 && problem}
-			<p class="text-xs text-red-600" aria-live="polite">{problem}</p>
+			<p class="-mt-2 text-sm font-medium text-red-600" aria-live="polite">{problem}</p>
 		{/if}
 		<MascotPicker
 			value={mascot}
@@ -175,7 +174,11 @@
 		</Button>
 	{/if}
 	{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
-	<button type="button" class="self-center text-xs text-ink-muted underline" onclick={switchMode}>
+	<button
+		type="button"
+		class="self-center text-sm font-medium text-ink-muted underline"
+		onclick={switchMode}
+	>
 		{creating ? 'I already have an account' : 'Create a new account'}
 	</button>
 </form>

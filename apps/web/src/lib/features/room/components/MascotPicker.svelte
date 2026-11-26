@@ -12,7 +12,7 @@
 </script>
 
 <fieldset class="flex flex-col gap-2">
-	<legend class="mb-1 flex items-center gap-1.5 text-sm font-medium">
+	<legend class="mb-1 flex items-center gap-1.5 text-base font-semibold">
 		<Sparkles class="size-4 text-brand-500" aria-hidden="true" />
 		Room symbol
 	</legend>
