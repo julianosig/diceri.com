@@ -7,15 +7,6 @@
 	import { saveHostKey } from '../host-keys.ts';
 	import { openRoom } from '../room-api.ts';
 	import type { RoomEntry } from '../types.ts';
-	import MascotAvatar from './MascotAvatar.svelte';
-
-	interface Props {
-		/** The signed-in person: their room is `@username` with their mascot. */
-		username: string;
-		mascot: string;
-	}
-
-	let { username, mascot }: Props = $props();
 
 	const t = $derived(i18n.t.openRoom);
 	const ENTRIES = $derived([
@@ -45,13 +36,6 @@
 </script>
 
 <form class="flex w-full max-w-md flex-col gap-5 text-start" onsubmit={submit}>
-	<div class="flex items-center gap-3">
-		<MascotAvatar {mascot} size={56} />
-		<div class="flex flex-col">
-			<h2 class="text-xl font-bold">@{username}</h2>
-			<p class="text-sm text-ink-muted">{t.livesAt(username)}</p>
-		</div>
-	</div>
 	<fieldset class="flex flex-col gap-2">
 		<legend class="mb-1 text-base font-semibold">{t.whoGetsIn}</legend>
 		<div class="grid grid-cols-2 gap-2">

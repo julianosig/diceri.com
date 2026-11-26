@@ -60,7 +60,6 @@ export const en = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `Your room lives at diceri.com/@${username}`,
 		whoGetsIn: 'Who gets in',
 		approval: 'I approve each person',
 		open: 'Anyone can join',

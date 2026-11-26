@@ -57,7 +57,6 @@ export const zh: Messages = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `你的房间地址：diceri.com/@${username}`,
 		whoGetsIn: '谁可以进入',
 		approval: '我逐个批准',
 		open: '任何人都可加入',

@@ -57,7 +57,6 @@ export const fr: Messages = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `Votre salle est à l’adresse diceri.com/@${username}`,
 		whoGetsIn: 'Qui peut entrer',
 		approval: 'J’approuve chaque personne',
 		open: 'Tout le monde peut entrer',

@@ -57,7 +57,6 @@ export const ko: Messages = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `내 방 주소: diceri.com/@${username}`,
 		whoGetsIn: '입장 방식',
 		approval: '한 명씩 승인',
 		open: '누구나 참여 가능',

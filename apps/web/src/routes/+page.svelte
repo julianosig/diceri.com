@@ -28,7 +28,7 @@
 	<div class="flex max-w-3xl flex-col items-center gap-8">
 		<Headline />
 		{#if account.account}
-			<OpenRoomForm username={account.account.username} mascot={account.account.mascot} />
+			<OpenRoomForm />
 		{:else if account.account === null}
 			<Onboarding
 				session={account}

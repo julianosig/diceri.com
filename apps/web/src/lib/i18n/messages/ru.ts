@@ -57,7 +57,6 @@ export const ru: Messages = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `Ваша комната: diceri.com/@${username}`,
 		whoGetsIn: 'Кто может войти',
 		approval: 'Я одобряю каждого',
 		open: 'Входить может любой',

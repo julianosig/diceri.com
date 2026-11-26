@@ -56,7 +56,6 @@ export const ja: Messages = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `あなたのルーム：diceri.com/@${username}`,
 		whoGetsIn: '入室できる人',
 		approval: '一人ずつ承認する',
 		open: '誰でも参加できる',

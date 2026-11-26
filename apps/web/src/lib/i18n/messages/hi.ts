@@ -57,7 +57,6 @@ export const hi: Messages = {
 		}
 	},
 	openRoom: {
-		livesAt: (username: string) => `आपका रूम यहाँ है: diceri.com/@${username}`,
 		whoGetsIn: 'कौन आ सकता है',
 		approval: 'हर व्यक्ति को मेरी मंज़ूरी चाहिए',
 		open: 'कोई भी जुड़ सकता है',

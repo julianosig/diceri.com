@@ -35,7 +35,7 @@
 			aria-expanded={open}
 			onclick={() => (open = !open)}
 		>
-			<MascotAvatar mascot={account.mascot} size={28} decorative />
+			<MascotAvatar mascot={account.mascot} size={28} />
 			<span>@{account.username}</span>
 			<ChevronDown
 				class={['size-4 text-ink-muted transition-transform', open && 'rotate-180']}
