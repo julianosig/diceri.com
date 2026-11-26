@@ -141,6 +141,7 @@
 					bind:value={password}
 					maxlength={MAX_PASSWORD_LENGTH}
 					autocomplete={mode === 'create' ? 'new-password' : 'current-password'}
+					placeholder={mode === 'create' ? 'At least 8 characters' : 'Your password'}
 				/>
 			</span>
 		</label>
@@ -156,6 +157,7 @@
 					bind:value={repeat}
 					maxlength={MAX_PASSWORD_LENGTH}
 					autocomplete="new-password"
+					placeholder="Type it again"
 				/>
 				{#if repeat.length > 0 && repeat === password}
 					<CircleCheck class="size-5 shrink-0 text-online" aria-label="Passwords match" />

@@ -14,7 +14,7 @@
 <fieldset class="flex flex-col gap-2">
 	<legend class="mb-1 flex items-center gap-1.5 text-base font-semibold">
 		<Sparkles class="size-4 text-brand-500" aria-hidden="true" />
-		Room symbol
+		Room mascot
 	</legend>
 	<div class="grid grid-cols-6 gap-1.5">
 		{#each MASCOTS as mascot (mascot.id)}

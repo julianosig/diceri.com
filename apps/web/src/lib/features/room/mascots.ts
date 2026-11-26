@@ -1,5 +1,5 @@
 /**
- * Room symbols: original animated mascots (`static/mascots/<id>.gif`). Mirrors
+ * Room mascots: original animated characters (`static/mascots/{webp,gif}/<id>.*`). Mirrors
  * `Mascot` in crates/domain/src/mascot.rs.
  */
 export const MASCOTS = [

@@ -11,7 +11,7 @@ export interface Room {
 	/** The owner's username, which is also the room's name (`/@owner`). */
 	owner: string;
 	entry: RoomEntry;
-	/** The room's animated symbol; see `mascots.ts`. */
+	/** The room's animated mascot; see `mascots.ts`. */
 	mascot: string;
 }
 
