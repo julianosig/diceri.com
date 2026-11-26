@@ -79,3 +79,7 @@ browsers:
 build:
     cargo build --release -p diceri-api -p diceri-media-agent
     pnpm --filter @diceri/web build
+
+# Build and (re)start the production user services on this host (docs/deployment.md).
+deploy:
+    ./scripts/deploy.sh

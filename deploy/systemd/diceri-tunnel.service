@@ -1,0 +1,13 @@
+[Unit]
+Description=Cloudflare Tunnel for diceri.com
+After=network-online.target diceri-api.service
+
+[Service]
+# Holds TUNNEL_TOKEN=… (the tunnel's connector token).
+EnvironmentFile=%h/.config/diceri/tunnel.env
+ExecStart=%h/.local/bin/cloudflared tunnel --no-autoupdate run
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

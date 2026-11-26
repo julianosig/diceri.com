@@ -1,0 +1,13 @@
+[Unit]
+Description=Diceri API (HTTP control plane + web app)
+After=network-online.target
+
+[Service]
+EnvironmentFile=%h/.config/diceri/production.env
+WorkingDirectory=%h/.local/share/diceri/current
+ExecStart=%h/.local/share/diceri/current/diceri-api
+Restart=always
+RestartSec=2
+
+[Install]
+WantedBy=default.target

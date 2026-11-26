@@ -40,6 +40,7 @@ docs/
   architecture.md
   decisions/      ADRs (MADR 4 format)
   research/       dated research reports; read-only history
+deploy/           production units and settings templates (docs/deployment.md)
 scripts/          repository tooling (bash, small, documented)
 ```
 
@@ -79,6 +80,7 @@ Do not upgrade a major version in passing. Upgrades get their own commit
 | `just e2e` | end-to-end smoke: real API + web build + LiveKit, fake microphones |
 | `just ci` | everything CI runs |
 | `just build` | production builds |
+| `just deploy` | build and restart the production services on this host |
 
 **Before declaring any task done, run `just verify` and make it pass** (and `just e2e`
 when you touched a user journey or media code). Never
