@@ -159,3 +159,18 @@ async fn scribe_transcribes_synthesized_portuguese() {
     let stt = ScribeSpeechToText::new(ScribeConfig::new(key("DICERI_ELEVENLABS_API_KEY")));
     transcribes_synthesized_portuguese(&stt, "scribe").await;
 }
+
+#[tokio::test]
+#[ignore = "live: needs LiveKit credentials"]
+async fn livekit_presence_lists_live_rooms() {
+    use diceri_application::ports::MediaPresence as _;
+    let secret = key("DICERI_LIVEKIT_API_SECRET");
+    let presence = diceri_infra::LiveKitPresence::new(
+        &std::env::var("DICERI_LIVEKIT_URL").unwrap(),
+        std::env::var("DICERI_LIVEKIT_API_KEY").unwrap(),
+        secret,
+        reqwest::Client::new(),
+    );
+    let rooms = presence.live_rooms().await.unwrap();
+    eprintln!("live rooms: {rooms:?}");
+}

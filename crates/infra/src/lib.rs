@@ -13,7 +13,8 @@ pub mod translation;
 
 pub use agent_dispatcher::{AGENT_KEY_HEADER, HttpTranslationDispatcher};
 pub use livekit::{
-    LiveKitAccessIssuer, LiveKitRoomCloser, OUTPUT_LANGUAGE_ATTRIBUTE, VOICE_ATTRIBUTE,
+    LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser, OUTPUT_LANGUAGE_ATTRIBUTE,
+    VOICE_ATTRIBUTE,
 };
 pub use memory_room_repository::MemoryRoomRepository;
 pub use os_random::OsRandom;
