@@ -19,7 +19,8 @@ test('one onboarding step creates the account, its room name and mascot', async 
 	await expect(page.getByRole('button', { name: 'Open my room' })).toBeVisible();
 	await expect(page.getByRole('img', { name: 'Ninja mascot' }).first()).toBeVisible();
 
-	await page.getByRole('button', { name: 'Sign out' }).click();
+	await page.getByRole('button', { name: `@${username}` }).click();
+	await page.getByRole('menuitem', { name: 'Sign out' }).click();
 	await page.getByPlaceholder('yourname').fill(username);
 	await expect(page.getByText(`Welcome back, @${username}`)).toBeVisible();
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);

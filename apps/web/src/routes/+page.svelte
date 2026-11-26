@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { AccountBadge, AccountSession, Onboarding } from '#lib/features/account/index.ts';
 	import { HeroAnimation } from '#lib/features/landing/index.ts';
-	import { LanguageSelect, Logo, ThemeToggle } from '#lib/components/ui/index.ts';
+	import { LanguageSelect, ThemeToggle } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
 
@@ -22,10 +22,9 @@
 </svelte:head>
 
 <header class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
-	<Logo class="h-11 sm:h-14" />
+	<LanguageSelect class="-ms-2" />
 	<div class="flex items-center gap-2">
 		<AccountBadge session={account} />
-		<LanguageSelect />
 		<ThemeToggle />
 	</div>
 </header>
