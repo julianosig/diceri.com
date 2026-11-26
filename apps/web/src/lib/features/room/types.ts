@@ -13,6 +13,8 @@ export interface Room {
 	entry: RoomEntry;
 	/** The room's animated mascot; see `mascots.ts`. */
 	mascot: string;
+	/** People in the call now (`/users/{username}/room` only; absent without a media server). */
+	people?: number;
 }
 
 /** Mirrors `OpenRoomRequest`: how the owner runs their room this time. */

@@ -57,14 +57,15 @@ test('the owner opens their room at /@username as host', async ({ page }) => {
 	await expect(page.getByRole('button', { name: 'Join now' })).toBeVisible();
 });
 
-test('someone else opening /@username must ask to join', async ({ page, browser }) => {
+test('a room nobody is in shows as not live to visitors', async ({ page, browser }) => {
 	const username = await signUp(page);
 	await openMyRoom(page);
 
-	const guest = await (await browser.newContext()).newPage();
-	await guest.goto(`/@${username}`);
-	await expect(guest.getByRole('button', { name: 'Ask to join' })).toBeVisible();
-	await expect(guest.getByText('Who gets in')).toBeHidden();
+	// Opened, but the host has not joined the call: no door to knock on yet.
+	const visitor = await (await browser.newContext()).newPage();
+	await visitor.goto(`/@${username}`);
+	await expect(visitor.getByText(`@${username} isn’t live right now`)).toBeVisible();
+	await expect(visitor.getByRole('button', { name: 'Ask to join' })).toBeHidden();
 });
 
 test('a free @ offers to claim it, prefilled on the home page', async ({ page }) => {
