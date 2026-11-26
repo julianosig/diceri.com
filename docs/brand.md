@@ -26,8 +26,10 @@ wins. An inline script in `app.html` applies it before first paint.
 
 A 6:1 strip (`HeroAnimation.svelte`), all vector or code, so it has no background and stays
 sharp at any size. The two people are Codex drawings with a transparent background,
-traced to SVG with `vtracer` (`src/lib/assets/hero/{left,right}-person.svg`, ~18 kB each
-gzipped, imported so the build hashes their names); one pair serves both themes. The
+traced to SVG with `vtracer` (`src/lib/assets/hero/{left,right}-person.svg`, ~45 kB each
+gzipped, imported so the build hashes their names); one pair serves both themes. Before tracing, the drawing gets a binary alpha and the
+soft light halo the generator leaves along the outline is painted in the outline colour
+(at 2× size), otherwise the trace shows broken, jagged edges on light backgrounds. The
 middle is the real mark with the wordmark under it (`Logo layout="stacked"`), with a CSS
 halo, sparkles and dotted SVG links that flow. The speech (`HeroSpeech.svelte`) is HTML
 on top: the speaker talks (the drawing has no mouth; a resting smile and an open,
@@ -50,8 +52,8 @@ translation spoken back in the speaker's own (consented, cloned) voice.
 
 `apps/web/src/lib/assets/favicon.svg`: a twenty-sided die
 whose outline is a speech bubble. Speaking is the product; the d20 is a nod to the
-geek culture of the room mascots. Violet `#7c3aed` and blue `#2563eb` facets with
-white gaps. The concept was explored with Codex image generation and redrawn by hand
+geek culture of the room mascots. Violet `#7c3aed` and blue `#2563eb` facets; the
+gaps take the background colour (white on light tabs, near-black on dark ones). The concept was explored with Codex image generation and redrawn by hand
 as a 1 kB vector so it stays sharp from favicon to header.
 
 ## Room mascots
