@@ -1,4 +1,10 @@
 <script lang="ts">
+	import {
+		AccountBadge,
+		AccountKeyNotice,
+		AccountSession,
+		ClaimUsername
+	} from '#lib/features/account/index.ts';
 	import { LivePresence, LiveRooms } from '#lib/features/presence/index.ts';
 	import { CreateRoomForm } from '#lib/features/room/index.ts';
 
@@ -6,12 +12,20 @@
 	const SOURCE_URL = 'https://github.com/julianosig/diceri.com';
 
 	const presence = new LivePresence();
+	const account = new AccountSession();
 	$effect(() => presence.start());
+	$effect(() => {
+		void account.load();
+	});
 </script>
 
 <svelte:head>
 	<title>Diceri — talk in any language</title>
 </svelte:head>
+
+<div class="absolute top-4 right-4">
+	<AccountBadge session={account} />
+</div>
 
 <main
 	class="mx-auto flex min-h-dvh max-w-3xl flex-col items-center gap-10 px-4 pt-16 pb-6 text-center sm:pt-24"
@@ -22,7 +36,12 @@
 			Start an anonymous meeting, share the link, and each person hears the other in their own
 			language — in a voice that sounds like the speaker.
 		</p>
-		<CreateRoomForm />
+		<AccountKeyNotice session={account} />
+		{#if account.username}
+			<CreateRoomForm />
+		{:else if account.username === null}
+			<ClaimUsername session={account} />
+		{/if}
 	</div>
 	<LiveRooms snapshot={presence.snapshot} />
 	<footer class="mt-auto text-xs text-ink-muted">

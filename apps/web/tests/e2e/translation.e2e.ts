@@ -1,3 +1,4 @@
+import { signUp } from './support/accounts.ts';
 import { chromium, expect, test, type Browser, type Page } from '@playwright/test';
 
 /**
@@ -67,11 +68,10 @@ test('three people hear each other translated into their own language', async ({
 	const bob = await launch('Bob', 'en', url);
 	const carla = await launch('Carla', 'es', url);
 	try {
-		const probe = await ana.page.request.post(`${url}/api/v1/rooms`, {
-			data: { title: 'Probe' }
-		});
+		const probe = await ana.page.request.get(`${url}/api/v1/presence`);
 		test.skip(!probe.ok(), 'API not reachable');
 
+		await signUp(ana.page);
 		await ana.page.goto('/');
 		await ana.page.getByRole('button', { name: 'New meeting' }).click();
 		await fillProfile(ana);
@@ -98,6 +98,7 @@ test('a person alone can hear their own voice translated', async ({ baseURL }) =
 	const url = baseURL ?? 'http://127.0.0.1:4180';
 	const bob = await launch('Bob', 'en', url);
 	try {
+		await signUp(bob.page);
 		await bob.page.goto('/');
 		await bob.page.getByRole('button', { name: 'New meeting' }).click();
 		await fillProfile(bob);
@@ -124,6 +125,7 @@ test('detects the spoken language regardless of the output language', async ({ b
 	// Hears in English but speaks Portuguese (the pt-BR fixture).
 	const bob = await launch('Bob', 'en', url, 'pt-BR');
 	try {
+		await signUp(bob.page);
 		await bob.page.goto('/');
 		await bob.page.getByRole('button', { name: 'New meeting' }).click();
 		await fillProfile(bob);
@@ -147,6 +149,7 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 	const url = baseURL ?? 'http://127.0.0.1:4180';
 	const bob = await launch('Bob', 'en', url);
 	try {
+		await signUp(bob.page);
 		await bob.page.goto('/');
 		await bob.page.getByRole('button', { name: 'New meeting' }).click();
 		await fillProfile(bob);
@@ -178,6 +181,7 @@ test('previewing in the language you speak explains there is nothing to translat
 	// Hears English and speaks English; the preview starts in the output language.
 	const bob = await launch('Bob', 'en', url);
 	try {
+		await signUp(bob.page);
 		await bob.page.goto('/');
 		await bob.page.getByRole('button', { name: 'New meeting' }).click();
 		await fillProfile(bob);
@@ -202,6 +206,7 @@ test('when the host ends the call everyone gets the transcript', async ({ baseUR
 	const ana = await launch('Ana', 'pt-BR', url);
 	const bob = await launch('Bob', 'en', url);
 	try {
+		await signUp(ana.page);
 		await ana.page.goto('/');
 		await ana.page.getByRole('button', { name: 'New meeting' }).click();
 		await fillProfile(ana);

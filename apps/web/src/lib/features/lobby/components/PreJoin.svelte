@@ -14,9 +14,10 @@
 
 	interface Props {
 		roomId: string;
-		/** What the meeting is called and who hosts it (once they joined). */
+		/** What the meeting is called and who hosts it. */
 		title: string;
-		hostName: string | null;
+		/** Username of the room's owner. */
+		owner: string;
 		/** Open rooms let guests straight in; others wait for the host. */
 		open: boolean;
 		isHost: boolean;
@@ -25,7 +26,7 @@
 		onjoin: (profile: Profile, deviceId: string | undefined) => void;
 	}
 
-	let { roomId, title, hostName, open, isHost, busy, error, onjoin }: Props = $props();
+	let { roomId, title, owner, open, isHost, busy, error, onjoin }: Props = $props();
 	const copy = $derived(joinCopy(isHost, open));
 
 	const preview = new MicPreview();
@@ -94,8 +95,8 @@
 	<form class="flex flex-col items-center gap-5 text-center" onsubmit={submit}>
 		<div class="flex flex-col items-center gap-1">
 			<p class="text-lg font-semibold">{title}</p>
-			{#if hostName && !isHost}
-				<p class="text-sm text-ink-muted">Hosted by {hostName}</p>
+			{#if !isHost}
+				<p class="text-sm text-ink-muted">Hosted by @{owner}</p>
 			{/if}
 		</div>
 		<h1 class="text-3xl font-normal">{copy.heading}</h1>

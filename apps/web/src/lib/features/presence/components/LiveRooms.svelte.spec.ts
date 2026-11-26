@@ -7,7 +7,7 @@ import LiveRooms from './LiveRooms.svelte';
 const open = {
 	id: 'aaaaaaaaaaaaaaaaaaaaaa',
 	title: 'Spanish practice',
-	host: 'Ana',
+	owner: 'ana',
 	entry: 'open',
 	people: 5,
 	languages: ['pt-BR', 'en']
@@ -15,7 +15,7 @@ const open = {
 const approval = {
 	id: 'bbbbbbbbbbbbbbbbbbbbbb',
 	title: 'Coffee chat',
-	host: null,
+	owner: 'bob',
 	entry: 'approval',
 	people: 2,
 	languages: ['es']
@@ -30,11 +30,13 @@ describe('LiveRooms', () => {
 		await expect.element(page.getByRole('heading', { name: '9 online now' })).toBeVisible();
 		await expect.element(page.getByText('3 live rooms')).toBeVisible();
 		const first = page.getByRole('link', {
-			name: '#1 Spanish practice hosted by Ana: 5 people, hearing Português (Brasil), English. join now'
+			name: '#1 Spanish practice hosted by @ana: 5 people, hearing Português (Brasil), English. join now'
 		});
 		await expect.element(first).toHaveAttribute('href', '/r/aaaaaaaaaaaaaaaaaaaaaa');
 		await expect
-			.element(page.getByRole('link', { name: /^#2 Coffee chat: 2 people.*ask to join$/ }))
+			.element(
+				page.getByRole('link', { name: /^#2 Coffee chat hosted by @bob: 2 people.*ask to join$/ })
+			)
 			.toBeVisible();
 	});
 

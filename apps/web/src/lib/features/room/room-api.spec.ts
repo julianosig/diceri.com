@@ -6,7 +6,7 @@ const room = {
 	id: 'abcdefghijklmnopqrstuv',
 	maxParticipants: 2,
 	title: 'Coffee chat',
-	hostName: null,
+	owner: 'ana',
 	entry: 'approval'
 };
 const newRoom = { title: 'Coffee chat', listed: false, entry: 'approval' } as const;

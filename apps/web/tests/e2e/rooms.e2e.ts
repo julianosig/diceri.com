@@ -1,6 +1,26 @@
 import { expect, test } from '@playwright/test';
+import { signUp, uniqueUsername } from './support/accounts.ts';
+
+test('claiming a username shows the sign-in code once and it signs in again', async ({ page }) => {
+	const username = uniqueUsername();
+	await page.goto('/');
+	await page.getByPlaceholder('yourname').fill(username);
+	await page.getByRole('button', { name: 'Claim username' }).click();
+	await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+	const code = (await page.getByTestId('account-key').textContent()) ?? '';
+	await page.getByRole('button', { name: 'I saved it' }).click();
+	await expect(page.getByTestId('account-key')).toBeHidden();
+
+	await page.getByRole('button', { name: 'Sign out' }).click();
+	await page.getByRole('button', { name: 'I already have a username' }).click();
+	await page.getByLabel('Your sign-in code').fill(code);
+	await page.getByRole('button', { name: 'Sign in' }).click();
+	await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'New meeting' })).toBeVisible();
+});
 
 test('creator lands on the pre-join screen as host', async ({ page }) => {
+	await signUp(page);
 	await page.goto('/');
 	await page.getByRole('button', { name: 'New meeting' }).click();
 
@@ -10,6 +30,7 @@ test('creator lands on the pre-join screen as host', async ({ page }) => {
 });
 
 test('someone else opening the link must ask to join', async ({ page, browser }) => {
+	await signUp(page);
 	await page.goto('/');
 	await page.getByRole('button', { name: 'New meeting' }).click();
 	await expect(page).toHaveURL(/\/r\//);

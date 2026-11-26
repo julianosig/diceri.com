@@ -4,8 +4,8 @@ import type { RoomEntry } from '#lib/features/room/index.ts';
 export interface RankedRoom {
 	id: string;
 	title: string;
-	/** Known once the host has joined. */
-	host: string | null;
+	/** Username of the room's owner. */
+	owner: string;
 	entry: RoomEntry;
 	people: number;
 	/** Output languages heard in the room, most listened first. */

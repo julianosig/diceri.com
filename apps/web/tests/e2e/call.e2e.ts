@@ -1,7 +1,12 @@
+import { signUp } from './support/accounts.ts';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
-/** Skips when the API has no media server configured (no DICERI_LIVEKIT_*). */
-async function skipWithoutMedia(page: Page): Promise<void> {
+/**
+ * Signs the page up (rooms need an account) and skips when the API has no media
+ * server configured (no DICERI_LIVEKIT_*). Returns the username.
+ */
+async function skipWithoutMedia(page: Page): Promise<string> {
+	const username = await signUp(page);
 	const room = (await (
 		await page.request.post('/api/v1/rooms', { data: { title: 'Probe' } })
 	).json()) as {
@@ -13,6 +18,7 @@ async function skipWithoutMedia(page: Page): Promise<void> {
 		data: { name: 'Probe' }
 	});
 	test.skip(session.status() === 503, 'LiveKit is not configured (set DICERI_LIVEKIT_* in .env)');
+	return username;
 }
 
 async function hostJoins(page: Page): Promise<string> {
@@ -82,7 +88,7 @@ test('a public open room is on the live board and anyone can walk in', async ({
 	page,
 	browser
 }) => {
-	await skipWithoutMedia(page);
+	const owner = await skipWithoutMedia(page);
 	const title = `Open room ${String(Date.now())}`;
 	await page.goto('/');
 	await page.getByLabel('Room title').fill(title);
@@ -94,7 +100,7 @@ test('a public open room is on the live board and anyone can walk in', async ({
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
 
 	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
-	const room = visitor.getByRole('link', { name: new RegExp(`${title} hosted by Host`) });
+	const room = visitor.getByRole('link', { name: new RegExp(`${title} hosted by @${owner}`) });
 	// Snapshots are cached for 10 s, so reload until the room shows up.
 	await expect
 		.poll(
@@ -109,7 +115,7 @@ test('a public open room is on the live board and anyone can walk in', async ({
 	await room.click();
 
 	await expect(visitor.getByText(title)).toBeVisible();
-	await expect(visitor.getByText('Hosted by Host')).toBeVisible();
+	await expect(visitor.getByText(`Hosted by @${owner}`)).toBeVisible();
 	await visitor.getByLabel('Your name').fill('Walk-in');
 	await visitor.getByRole('button', { name: 'Join now' }).click();
 	await expect(visitor.getByRole('button', { name: 'Leave call' })).toBeVisible({

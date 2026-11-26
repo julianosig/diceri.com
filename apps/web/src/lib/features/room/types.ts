@@ -6,8 +6,8 @@ export interface Room {
 	id: string;
 	maxParticipants: number;
 	title: string;
-	/** Known once the host has joined. */
-	hostName: string | null;
+	/** Username of the account that owns (hosts) the room. */
+	owner: string;
 	entry: RoomEntry;
 }
 

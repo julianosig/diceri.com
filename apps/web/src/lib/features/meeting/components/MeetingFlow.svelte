@@ -104,7 +104,7 @@
 			<PreJoin
 				{roomId}
 				title={room.title}
-				hostName={room.hostName}
+				owner={room.owner}
 				open={room.entry === 'open'}
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}

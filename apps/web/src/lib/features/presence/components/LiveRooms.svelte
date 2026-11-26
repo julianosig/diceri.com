@@ -12,7 +12,7 @@
 	let { snapshot }: Props = $props();
 
 	function describe(room: RankedRoom, rank: number): string {
-		const host = room.host ? ` hosted by ${room.host}` : '';
+		const host = ` hosted by @${room.owner}`;
 		const heard = room.languages.map(languageLabel).join(', ');
 		const action = room.entry === 'open' ? 'join now' : 'ask to join';
 		return `#${String(rank)} ${room.title}${host}: ${peopleLabel(room.people)}${heard ? `, hearing ${heard}` : ''}. ${action}`;
@@ -65,7 +65,7 @@
 						<span class="flex min-w-0 flex-1 flex-col" aria-hidden="true">
 							<span class="truncate font-semibold text-white">{room.title}</span>
 							<span class="truncate text-xs text-white/60">
-								{room.host ? `by ${room.host}` : 'starting…'}{tags ? ` · ${tags}` : ''}
+								by @{room.owner}{tags ? ` · ${tags}` : ''}
 							</span>
 						</span>
 						<span class="flex shrink-0 items-center -space-x-1.5" aria-hidden="true">
