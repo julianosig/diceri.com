@@ -22,14 +22,19 @@ pub(crate) async fn open_room(
     Ok((StatusCode::CREATED, Json(body)))
 }
 
-/// The live room at `/@username`; 404 when its owner has not opened it.
+/// The live room at `/@username` with how many people are in its call; 404 when its
+/// owner has not opened it.
 pub(crate) async fn user_room(
     State(state): State<AppState>,
     Path(username): Path<String>,
 ) -> Result<Json<RoomResponse>, ApiError> {
     let owner: Username = username.parse().map_err(|_| ApiError::NotFound)?;
     let room = state.rooms.live(&owner).await?;
-    Ok(Json(RoomResponse::from(&room)))
+    let people = state.presence.people_in(&room.id).await;
+    Ok(Json(RoomResponse {
+        people,
+        ..RoomResponse::from(&room)
+    }))
 }
 
 pub(crate) async fn get_room(

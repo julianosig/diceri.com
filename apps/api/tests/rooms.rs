@@ -55,6 +55,8 @@ async fn the_room_lives_at_the_owners_username() {
     assert_eq!(room["owner"], "ana");
     assert_eq!(room["code"], opened["code"]);
     assert_eq!(room["entry"], "open");
+    // Without a media server nobody can tell who is in the call, so no count is given.
+    assert!(room.get("people").is_none());
 
     // Opening again keeps the same room (and link) with the new settings.
     let (_, _, again) = exchange(

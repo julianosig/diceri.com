@@ -51,6 +51,19 @@ impl LiveKitPresence {
             .collect())
     }
 
+    /// Whether the media room exists (asking for its participants otherwise is an error).
+    async fn exists(&self, room: &str) -> Result<bool, MediaAccessError> {
+        let grants = VideoGrants {
+            room_list: true,
+            ..VideoGrants::default()
+        };
+        let listed: RoomList = self
+            .twirp
+            .call("ListRooms", grants, &json!({ "names": [room] }))
+            .await?;
+        Ok(!listed.rooms.is_empty())
+    }
+
     async fn participants(&self, room: String) -> Result<Vec<Participant>, MediaAccessError> {
         let grants = VideoGrants {
             room_admin: true,
@@ -82,6 +95,18 @@ impl MediaPresence for LiveKitPresence {
             .zip(lists)
             .filter_map(|(room, list)| Some(live_room(room, list.ok()?)))
             .collect())
+    }
+
+    async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {
+        let name = room.to_string();
+        if !self.exists(&name).await? {
+            return Ok(0);
+        }
+        let people = self.participants(name).await?;
+        Ok(people
+            .iter()
+            .filter(|p| p.identity.starts_with(PERSON_PREFIX))
+            .count())
     }
 }
 

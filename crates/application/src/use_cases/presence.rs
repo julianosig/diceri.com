@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 
-use diceri_domain::{EntryPolicy, LanguageCode, Mascot, Room, RoomCode, Username};
+use diceri_domain::{EntryPolicy, LanguageCode, Mascot, Room, RoomCode, RoomId, Username};
 use tokio::sync::Mutex;
 use tokio::time::Instant;
 
@@ -94,6 +94,20 @@ impl PresenceService {
         };
         *cache = Some((Instant::now(), snapshot.clone()));
         snapshot
+    }
+
+    /// People in `room`'s call right now, asked fresh (not cached: someone who just
+    /// joined must count at once). `None` when no media server is configured or it cannot
+    /// be reached, since then nobody can tell (callers must not gate on it).
+    pub async fn people_in(&self, room: &RoomId) -> Option<usize> {
+        let source = self.source.as_ref()?;
+        match source.people_in(room).await {
+            Ok(people) => Some(people),
+            Err(error) => {
+                tracing::warn!(%error, room_id = %room, "room presence unavailable");
+                None
+            }
+        }
     }
 
     /// Pairs live media rooms with this deployment's open rooms; others (another

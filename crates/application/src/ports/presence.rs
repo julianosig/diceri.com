@@ -15,4 +15,14 @@ pub struct LiveRoom {
 #[async_trait::async_trait]
 pub trait MediaPresence: Send + Sync {
     async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError>;
+
+    /// People in one room's call right now (0 when the media room does not exist).
+    /// Adapters should answer with a single-room query; this default scans every room.
+    async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {
+        let rooms = self.live_rooms().await?;
+        Ok(rooms
+            .into_iter()
+            .find(|live| live.room == *room)
+            .map_or(0, |live| live.people))
+    }
 }

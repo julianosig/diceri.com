@@ -140,3 +140,14 @@ async fn failures_and_missing_media_report_nobody_online() {
     let without_media = PresenceService::new(None, f.repository.clone());
     assert_eq!(without_media.snapshot().await.online, 0);
 }
+
+#[tokio::test]
+async fn tells_how_many_people_are_in_a_room_call() {
+    let f = fixture(false);
+    let busy = f.live("busy", false, 3, &["en"]).await;
+    let quiet = f.live("quiet", false, 0, &[]).await;
+    assert_eq!(f.presence.people_in(&busy.id).await, Some(3));
+    assert_eq!(f.presence.people_in(&quiet.id).await, Some(0));
+    let without_media = PresenceService::new(None, f.repository.clone());
+    assert_eq!(without_media.people_in(&busy.id).await, None);
+}

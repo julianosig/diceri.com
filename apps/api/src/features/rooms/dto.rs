@@ -65,8 +65,12 @@ pub(crate) struct RoomResponse {
     /// Username of the owner, which is also the room's name (`@owner`).
     pub owner: String,
     pub entry: EntryDto,
-    /// The room's animated symbol (`/mascots/<name>.gif`).
+    /// The room's animated mascot (`/mascots/<format>/<name>.*`).
     pub mascot: &'static str,
+    /// People in the call right now, on `/users/{username}/room` only; absent when no
+    /// media server is configured. Lets visitors see a room nobody is in as not live.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub people: Option<usize>,
 }
 
 impl From<&Room> for RoomResponse {
@@ -78,6 +82,7 @@ impl From<&Room> for RoomResponse {
             owner: room.owner.to_string(),
             entry: room.settings.entry.into(),
             mascot: room.settings.mascot.as_str(),
+            people: None,
         }
     }
 }
