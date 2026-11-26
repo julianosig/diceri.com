@@ -1,6 +1,7 @@
 //! Ports (driven side) that adapters must implement.
 
 mod media_access;
+mod presence;
 mod random_source;
 mod room_repository;
 mod speech_to_text;
@@ -12,6 +13,7 @@ mod voice_cloner;
 pub use media_access::{
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
 };
+pub use presence::{LiveRoom, MediaPresence};
 pub use random_source::RandomSource;
 pub use room_repository::{RoomRepository, RoomRepositoryError};
 pub use speech_to_text::{
