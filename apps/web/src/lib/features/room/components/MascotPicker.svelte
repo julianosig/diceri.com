@@ -22,7 +22,7 @@
 				class={[
 					'cursor-pointer rounded-full p-0.5 transition has-focus-visible:ring-2 has-focus-visible:ring-brand-500',
 					value === mascot.id
-						? 'bg-brand-500 ring-2 ring-brand-500'
+						? 'bg-brand-500/15 ring-2 ring-brand-500'
 						: 'opacity-70 hover:opacity-100'
 				]}
 				title={mascot.label}

@@ -19,8 +19,9 @@ export const MASCOTS = [
 
 export type MascotId = (typeof MASCOTS)[number]['id'];
 
-export function mascotUrl(id: string): string {
-	return `/mascots/${encodeURIComponent(id)}.gif`;
+/** Transparent animated asset: WebP (preferred) or GIF (fallback). */
+export function mascotUrl(id: string, format: 'webp' | 'gif' = 'webp'): string {
+	return `/mascots/${format}/${encodeURIComponent(id)}.${format}`;
 }
 
 export function mascotLabel(id: string): string {

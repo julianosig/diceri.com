@@ -14,12 +14,16 @@
 	let { mascot, size = 40, decorative = false, class: className }: Props = $props();
 </script>
 
-<img
-	src={mascotUrl(mascot)}
-	alt={decorative ? '' : `${mascotLabel(mascot)} mascot`}
-	width={size}
-	height={size}
-	loading="lazy"
-	decoding="async"
-	class={cn('shrink-0 rounded-full object-cover', className)}
-/>
+<!-- Transparent animated WebP; GIF (1-bit transparency) for browsers without it. -->
+<picture class="contents">
+	<source srcset={mascotUrl(mascot, 'webp')} type="image/webp" />
+	<img
+		src={mascotUrl(mascot, 'gif')}
+		alt={decorative ? '' : `${mascotLabel(mascot)} mascot`}
+		width={size}
+		height={size}
+		loading="lazy"
+		decoding="async"
+		class={cn('shrink-0 object-contain', className)}
+	/>
+</picture>

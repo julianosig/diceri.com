@@ -2,7 +2,7 @@ use std::fmt;
 use std::str::FromStr;
 
 /// The room's animated symbol, picked by the host from a fixed catalog of original
-/// characters (assets in `apps/web/static/mascots/<name>.gif`).
+/// characters (assets in `apps/web/static/mascots/{webp,gif}/<name>.*`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub enum Mascot {
     Alien,

@@ -20,7 +20,8 @@ describe('mascots', () => {
 	});
 
 	it('builds asset URLs and labels', () => {
-		expect(mascotUrl('robot')).toBe('/mascots/robot.gif');
+		expect(mascotUrl('robot')).toBe('/mascots/webp/robot.webp');
+		expect(mascotUrl('robot', 'gif')).toBe('/mascots/gif/robot.gif');
 		expect(mascotLabel('cybercat')).toBe('Cyber cat');
 		expect(mascotLabel('unknown')).toBe('Room');
 	});
