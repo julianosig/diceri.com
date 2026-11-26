@@ -57,6 +57,8 @@ pub struct Config {
     pub database_url: String,
     /// Mark the session cookie `Secure` (HTTPS only); on in production.
     pub secure_cookies: bool,
+    /// Recording your own voice for translations (a paid feature, off until it ships).
+    pub voice_cloning: bool,
 }
 
 impl Config {
@@ -99,6 +101,7 @@ impl Config {
             database_url: env::var("DICERI_DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite://diceri.db".to_owned()),
             secure_cookies: env::var("DICERI_SECURE_COOKIES").is_ok_and(|value| value == "true"),
+            voice_cloning: env::var("DICERI_VOICE_CLONING").is_ok_and(|value| value == "true"),
         })
     }
 
@@ -119,6 +122,7 @@ impl Config {
             deployment: "test".to_owned(),
             database_url: "sqlite::memory:".to_owned(),
             secure_cookies: false,
+            voice_cloning: false,
         }
     }
 }

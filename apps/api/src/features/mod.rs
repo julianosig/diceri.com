@@ -1,6 +1,7 @@
 //! HTTP features. One folder per feature: `routes`, `handlers`, `dto`.
 
 mod accounts;
+mod capabilities;
 pub(crate) mod health;
 mod presence;
 pub(crate) mod rooms;
@@ -16,6 +17,7 @@ use crate::AppState;
 pub(crate) fn api_routes() -> Router<AppState> {
     Router::new()
         .merge(accounts::routes())
+        .merge(capabilities::routes())
         .merge(rooms::routes())
         .merge(presence::routes())
         // Own fallback so unknown API paths never inherit the SPA shell.

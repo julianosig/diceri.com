@@ -56,9 +56,11 @@ impl AppState {
                     livekit.api_secret.clone(),
                 ))
             });
+        // Voice cloning is off unless switched on: no cloner, no voice service, nothing sent.
         let cloner = config
             .elevenlabs_api_key
             .as_ref()
+            .filter(|_| config.voice_cloning)
             .map(|key| -> Arc<dyn VoiceCloner> {
                 Arc::new(ElevenLabsVoiceCloner::new(
                     key.clone(),
