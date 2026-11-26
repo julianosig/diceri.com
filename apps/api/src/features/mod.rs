@@ -1,6 +1,7 @@
 //! HTTP features. One folder per feature: `routes`, `handlers`, `dto`.
 
 pub(crate) mod health;
+mod presence;
 mod rooms;
 
 use axum::Router;
@@ -13,6 +14,7 @@ use crate::AppState;
 pub(crate) fn api_routes() -> Router<AppState> {
     Router::new()
         .merge(rooms::routes())
+        .merge(presence::routes())
         // Own fallback so unknown API paths never inherit the SPA shell.
         .fallback(|| async { crate::error::ApiError::NotFound })
 }

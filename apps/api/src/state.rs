@@ -1,13 +1,14 @@
 use std::sync::Arc;
 
 use diceri_application::ports::{
-    MediaAccessIssuer, RandomSource, RoomRepository, TranslationDispatcher, VoiceCloner,
+    MediaAccessIssuer, MediaPresence, RandomSource, RoomRepository, TranslationDispatcher,
+    VoiceCloner,
 };
-use diceri_application::use_cases::{AdmissionService, RoomService, VoiceService};
+use diceri_application::use_cases::{AdmissionService, PresenceService, RoomService, VoiceService};
 use diceri_infra::synthesis::ElevenLabsVoiceCloner;
 use diceri_infra::{
-    HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitRoomCloser, MemoryRoomRepository,
-    OsRandom,
+    HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser,
+    MemoryRoomRepository, OsRandom,
 };
 
 use crate::Config;
@@ -19,6 +20,8 @@ pub struct AppState {
     pub admission: AdmissionService,
     /// `None` when voice cloning is not configured.
     pub voices: Option<VoiceService>,
+    /// Who is online now; empty when media is not configured.
+    pub presence: PresenceService,
 }
 
 impl AppState {
@@ -53,6 +56,13 @@ impl AppState {
                 reqwest::Client::new(),
             ));
             state.admission = state.admission.with_room_closer(room_closer);
+            let presence: Arc<dyn MediaPresence> = Arc::new(LiveKitPresence::new(
+                &livekit.url,
+                livekit.api_key.clone(),
+                livekit.api_secret.clone(),
+                reqwest::Client::new(),
+            ));
+            state.presence = PresenceService::new(Some(presence));
         }
         if let Some(agent) = &config.agent {
             let dispatcher: Arc<dyn TranslationDispatcher> =
@@ -84,6 +94,7 @@ impl AppState {
             rooms: RoomService::new(repository.clone(), random.clone()),
             voices: cloner.map(|cloner| VoiceService::new(repository.clone(), cloner)),
             admission: AdmissionService::new(repository, random, media),
+            presence: PresenceService::new(None),
         }
     }
 }
