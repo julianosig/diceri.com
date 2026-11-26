@@ -10,6 +10,7 @@ use tower_http::timeout::TimeoutLayer;
 use tower_http::trace::TraceLayer;
 
 use crate::rate_limit::{RateLimiter, limit_writes};
+use crate::web_cache::cache_web_assets;
 use crate::{AppState, Config, features};
 
 const REQUEST_TIMEOUT: Duration = Duration::from_secs(10);
@@ -20,7 +21,9 @@ pub fn build_router(state: AppState, config: &Config) -> Router {
         .merge(features::health::routes())
         .nest("/api/v1", with_write_limit(features::api_routes(), config));
     let router = match &config.web_dir {
-        Some(dir) => router.fallback_service(spa(dir)),
+        Some(dir) => router
+            .fallback_service(spa(dir))
+            .layer(axum::middleware::from_fn(cache_web_assets)),
         None => router,
     };
     router

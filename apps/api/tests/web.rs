@@ -51,3 +51,11 @@ async fn unknown_api_paths_are_not_found_instead_of_the_shell() {
     assert_eq!(status, StatusCode::NOT_FOUND);
     assert_ne!(body, "shell");
 }
+
+#[tokio::test]
+async fn web_files_say_how_long_they_may_be_cached() {
+    let app = app(web_dir("cache"));
+    let request = Request::builder().uri("/@ana").body(Body::empty()).unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    assert_eq!(response.headers()["cache-control"], "no-cache");
+}

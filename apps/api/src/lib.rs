@@ -12,6 +12,7 @@ mod router;
 mod shutdown;
 mod state;
 pub mod telemetry;
+mod web_cache;
 
 pub use config::{AgentConfig, Config, LiveKitConfig, LogFormat};
 pub use error::ApiError;
