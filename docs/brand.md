@@ -24,8 +24,9 @@ wins. An inline script in `app.html` applies it before first paint.
 ## Home illustration
 
 A 6:1 strip (`HeroAnimation.svelte`): the scene is a text-free image generated with
-Codex in four aligned variants, `static/hero/scene-{light,dark}{,-glow}.webp` (~22 kB
-each). The speech is HTML on top: a line said on the left travels into Diceri, Diceri
+Codex, one per theme, `static/hero/scene-{light,dark}.webp` (~50 kB each), with a
+transparent background so it sits on the page. Diceri's glow is a CSS halo behind the
+image plus sparkles. The speech is HTML on top: a line said on the left travels into Diceri, Diceri
 glows, and the same line arrives translated at the listener, labelled with each
 language. Pairs live in `language-pairs.ts`; add one there, no new image needed. Reduced
 motion shows both lines at once.
