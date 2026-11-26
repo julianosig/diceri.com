@@ -21,7 +21,7 @@
 	The top of every page outside a call: language on the left, the signed-in @ and the
 	theme on the right, then the banner with the Diceri mark as the site's masthead.
 -->
-<header class="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 pt-4">
+<header class="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 pt-4 pb-6 sm:gap-10 sm:pb-10">
 	<div class="flex items-center justify-between gap-4">
 		<LanguageSelect class="-ms-2" />
 		<div class="flex items-center gap-2">
