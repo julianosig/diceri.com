@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { AccountBadge, AccountSession, Onboarding } from '#lib/features/account/index.ts';
+	import { HeroAnimation } from '#lib/features/landing/index.ts';
 	import { LivePresence, LiveRooms } from '#lib/features/presence/index.ts';
 	import { Logo } from '#lib/components/ui/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
@@ -25,9 +26,10 @@
 </header>
 
 <main
-	class="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-3xl flex-col items-center gap-10 px-4 pt-8 pb-6 text-center sm:pt-14"
+	class="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-5xl flex-col items-center gap-10 px-4 pt-2 pb-6 text-center sm:pt-6"
 >
-	<div class="flex flex-col items-center gap-8">
+	<HeroAnimation class="max-w-5xl" />
+	<div class="flex max-w-3xl flex-col items-center gap-8">
 		<h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
 			The call you already know.<br />
 			<span class="bg-gradient-to-r from-brand-violet to-brand-500 bg-clip-text text-transparent">

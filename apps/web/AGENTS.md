@@ -41,6 +41,9 @@ Features today:
 | `call`        | LiveKit session, participant tiles, control bar, audio settings, stats    |
 | `translation` | agent contract, caption feed, what each listener hears                    |
 | `meeting`     | orchestrates one visit: pre-join → waiting → call → left                  |
+| `account`     | onboarding (username check, password, mascot), sign-in, session badge     |
+| `presence`    | the live board: who is online and the public rooms                        |
+| `landing`     | home-page presentation (hero animation)                                   |
 
 Dependency direction: `meeting` → `lobby` → `call` → `translation`, `room`. Never import upwards.
 
