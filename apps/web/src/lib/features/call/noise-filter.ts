@@ -1,9 +1,10 @@
 import type { LocalAudioTrack } from 'livekit-client';
 import type { EnhancedFilter } from './audio-settings.ts';
+import type { CallProblem } from './call-problem.ts';
 
 export interface FilterResult {
 	active: EnhancedFilter;
-	error?: string;
+	error?: CallProblem;
 }
 
 /**
@@ -20,14 +21,13 @@ export async function applyEnhancedFilter(
 	const { KrispNoiseFilter, isKrispNoiseFilterSupported } =
 		await import('@livekit/krisp-noise-filter');
 	if (!isKrispNoiseFilterSupported()) {
-		return { active: 'off', error: 'Enhanced noise filter is not supported in this browser.' };
+		return { active: 'off', error: 'filterUnsupported' };
 	}
 	try {
 		await track.setProcessor(KrispNoiseFilter({ useBVC: filter === 'voice', quality: 'high' }));
 		return { active: filter };
-	} catch (cause) {
-		const message = cause instanceof Error ? cause.message : String(cause);
-		return { active: 'off', error: `Enhanced noise filter failed: ${message}` };
+	} catch {
+		return { active: 'off', error: 'filterFailed' };
 	}
 }
 

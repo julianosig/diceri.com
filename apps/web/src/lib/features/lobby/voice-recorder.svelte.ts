@@ -13,16 +13,17 @@ const VOICE_LEVEL = 0.12;
 const MIN_VOICED_MS = 1500;
 /** What speech-to-text reads, and what the API accepts for a voice. */
 const SPEECH_SAMPLE_RATE = 16_000;
-const NO_VOICE = "We couldn't hear you clearly. Read the sentence out loud and try again.";
 
 export type VoiceStep = 'idle' | 'recording' | 'creating' | 'ready' | 'error';
+/** Why recording failed; the component words it in the visitor's language. */
+export type VoiceProblem = 'noVoice' | 'micNeeded' | 'failed';
 
 /** Records ~10 s of the user reading a script and turns it into a voice clone. */
 export class VoiceRecorder {
 	step = $state<VoiceStep>('idle');
 	elapsed = $state(0);
 	level = $state(0);
-	error = $state<string | undefined>();
+	error = $state<VoiceProblem | undefined>();
 	voiceId = $state<string | undefined>();
 
 	#stream: MediaStream | undefined;
@@ -52,7 +53,7 @@ export class VoiceRecorder {
 				}
 			});
 		} catch {
-			this.#fail('Microphone access is needed to record your voice.');
+			this.#fail('micNeeded');
 			return;
 		}
 		this.#record(this.#stream);
@@ -79,7 +80,7 @@ export class VoiceRecorder {
 		recorder.onstop = () => {
 			// Nothing leaves the browser unless the microphone clearly heard a voice.
 			if (this.#voicedMs < MIN_VOICED_MS) {
-				this.#fail(NO_VOICE);
+				this.#fail('noVoice');
 				return;
 			}
 			void this.#upload(new Blob(this.#chunks, { type: recorder.mimeType }));
@@ -120,14 +121,13 @@ export class VoiceRecorder {
 			this.step = 'ready';
 		} catch (cause) {
 			// 400: the API heard no words in it (or could not read it): read the sentence again.
-			if (cause instanceof ApiError && cause.status === 400) this.#fail(NO_VOICE);
-			else this.#fail(cause instanceof Error ? cause.message : 'Could not create your voice.');
+			this.#fail(cause instanceof ApiError && cause.status === 400 ? 'noVoice' : 'failed');
 		}
 	}
 
-	#fail(message: string): void {
+	#fail(problem: VoiceProblem): void {
 		this.#cleanup();
-		this.error = message;
+		this.error = problem;
 		this.step = 'error';
 	}
 

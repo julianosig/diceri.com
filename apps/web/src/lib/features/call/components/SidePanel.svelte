@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import type { Snippet } from 'svelte';
 	import { X } from '@lucide/svelte';
 
@@ -20,7 +21,7 @@
 		<button
 			type="button"
 			class="-me-2 rounded-full p-2 text-ink-muted hover:bg-surface-raised hover:text-ink"
-			aria-label="Close panel"
+			aria-label={i18n.t.call.closePanel}
 			onclick={onclose}
 		>
 			<X class="size-5" />

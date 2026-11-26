@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import { cn } from '#lib/utils/cn.ts';
 
 	interface Props {
@@ -13,7 +14,7 @@
 	let {
 		level,
 		muted,
-		label = 'Outgoing level (after filtering)',
+		label = i18n.t.audio.outgoingLevel,
 		tone = 'light',
 		showLabel = true
 	}: Props = $props();
@@ -29,7 +30,7 @@
 			)}
 		>
 			<span>{label}</span>
-			<span>{muted ? 'Muted' : `${String(percent)}%`}</span>
+			<span>{muted ? i18n.t.audio.muted : `${String(percent)}%`}</span>
 		</div>
 	{/if}
 	<div

@@ -10,6 +10,7 @@ import {
 	type RemoteTrack,
 	type RemoteTrackPublication
 } from 'livekit-client';
+import type { CallProblem } from './call-problem.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
 	DEFAULT_AUDIO_SETTINGS,
@@ -206,7 +207,8 @@ export class CallSession {
 	async #publishMicrophone(): Promise<void> {
 		await this.#room.localParticipant.setMicrophoneEnabled(true, toCaptureOptions(this.settings));
 		const track = this.#micTrack();
-		if (!track) throw new Error('Microphone could not be published.');
+		// The message is a problem key; CallScreen words it in the visitor's language.
+		if (!track) throw new Error('micUnpublished' satisfies CallProblem);
 		const result = await applyEnhancedFilter(track, this.settings.enhancedFilter);
 		this.activeFilter = result.active;
 		this.error = result.error;

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
+	import { isCallProblem } from '../call-problem.ts';
 	import type { Snippet } from 'svelte';
 	import { CaptionsOverlay } from '#lib/features/translation/index.ts';
 	import type { CallPanel } from '../call-layout.ts';
@@ -36,8 +38,12 @@
 	}: Props = $props();
 	let panel = $state<CallPanel>('none');
 	const grid = $derived(session.participants.length > 1 ? 'sm:grid-cols-2' : 'max-w-4xl');
+	/** Our own problems in the visitor's language; server errors as they come. */
+	const problemText = (error: string): string =>
+		isCallProblem(error) ? i18n.t.call[error] : error;
+
 	const nameOf = (identity: string) =>
-		session.participants.find((p) => p.identity === identity)?.name ?? 'Guest';
+		session.participants.find((p) => p.identity === identity)?.name ?? i18n.t.call.guest;
 </script>
 
 <div class="flex h-dvh flex-col bg-stage">
@@ -47,7 +53,7 @@
 			class="bg-brand-500 px-4 py-2 text-sm text-white"
 			onclick={() => session.startAudio()}
 		>
-			Click to enable audio from other participants
+			{i18n.t.call.enableAudio}
 		</button>
 	{/if}
 	<div class="flex min-h-0 flex-1 gap-4 p-4">
@@ -58,11 +64,11 @@
 				{/each}
 			</div>
 			{#if session.status === 'connecting'}
-				<p class="absolute text-white/80">Connecting…</p>
+				<p class="absolute text-white/80">{i18n.t.call.connecting}</p>
 			{/if}
 			{#if session.error}
 				<p role="alert" class="absolute top-0 rounded-lg bg-danger px-4 py-2 text-sm text-white">
-					{session.error}
+					{problemText(session.error)}
 				</p>
 			{/if}
 			<div class="pointer-events-none absolute inset-0 flex flex-col justify-end gap-3">
@@ -73,10 +79,12 @@
 			</div>
 		</main>
 		{#if panel === 'people'}
-			<SidePanel title="People" onclose={() => (panel = 'none')}>
+			<SidePanel title={i18n.t.call.people} onclose={() => (panel = 'none')}>
 				{@render peopleExtra?.()}
 				<section class="flex flex-col gap-2">
-					<h3 class="text-xs font-medium tracking-wide text-ink-muted uppercase">In call</h3>
+					<h3 class="text-xs font-medium tracking-wide text-ink-muted uppercase">
+						{i18n.t.call.inCall}
+					</h3>
 					<ul class="flex flex-col gap-2">
 						{#each session.participants as participant (participant.identity)}
 							<li class="flex items-center gap-3">
@@ -87,7 +95,7 @@
 									{participant.name.charAt(0).toUpperCase()}
 								</span>
 								<span class="flex-1 truncate">
-									{participant.name}{participant.isLocal ? ' (You)' : ''}
+									{participant.isLocal ? i18n.t.call.you(participant.name) : participant.name}
 								</span>
 								{#if participant.muted}<span class="text-xs text-ink-muted">muted</span>{/if}
 							</li>
@@ -96,7 +104,7 @@
 				</section>
 			</SidePanel>
 		{:else if panel === 'settings'}
-			<SidePanel title="Audio settings" onclose={() => (panel = 'none')}>
+			<SidePanel title={i18n.t.call.audioSettings} onclose={() => (panel = 'none')}>
 				<AudioSettingsForm
 					settings={session.settings}
 					devices={session.devices}

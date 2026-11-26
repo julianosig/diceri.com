@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import type { PendingRequest } from '../lobby-api.ts';
 
 	interface Props {
@@ -12,7 +13,9 @@
 
 {#if requests.length > 0}
 	<section class="flex flex-col gap-2" aria-live="polite">
-		<h3 class="text-xs font-medium tracking-wide text-ink-muted uppercase">Waiting to join</h3>
+		<h3 class="text-xs font-medium tracking-wide text-ink-muted uppercase">
+			{i18n.t.lobby.waitingToJoin}
+		</h3>
 		<ul class="flex flex-col gap-2">
 			{#each requests as request (request.id)}
 				<li class="flex items-center gap-2">
@@ -24,7 +27,7 @@
 							ondecide(request.id, false);
 						}}
 					>
-						Deny
+						{i18n.t.lobby.deny}
 					</Button>
 					<Button
 						size="sm"
@@ -32,7 +35,7 @@
 							ondecide(request.id, true);
 						}}
 					>
-						Admit
+						{i18n.t.lobby.admit}
 					</Button>
 				</li>
 			{/each}

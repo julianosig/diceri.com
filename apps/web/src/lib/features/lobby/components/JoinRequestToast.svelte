@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { X } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { languageLabel } from '#lib/features/translation/index.ts';
 	import type { PendingRequest } from '../lobby-api.ts';
 
@@ -20,13 +21,15 @@
 >
 	<header class="flex items-start justify-between gap-3">
 		<p id="join-request-title">
-			<strong>{request.name}</strong> wants to join this call
-			<span class="text-sm text-ink-muted">(hears {languageLabel(request.outputLanguage)})</span>
+			<strong class="font-semibold">{i18n.t.lobby.wantsToJoin(request.name)}</strong>
+			<span class="text-sm text-ink-muted">
+				{i18n.t.lobby.hears(languageLabel(request.outputLanguage))}
+			</span>
 		</p>
 		<button
 			type="button"
 			class="-m-1 rounded-full p-1 hover:bg-surface-raised"
-			aria-label="Dismiss"
+			aria-label={i18n.t.lobby.dismiss}
 			onclick={ondismiss}
 		>
 			<X class="size-4" />
@@ -40,7 +43,7 @@
 				ondecide(false);
 			}}
 		>
-			Deny
+			{i18n.t.lobby.deny}
 		</Button>
 		<Button
 			size="sm"
@@ -48,7 +51,7 @@
 				ondecide(true);
 			}}
 		>
-			Admit
+			{i18n.t.lobby.admit}
 		</Button>
 	</div>
 </div>

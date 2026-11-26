@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Activity } from '@lucide/svelte';
+	import { i18n } from '#lib/i18n/index.ts';
 	import SettingsSection from './SettingsSection.svelte';
 	import type { TransportMetrics } from '../transport-stats.ts';
 	import type { CallMetrics } from '../stats-poller.ts';
@@ -13,23 +14,25 @@
 	const rows = $derived(
 		(
 			[
-				['Sending', metrics.send],
-				['Receiving', metrics.receive]
+				[i18n.t.audio.sending, metrics.send],
+				[i18n.t.audio.receiving, metrics.receive]
 			] as const
 		).map(([label, m]: readonly [string, TransportMetrics | undefined]) => ({ label, m }))
 	);
 </script>
 
-<SettingsSection title="Connection" icon={Activity}>
+<SettingsSection title={i18n.t.audio.connection} icon={Activity}>
 	<div class="rounded-xl border border-ink-muted/15 px-4 py-3">
 		<table class="w-full text-start text-sm">
 			<thead class="text-xs text-ink-muted">
 				<tr>
-					<th class="pb-2 text-start font-normal"><span class="sr-only">Direction</span></th>
-					<th class="pb-2 text-end font-normal">Bitrate</th>
-					<th class="pb-2 text-end font-normal">Loss</th>
-					<th class="pb-2 text-end font-normal">Jitter</th>
-					<th class="pb-2 text-end font-normal">RTT</th>
+					<th class="pb-2 text-start font-normal">
+						<span class="sr-only">{i18n.t.audio.direction}</span>
+					</th>
+					<th class="pb-2 text-end font-normal">{i18n.t.audio.bitrate}</th>
+					<th class="pb-2 text-end font-normal">{i18n.t.audio.loss}</th>
+					<th class="pb-2 text-end font-normal">{i18n.t.audio.jitter}</th>
+					<th class="pb-2 text-end font-normal">{i18n.t.audio.rtt}</th>
 				</tr>
 			</thead>
 			<tbody class="tabular-nums">

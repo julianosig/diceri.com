@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import type { CaptionLine } from '../captions.svelte.ts';
 
 	interface Props {
@@ -12,7 +13,7 @@
 {#if lines.length > 0}
 	<section
 		class="mx-auto flex w-full max-w-3xl flex-col gap-1 rounded-xl bg-black/70 px-5 py-3 text-white"
-		aria-label="Captions"
+		aria-label={i18n.t.call.captions}
 		aria-live="polite"
 	>
 		{#each lines as line (`${line.speaker}#${String(line.phrase)}`)}

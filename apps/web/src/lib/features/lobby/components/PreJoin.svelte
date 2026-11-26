@@ -2,6 +2,7 @@
 	import { onMount, untrack } from 'svelte';
 	import { Hand, Languages, LoaderCircle, Mic, UserRound, Video } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
 	import { RoomEntryPicker, type RoomEntry } from '#lib/features/room/index.ts';
 	import { isValidDisplayName, loadDisplayName, MAX_NAME_LENGTH } from '../display-name.ts';
@@ -68,7 +69,7 @@
 	onsubmit={submit}
 >
 	<label class="w-full text-start text-sm">
-		<span class="mb-1 block text-ink-muted">Your name</span>
+		<span class="mb-1 block text-ink-muted">{i18n.t.lobby.yourName}</span>
 		<span class={fieldClass}>
 			<UserRound class={iconClass} aria-hidden="true" />
 			<input
@@ -81,7 +82,7 @@
 		</span>
 	</label>
 	<label class="w-full text-start text-sm">
-		<span class="mb-1 block text-ink-muted">Hear everyone in</span>
+		<span class="mb-1 block text-ink-muted">{i18n.t.lobby.hearEveryoneIn}</span>
 		<span class={fieldClass}>
 			<Languages class={iconClass} aria-hidden="true" />
 			<select
@@ -97,9 +98,12 @@
 	{#if isHost}
 		<RoomEntryPicker {entry} />
 	{/if}
-	<section class="flex w-full flex-col gap-2 text-start" aria-label="Microphone preview">
+	<section
+		class="flex w-full flex-col gap-2 text-start"
+		aria-label={i18n.t.lobby.microphonePreview}
+	>
 		<label class="text-sm">
-			<span class="mb-1 block text-ink-muted">Microphone</span>
+			<span class="mb-1 block text-ink-muted">{i18n.t.lobby.microphone}</span>
 			<span class={fieldClass}>
 				<Mic class={iconClass} aria-hidden="true" />
 				<select
@@ -107,16 +111,21 @@
 					value={preview.deviceId ?? ''}
 					onchange={(event) => preview.start(event.currentTarget.value || undefined)}
 				>
-					<option value="">System default</option>
+					<option value="">{i18n.t.lobby.systemDefault}</option>
 					{#each preview.devices as device (device.deviceId)}
-						<option value={device.deviceId}>{device.label || 'Microphone'}</option>
+						<option value={device.deviceId}>{device.label || i18n.t.lobby.microphone}</option>
 					{/each}
 				</select>
 			</span>
 		</label>
-		<AudioMeter level={preview.level} muted={false} label="Microphone level" showLabel={false} />
+		<AudioMeter
+			level={preview.level}
+			muted={false}
+			label={i18n.t.lobby.microphone}
+			showLabel={false}
+		/>
 		{#if preview.error}
-			<p role="alert" class="text-sm text-red-600">{preview.error}</p>
+			<p role="alert" class="text-sm text-red-600">{i18n.t.lobby[preview.error]}</p>
 		{/if}
 	</section>
 	<VoiceSetup
@@ -128,13 +137,13 @@
 	<Button type="submit" size="lg" disabled={!canJoin}>
 		{#if busy}
 			<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
-			Joining…
-		{:else if action === 'Join now'}
+			{i18n.t.lobby.joining}
+		{:else if action === 'join'}
 			<Video class="size-5" aria-hidden="true" />
-			{action}
+			{i18n.t.lobby.joinNow}
 		{:else}
 			<Hand class="size-5" aria-hidden="true" />
-			{action}
+			{i18n.t.lobby.askToJoin}
 		{/if}
 	</Button>
 	{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}

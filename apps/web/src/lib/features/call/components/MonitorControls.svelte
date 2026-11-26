@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { Ear, Headphones, Languages, Server, VolumeX } from '@lucide/svelte';
 	import { SegmentedControl } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { LANGUAGES, languageLabel, sameLanguage } from '#lib/features/translation/index.ts';
 	import type { MonitorMode } from '../call-session.svelte.ts';
 	import SettingsSection from './SettingsSection.svelte';
@@ -19,38 +20,24 @@
 		mode === 'translated' && sameLanguage(spokenLanguage, previewLanguage)
 	);
 
-	const modes = [
-		{ value: 'off', label: 'Off', icon: VolumeX, hint: 'You do not hear yourself.' },
+	const t = $derived(i18n.t.audio);
+	const modes = $derived([
+		{ value: 'off' as MonitorMode, label: t.monitorOff, icon: VolumeX, hint: t.monitorOffHint },
+		{ value: 'local' as MonitorMode, label: t.local, icon: Ear, hint: t.localHint },
+		{ value: 'loopback' as MonitorMode, label: t.viaServer, icon: Server, hint: t.viaServerHint },
 		{
-			value: 'local',
-			label: 'Local',
-			icon: Ear,
-			hint: 'Hear your mic after the noise filter, instantly. Judges filter quality.'
-		},
-		{
-			value: 'loopback',
-			label: 'Via server',
-			icon: Server,
-			hint: 'Hear yourself after a round trip through the media server. Judges transmission.'
-		},
-		{
-			value: 'translated',
-			label: 'Translated',
+			value: 'translated' as MonitorMode,
+			label: t.translated,
 			icon: Languages,
-			hint: 'Hear your own voice translated by the agent. Speak, pause, and listen.'
+			hint: t.translatedHint
 		}
-	] as const satisfies readonly {
-		value: MonitorMode;
-		label: string;
-		icon: unknown;
-		hint: string;
-	}[];
+	]);
 </script>
 
-<SettingsSection title="Hear myself" icon={Headphones}>
-	<p class="-mt-1 text-xs text-ink-muted">Use headphones, or the room hears you twice.</p>
+<SettingsSection title={t.hearMyself} icon={Headphones}>
+	<p class="-mt-1 text-xs text-ink-muted">{t.headphones}</p>
 	<SegmentedControl
-		label="Hear myself"
+		label={t.hearMyself}
 		options={modes}
 		value={mode}
 		onchange={(next: MonitorMode) => {
@@ -60,7 +47,7 @@
 	<p class="text-xs text-ink-muted">{modes.find((m) => m.value === mode)?.hint}</p>
 	{#if mode === 'translated'}
 		<label class="flex flex-col gap-2 text-sm font-medium">
-			Translate me into
+			{t.translateMeInto}
 			<select
 				class="w-full select-field rounded-lg bg-surface-raised py-2 ps-3 text-sm font-normal"
 				value={previewLanguage}
@@ -76,8 +63,7 @@
 	{/if}
 	{#if sameAsSpoken && spokenLanguage}
 		<p role="status" class="rounded-lg bg-amber-100 px-3 py-2 text-xs text-amber-900">
-			You're speaking {languageLabel(spokenLanguage)}, the language you picked, so there is nothing
-			to translate. Pick another language to hear yourself translated.
+			{t.sameLanguage(languageLabel(spokenLanguage))}
 		</p>
 	{/if}
 </SettingsSection>

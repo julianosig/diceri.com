@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import { Mic, MicOff, PhoneOff, Settings, Users } from '@lucide/svelte';
 	import { cn } from '#lib/utils/cn.ts';
 	import type { CallPanel } from '../call-layout.ts';
@@ -40,7 +41,7 @@
 			type="button"
 			class={cn(round, muted ? 'bg-danger hover:bg-danger/90' : 'bg-control hover:bg-control/80')}
 			aria-pressed={muted}
-			aria-label={muted ? 'Turn on microphone' : 'Turn off microphone'}
+			aria-label={muted ? i18n.t.call.turnOnMic : i18n.t.call.turnOffMic}
 			onclick={ontogglemute}
 		>
 			{#if muted}<MicOff class="size-5" />{:else}<Mic class="size-5" />{/if}
@@ -49,7 +50,7 @@
 			<button
 				type="button"
 				class="flex h-12 items-center justify-center rounded-full bg-danger px-6 hover:bg-danger/90"
-				aria-label="Leave call"
+				aria-label={i18n.t.call.leaveCall}
 				aria-haspopup={onendforeveryone ? 'menu' : undefined}
 				aria-expanded={onendforeveryone ? leaveMenu : undefined}
 				onclick={() => {
@@ -70,7 +71,7 @@
 						class="px-4 py-3 text-left hover:bg-surface-raised"
 						onclick={onleave}
 					>
-						Just leave the call
+						{i18n.t.call.justLeave}
 					</button>
 					<button
 						type="button"
@@ -78,7 +79,7 @@
 						class="px-4 py-3 text-left text-danger hover:bg-surface-raised"
 						onclick={onendforeveryone}
 					>
-						End call for everyone
+						{i18n.t.call.endForEveryone}
 					</button>
 				</div>
 			{/if}
@@ -88,7 +89,7 @@
 		<button
 			type="button"
 			class={cn(round, 'relative', panel === 'people' ? 'bg-brand-500' : 'hover:bg-control')}
-			aria-label="People"
+			aria-label={i18n.t.call.people}
 			aria-pressed={panel === 'people'}
 			onclick={() => {
 				toggle('people');
@@ -106,7 +107,7 @@
 		<button
 			type="button"
 			class={cn(round, panel === 'settings' ? 'bg-brand-500' : 'hover:bg-control')}
-			aria-label="Audio settings"
+			aria-label={i18n.t.call.audioSettings}
 			aria-pressed={panel === 'settings'}
 			onclick={() => {
 				toggle('settings');

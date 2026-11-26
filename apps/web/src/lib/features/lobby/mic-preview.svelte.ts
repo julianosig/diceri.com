@@ -5,7 +5,8 @@ export class MicPreview {
 	level = $state(0);
 	devices = $state<MediaDeviceInfo[]>([]);
 	deviceId = $state<string | undefined>();
-	error = $state<string | undefined>();
+	/** Why the microphone cannot be previewed; the component words it. */
+	error = $state<'micBlocked' | 'micUnavailable' | undefined>();
 	#stream: MediaStream | undefined;
 	#meter: LevelMeter | undefined;
 	#frame = 0;
@@ -32,8 +33,8 @@ export class MicPreview {
 		} catch (cause) {
 			this.error =
 				cause instanceof DOMException && cause.name === 'NotAllowedError'
-					? 'Microphone access was blocked. Allow it in the browser address bar.'
-					: 'Could not access the microphone.';
+					? 'micBlocked'
+					: 'micUnavailable';
 		}
 	}
 

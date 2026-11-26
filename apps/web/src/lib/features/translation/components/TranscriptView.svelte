@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import { Check, Copy, Download } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { languageLabel } from '../languages.ts';
@@ -25,20 +26,27 @@
 	}
 </script>
 
-<section class="flex w-full max-w-2xl flex-col gap-4 text-left" aria-label="Transcript">
+<section
+	class="flex w-full max-w-2xl flex-col gap-4 text-start"
+	aria-label={i18n.t.transcript.title}
+>
 	<header class="flex flex-wrap items-center justify-between gap-3">
-		<h2 class="text-xl">Transcript</h2>
+		<h2 class="text-xl">{i18n.t.transcript.title}</h2>
 		{#if transcript.entries.length > 0}
 			<div class="flex gap-2">
 				<Button size="sm" variant="secondary" onclick={copy}>
-					{#if copied}<Check class="size-4" />{:else}<Copy class="size-4" />{/if} Copy
+					{#if copied}<Check class="size-4" />{:else}<Copy class="size-4" />{/if}
+					{i18n.t.transcript.copy}
 				</Button>
-				<Button size="sm" onclick={download}><Download class="size-4" /> Download</Button>
+				<Button size="sm" onclick={download}>
+					<Download class="size-4" />
+					{i18n.t.transcript.download}
+				</Button>
 			</div>
 		{/if}
 	</header>
 	{#if transcript.entries.length === 0}
-		<p class="text-sm text-ink-muted">Nothing was said while you were in the call.</p>
+		<p class="text-sm text-ink-muted">{i18n.t.transcript.empty}</p>
 	{:else}
 		<ol
 			class="flex max-h-[60dvh] flex-col gap-3 overflow-y-auto rounded-tile bg-surface-raised p-4"
@@ -62,5 +70,5 @@
 			{/each}
 		</ol>
 	{/if}
-	<span class="sr-only" aria-live="polite">{copied ? 'Transcript copied' : ''}</span>
+	<span class="sr-only" aria-live="polite">{copied ? i18n.t.transcript.copied : ''}</span>
 </section>

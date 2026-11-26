@@ -2,6 +2,7 @@
 	import { onDestroy } from 'svelte';
 	import { Check, Mic, RotateCcw } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { AudioMeter } from '#lib/features/call/index.ts';
 	import { MIN_SECONDS, RECORD_SECONDS, type VoiceRecorder } from '../voice-recorder.svelte.ts';
 	import { voiceScript } from '../voice-scripts.ts';
@@ -18,6 +19,8 @@
 	const progress = $derived(Math.min(100, (recorder.elapsed / RECORD_SECONDS) * 100));
 	const secondsLeft = $derived(Math.max(0, Math.ceil(RECORD_SECONDS - recorder.elapsed)));
 
+	const t = $derived(i18n.t.voice);
+
 	async function record() {
 		await onbeforerecord();
 		await recorder.start(deviceId);
@@ -30,22 +33,22 @@
 
 <section
 	class="flex w-full flex-col gap-3 rounded-tile border border-ink-muted/20 p-4 text-start"
-	aria-label="Your voice"
+	aria-label={t.section}
 	aria-live="polite"
 >
 	{#if recorder.step === 'recording'}
 		<div class="flex items-center justify-between text-sm font-medium">
 			<span class="flex items-center gap-2 text-red-600">
 				<span class="size-2 animate-pulse rounded-full bg-red-600" aria-hidden="true"></span>
-				Recording · read aloud
+				{t.recording}
 			</span>
-			<span class="tabular-nums">{secondsLeft}s</span>
+			<span class="tabular-nums">{t.secondsLeft(secondsLeft)}</span>
 		</div>
 		<p class="text-base leading-relaxed">{voiceScript(language)}</p>
 		<div class="h-1.5 overflow-hidden rounded-full bg-surface-raised">
 			<div class="h-full bg-red-600 transition-[width]" style:width="{progress}%"></div>
 		</div>
-		<AudioMeter level={recorder.level} muted={false} label="Your voice" />
+		<AudioMeter level={recorder.level} muted={false} label={t.section} />
 		<Button
 			size="sm"
 			variant="secondary"
@@ -54,7 +57,7 @@
 				recorder.stop();
 			}}
 		>
-			{recorder.canStop ? 'Done' : `Keep reading (${String(MIN_SECONDS)}s min)`}
+			{recorder.canStop ? t.done : t.keepReading(MIN_SECONDS)}
 		</Button>
 	{:else if recorder.step === 'creating'}
 		<p class="flex items-center gap-2 text-sm">
@@ -62,12 +65,13 @@
 				class="size-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"
 				aria-hidden="true"
 			></span>
-			Creating your voice…
+			{t.creating}
 		</p>
 	{:else if recorder.step === 'ready'}
 		<div class="flex items-center justify-between gap-2">
 			<p class="flex items-center gap-2 text-sm font-medium text-green-700">
-				<Check class="size-4" aria-hidden="true" /> Your voice is ready
+				<Check class="size-4" aria-hidden="true" />
+				{t.ready}
 			</p>
 			<Button
 				size="sm"
@@ -76,19 +80,20 @@
 					recorder.reset();
 				}}
 			>
-				<RotateCcw class="size-4" aria-hidden="true" /> Redo
+				<RotateCcw class="size-4" aria-hidden="true" />
+				{t.redo}
 			</Button>
 		</div>
-		<p class="text-xs text-ink-muted">Translations will sound like you. Deleted when you leave.</p>
+		<p class="text-xs text-ink-muted">{t.readyHint}</p>
 	{:else}
-		<p class="text-sm font-medium">Make translations sound like you</p>
+		<p class="text-sm font-medium">{t.title}</p>
 		<p class="text-xs text-ink-muted">
-			Read one short sentence for {RECORD_SECONDS} seconds. Optional, and deleted when you leave.
+			{t.hint(RECORD_SECONDS)}
 		</p>
-		{#if recorder.error}<p role="alert" class="text-xs text-red-600">{recorder.error}</p>{/if}
+		{#if recorder.error}<p role="alert" class="text-xs text-red-600">{t[recorder.error]}</p>{/if}
 		<Button size="sm" onclick={record}>
 			<Mic class="size-4" aria-hidden="true" />
-			{recorder.step === 'error' ? 'Try again' : `Record my voice (${String(RECORD_SECONDS)}s)`}
+			{recorder.step === 'error' ? t.tryAgain : t.record(RECORD_SECONDS)}
 		</Button>
 	{/if}
 </section>

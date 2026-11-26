@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import { onMount, type Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/index.ts';
@@ -86,18 +87,20 @@
 		{:else if flow.phase === 'left' || flow.phase === 'ended'}
 			<section class="flex w-full flex-col items-center gap-6 px-4 text-center">
 				<h1 class="text-3xl">
-					{#if flow.phase === 'left'}You left the meeting{:else if flow.endedBy === 'me'}You ended
-						the call for everyone{:else}The host ended the call{/if}
+					{#if flow.phase === 'left'}{i18n.t.meeting.left}{:else if flow.endedBy === 'me'}{i18n.t
+							.meeting.endedByMe}{:else}{i18n.t.meeting.endedByHost}{/if}
 				</h1>
 				<div class="flex gap-3">
 					{#if flow.phase === 'left'}
-						<Button variant="secondary" onclick={() => (flow.phase = 'prejoin')}>Rejoin</Button>
+						<Button variant="secondary" onclick={() => (flow.phase = 'prejoin')}>
+							{i18n.t.meeting.rejoin}
+						</Button>
 					{/if}
 					<a
 						class="rounded-full px-6 py-2.5 text-brand-600 hover:bg-surface-raised"
 						href={resolve('/')}
 					>
-						Return to home screen
+						{i18n.t.meeting.home}
 					</a>
 				</div>
 				{#if flow.transcript}

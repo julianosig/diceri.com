@@ -1,10 +1,13 @@
 <script lang="ts">
+	import { i18n } from '#lib/i18n/index.ts';
 	import { MicOff } from '@lucide/svelte';
 	import { cn } from '#lib/utils/cn.ts';
 	import type { Participant } from '../call-session.svelte.ts';
 
 	let { participant }: { participant: Participant } = $props();
-	const label = $derived(participant.isLocal ? `${participant.name} (You)` : participant.name);
+	const label = $derived(
+		participant.isLocal ? i18n.t.call.you(participant.name) : participant.name
+	);
 </script>
 
 <article
@@ -23,9 +26,9 @@
 	{#if participant.muted}
 		<span
 			class="absolute top-3 right-3 flex size-8 items-center justify-center rounded-full bg-black/40"
-			title="Microphone off"
+			title={i18n.t.call.micOff}
 		>
-			<MicOff class="size-4 text-white" aria-label="Microphone off" />
+			<MicOff class="size-4 text-white" aria-label={i18n.t.call.micOff} />
 		</span>
 	{/if}
 	<span
@@ -33,8 +36,8 @@
 	>
 		{label}
 		{#if participant.outputLanguage}
-			<span class="rounded bg-white/20 px-1.5 py-0.5 text-xs" title="Hears everyone in">
-				hears {participant.outputLanguage}
+			<span class="rounded bg-white/20 px-1.5 py-0.5 text-xs" title={i18n.t.call.hearsEveryoneIn}>
+				{i18n.t.call.hears(participant.outputLanguage)}
 			</span>
 		{/if}
 	</span>

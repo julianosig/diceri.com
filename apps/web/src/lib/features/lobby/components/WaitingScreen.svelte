@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Button } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import type { KnockStatus } from '../guest-knock.svelte.ts';
 
 	interface Props {
@@ -13,19 +14,19 @@
 
 <section class="flex flex-col items-center gap-4 px-4 text-center" aria-live="polite">
 	{#if status === 'denied'}
-		<h1 class="text-2xl">You can't join this meeting</h1>
-		<p class="text-ink-muted">The host declined your request.</p>
+		<h1 class="text-2xl">{i18n.t.lobby.cantJoin}</h1>
+		<p class="text-ink-muted">{i18n.t.lobby.declined}</p>
 	{:else if status === 'error'}
-		<h1 class="text-2xl">Something went wrong</h1>
+		<h1 class="text-2xl">{i18n.t.lobby.somethingWrong}</h1>
 		<p role="alert" class="text-red-600">{error}</p>
-		<Button variant="secondary" onclick={oncancel}>Back</Button>
+		<Button variant="secondary" onclick={oncancel}>{i18n.t.lobby.back}</Button>
 	{:else}
 		<div
 			class="size-10 animate-spin rounded-full border-4 border-brand-500 border-t-transparent"
 			aria-hidden="true"
 		></div>
-		<h1 class="text-2xl">Asking to be let in…</h1>
-		<p class="text-ink-muted">You'll join the meeting when someone lets you in.</p>
-		<Button variant="ghost" onclick={oncancel}>Cancel</Button>
+		<h1 class="text-2xl">{i18n.t.lobby.asking}</h1>
+		<p class="text-ink-muted">{i18n.t.lobby.willJoin}</p>
+		<Button variant="ghost" onclick={oncancel}>{i18n.t.lobby.cancel}</Button>
 	{/if}
 </section>
