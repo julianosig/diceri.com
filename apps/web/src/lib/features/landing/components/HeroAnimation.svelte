@@ -6,6 +6,7 @@
 	import { Logo } from '#lib/components/ui/index.ts';
 	import { cn } from '#lib/utils/cn.ts';
 	import { CYCLE_MS, LANGUAGE_PAIRS, nextPair } from '../language-pairs.ts';
+	import HeroPerson from './HeroPerson.svelte';
 	import HeroSpeech from './HeroSpeech.svelte';
 
 	interface Props {
@@ -13,6 +14,10 @@
 	}
 
 	let { class: className }: Props = $props();
+
+	/** Where the voice shows on each drawing (% of its box): the speaker's mouth, the listener's ear cup. */
+	const LEFT_MOUTH = { x: 63.9, y: 48 } as const;
+	const RIGHT_EAR = { x: 58.6, y: 43 } as const;
 
 	/** Twinkles around the mark while Diceri translates (positions in % of the banner). */
 	const SPARKLES = [
@@ -52,8 +57,8 @@
 		<path class="link link-in" d="M 285 122 Q 400 60 525 78" />
 		<path class="link link-out" d="M 675 78 Q 800 60 915 122" />
 	</svg>
-	<img src={leftPerson} alt="" class="absolute bottom-0 left-0 h-[94%] w-auto" />
-	<img src={rightPerson} alt="" class="absolute right-0 bottom-0 h-[94%] w-auto" />
+	<HeroPerson src={leftPerson} cue="talk" {...LEFT_MOUTH} cycle={index} class="left-0" />
+	<HeroPerson src={rightPerson} cue="listen" {...RIGHT_EAR} cycle={index} class="right-0" />
 
 	{#key index}
 		<span class="halo" aria-hidden="true"></span>

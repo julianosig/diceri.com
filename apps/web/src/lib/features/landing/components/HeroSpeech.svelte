@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { Volume2 } from '@lucide/svelte';
+	import { AudioLines, Volume2 } from '@lucide/svelte';
 	import type { LanguagePair } from '../language-pairs.ts';
 
 	interface Props {
@@ -18,8 +18,14 @@
 	<span class="label">{pair.said.language}</span>
 	<span class="text">{pair.said.text}</span>
 </div>
-<span class="token token-in" lang={pair.said.lang} aria-hidden="true">{pair.said.text}</span>
-<span class="token token-out" lang={pair.heard.lang} aria-hidden="true">{pair.heard.text}</span>
+<span class="token token-in" lang={pair.said.lang} aria-hidden="true">
+	<AudioLines class="inline size-[1.1em]" aria-hidden="true" />
+	{pair.said.text}
+</span>
+<span class="token token-out" lang={pair.heard.lang} aria-hidden="true">
+	<AudioLines class="inline size-[1.1em]" aria-hidden="true" />
+	{pair.heard.text}
+</span>
 <div class="heard bubble" lang={pair.heard.lang} aria-hidden="true">
 	<span class="label">
 		<Volume2 class="inline size-[1.1em]" aria-hidden="true" />
