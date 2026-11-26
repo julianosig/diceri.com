@@ -28,7 +28,10 @@ cp "$root"/deploy/systemd/*.service "$root"/deploy/systemd/*.timer "$units/"
 systemctl --user daemon-reload
 systemctl --user enable diceri-api diceri-agent diceri-tunnel >/dev/null
 systemctl --user enable --now diceri-backup.timer >/dev/null
-systemctl --user restart diceri-agent diceri-api diceri-tunnel
+systemctl --user restart diceri-agent diceri-api
+# The tunnel only forwards to the API port; restarting it would drop every visitor
+# for a few seconds (Cloudflare error 1033), so it is only started if stopped.
+systemctl --user start diceri-tunnel
 
 # Keep the three newest releases for a quick rollback (re-point `current`, restart).
 ls -1dt "$data"/releases/*/ | tail -n +4 | xargs -r rm -rf
