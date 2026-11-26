@@ -1,28 +1,25 @@
 use std::time::Duration;
 
-use async_trait::async_trait;
-use diceri_application::ports::{MediaAccessError, MediaRoomCloser};
-use diceri_domain::RoomId;
+use diceri_application::ports::MediaAccessError;
 use livekit_api::access_token::{AccessToken, VideoGrants};
 use secrecy::{ExposeSecret as _, SecretString};
-use serde_json::json;
+use serde::de::DeserializeOwned;
 
 const TOKEN_TTL: Duration = Duration::from_secs(60);
 
-/// Ends a LiveKit room for everyone via the server `RoomService/DeleteRoom` API
-/// (a single Twirp call; avoids pulling the SDK's service stack).
+/// Minimal client for LiveKit's server `RoomService` (Twirp over HTTP + JSON);
+/// avoids pulling the SDK's service stack and its licenses.
 #[derive(Debug, Clone)]
-pub struct LiveKitRoomCloser {
+pub(crate) struct TwirpClient {
     http_url: String,
     api_key: String,
     api_secret: SecretString,
     http: reqwest::Client,
 }
 
-impl LiveKitRoomCloser {
+impl TwirpClient {
     /// `server_url` is the client URL (`wss://…`); the API uses its HTTPS form.
-    #[must_use]
-    pub fn new(
+    pub(crate) fn new(
         server_url: &str,
         api_key: String,
         api_secret: SecretString,
@@ -35,6 +32,39 @@ impl LiveKitRoomCloser {
             http,
         }
     }
+
+    /// Calls `livekit.RoomService/<method>` with a short-lived token carrying `grants`.
+    pub(crate) async fn call<T: DeserializeOwned>(
+        &self,
+        method: &str,
+        grants: VideoGrants,
+        body: &serde_json::Value,
+    ) -> Result<T, MediaAccessError> {
+        let failed = |error: &dyn std::fmt::Display| MediaAccessError(error.to_string());
+        let token = AccessToken::with_api_key(&self.api_key, self.api_secret.expose_secret())
+            .with_ttl(TOKEN_TTL)
+            .with_grants(grants)
+            .to_jwt()
+            .map_err(|e| failed(&e))?;
+        let response = self
+            .http
+            .post(format!(
+                "{}/twirp/livekit.RoomService/{method}",
+                self.http_url
+            ))
+            .bearer_auth(token)
+            .json(body)
+            .send()
+            .await
+            .map_err(|e| failed(&e))?;
+        if !response.status().is_success() {
+            return Err(MediaAccessError(format!(
+                "{method} answered HTTP {}",
+                response.status()
+            )));
+        }
+        response.json().await.map_err(|e| failed(&e))
+    }
 }
 
 fn http_url(server_url: &str) -> String {
@@ -46,40 +76,6 @@ fn http_url(server_url: &str) -> String {
                 .map(|rest| format!("http://{rest}"))
         })
         .unwrap_or_else(|| url.to_owned())
-}
-
-#[async_trait]
-impl MediaRoomCloser for LiveKitRoomCloser {
-    async fn close(&self, room: &RoomId) -> Result<(), MediaAccessError> {
-        let failed = |error: &dyn std::fmt::Display| MediaAccessError(error.to_string());
-        let token = AccessToken::with_api_key(&self.api_key, self.api_secret.expose_secret())
-            .with_ttl(TOKEN_TTL)
-            .with_grants(VideoGrants {
-                room_create: true,
-                ..VideoGrants::default()
-            })
-            .to_jwt()
-            .map_err(|e| failed(&e))?;
-        let response = self
-            .http
-            .post(format!(
-                "{}/twirp/livekit.RoomService/DeleteRoom",
-                self.http_url
-            ))
-            .bearer_auth(token)
-            .json(&json!({ "room": room.as_str() }))
-            .send()
-            .await
-            .map_err(|e| failed(&e))?;
-        if response.status().is_success() {
-            Ok(())
-        } else {
-            Err(MediaAccessError(format!(
-                "DeleteRoom answered HTTP {}",
-                response.status()
-            )))
-        }
-    }
 }
 
 #[cfg(test)]

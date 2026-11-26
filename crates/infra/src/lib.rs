@@ -4,8 +4,7 @@
 //! `speech/` (speech-to-text), `translation/`, `synthesis/` (text-to-speech).
 
 mod agent_dispatcher;
-mod livekit_access_issuer;
-mod livekit_room_closer;
+mod livekit;
 mod memory_room_repository;
 mod os_random;
 pub mod speech;
@@ -13,8 +12,9 @@ pub mod synthesis;
 pub mod translation;
 
 pub use agent_dispatcher::{AGENT_KEY_HEADER, HttpTranslationDispatcher};
-pub use livekit_access_issuer::{LiveKitAccessIssuer, OUTPUT_LANGUAGE_ATTRIBUTE, VOICE_ATTRIBUTE};
-pub use livekit_room_closer::LiveKitRoomCloser;
+pub use livekit::{
+    LiveKitAccessIssuer, LiveKitRoomCloser, OUTPUT_LANGUAGE_ATTRIBUTE, VOICE_ATTRIBUTE,
+};
 pub use memory_room_repository::MemoryRoomRepository;
 pub use os_random::OsRandom;
 
