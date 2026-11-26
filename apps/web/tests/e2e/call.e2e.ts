@@ -75,3 +75,25 @@ test('host can hear themselves through the server', async ({ page }) => {
 		'true'
 	);
 });
+
+test('the home page counts people in calls', async ({ page, browser }) => {
+	await skipWithoutMedia(page);
+	await hostJoins(page);
+	const visitor = await (await browser.newContext()).newPage();
+	const online = visitor.getByTestId('online-count');
+	// Snapshots are cached for 10 s, so reload until the call shows up.
+	await expect
+		.poll(
+			async () => {
+				await visitor.goto('/');
+				await expect(online).not.toHaveText('–');
+				return Number.parseInt((await online.textContent()) ?? '0', 10);
+			},
+			{ timeout: 40_000, intervals: [2_000, 5_000] }
+		)
+		.toBeGreaterThan(0);
+	await expect(visitor.getByRole('listitem').first()).toHaveAccessibleName(
+		/^#1: \d+ (person|people)/
+	);
+	await expect(visitor.getByRole('link', { name: /\/r\// })).toHaveCount(0);
+});
