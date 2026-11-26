@@ -49,18 +49,25 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
    languages are hints). Finals drive translation; endpointing decides phrase
    boundaries.
 4. **MT:** each final segment is translated **directly** (never via English) by
-   Gemini 3.5 Flash-Lite with minimal thinking, the last 2–4 segments as context
-   and a per-call glossary. Only finals are spoken, because spoken audio cannot
-   be revised.
-5. **TTS:** ElevenLabs `eleven_v4_turbo` with an instant voice clone created
-   from the consented lobby sample (stock voice without consent).
+   Gemini 3.5 Flash-Lite with minimal thinking, prompted as a live interpreter
+   (idioms and expressions adapted, not literal; tone and form of address kept;
+   recognition errors read in context). Context is the call's last 8 turns from
+   **every** participant (`Conversation`, one per call), under neutral labels
+   (A, B, …) so no name or id reaches the provider. Only finals are spoken,
+   because spoken audio cannot be revised.
+5. **TTS:** the translation **streams** from Gemini and each complete sentence (or
+   long clause, `Clauses`) is synthesized while the rest is still translating, by
+   ElevenLabs `eleven_v4_turbo` with an instant voice clone created from the
+   consented lobby sample (stock voice without consent).
 6. **Publish:** translated audio is published as `<speaker>-<lang>` track; each
    listener subscribes only to the language they chose, with the original track
    ducked underneath.
 
 Latency budget (end of phrase → translated audio): endpointing 200–500 ms,
 STT final 100–300 ms, MT 300–700 ms, TTS first audio 150–300 ms, transport
-100–200 ms. **Target ≈ 1–2 s.** Every stage is measured with tracing spans.
+100–200 ms. **Target ≈ 1–2 s.** Each phrase logs one `phrase latency` line per
+language, from the end of the phrase: `stt_wait_ms` (last partial → final),
+`first_piece_ms` and `translated_ms` (MT), `first_audio_ms` (TTS) and `speech_ms`.
 
 Estimated provider cost: ≈ $0.04 per call-minute for both directions
 (dominated by TTS). See ADR 0005.
