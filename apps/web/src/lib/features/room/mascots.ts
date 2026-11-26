@@ -19,10 +19,17 @@ export const MASCOTS = [
 
 export type MascotId = (typeof MASCOTS)[number]['id'];
 
-/** Transparent animated asset: WebP (preferred) or GIF (fallback). */
-export function mascotUrl(id: string, format: 'webp' | 'gif' = 'webp'): string {
-	return `/mascots/${format}/${encodeURIComponent(id)}.${format}`;
+/**
+ * Transparent animated asset: WebP (preferred, 128 px or the native 250 px as `webp-2x`)
+ * or GIF (fallback, 128 px).
+ */
+export function mascotUrl(id: string, format: 'webp' | 'webp-2x' | 'gif' = 'webp'): string {
+	const extension = format === 'gif' ? 'gif' : 'webp';
+	return `/mascots/${format}/${encodeURIComponent(id)}.${extension}`;
 }
+
+/** Pixel widths of the WebP files, for `srcset`. */
+export const MASCOT_WEBP_WIDTHS = { webp: 128, 'webp-2x': 250 } as const;
 
 export function mascotLabel(id: string): string {
 	return MASCOTS.find((mascot) => mascot.id === id)?.label ?? 'Room';

@@ -22,6 +22,7 @@ describe('mascots', () => {
 	it('builds asset URLs and labels', () => {
 		expect(mascotUrl('robot')).toBe('/mascots/webp/robot.webp');
 		expect(mascotUrl('robot', 'gif')).toBe('/mascots/gif/robot.gif');
+		expect(mascotUrl('robot', 'webp-2x')).toBe('/mascots/webp-2x/robot.webp');
 		expect(mascotLabel('cybercat')).toBe('Cyber cat');
 		expect(mascotLabel('unknown')).toBe('Room');
 	});

@@ -37,7 +37,7 @@
 				aria-hidden="true"
 			></span>
 		</p>
-		<MascotAvatar mascot={mascot ?? 'ghost'} size={176} decorative class="float" />
+		<MascotAvatar mascot={mascot ?? 'ghost'} size={128} decorative class="float" />
 	</div>
 	<p class="max-w-md text-lg text-pretty text-ink-muted">
 		{claimed ? t.liveBody(username) : t.freeBody}
