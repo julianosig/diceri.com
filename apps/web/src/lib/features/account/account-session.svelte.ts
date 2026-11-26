@@ -1,37 +1,35 @@
 import { currentAccount, register, signIn, signOut } from './account-api.ts';
+import type { Account, Credentials, Registration } from './types.ts';
 import { normalizeUsername } from './username.ts';
 
 /** Who is signed in on this browser; `undefined` until the first check finishes. */
 export class AccountSession {
-	username = $state<string | null | undefined>(undefined);
-	/** Shown once right after sign-up so the owner can save it. */
-	newKey = $state<string | null>(null);
+	account = $state<Account | null | undefined>(undefined);
 
 	async load(): Promise<void> {
 		try {
-			this.username = (await currentAccount())?.username ?? null;
+			this.account = await currentAccount();
 		} catch {
-			this.username = null;
+			this.account = null;
 		}
 	}
 
-	async register(raw: string): Promise<void> {
-		const account = await register(normalizeUsername(raw));
-		this.username = account.username;
-		this.newKey = account.key;
+	async register(registration: Registration): Promise<void> {
+		this.account = await register({
+			...registration,
+			username: normalizeUsername(registration.username)
+		});
 	}
 
-	async signIn(key: string): Promise<void> {
-		this.username = (await signIn(key.trim())).username;
+	async signIn(credentials: Credentials): Promise<void> {
+		this.account = await signIn({
+			...credentials,
+			username: normalizeUsername(credentials.username)
+		});
 	}
 
 	async signOut(): Promise<void> {
 		await signOut();
-		this.username = null;
-		this.newKey = null;
-	}
-
-	dismissKey(): void {
-		this.newKey = null;
+		this.account = null;
 	}
 }

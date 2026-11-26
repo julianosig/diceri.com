@@ -1,46 +1,50 @@
 import { expect, test } from '@playwright/test';
-import { signUp, uniqueUsername } from './support/accounts.ts';
+import { openMyRoom, PASSWORD, signUp, uniqueUsername } from './support/accounts.ts';
 
-test('claiming a username shows the sign-in code once and it signs in again', async ({ page }) => {
+test('one onboarding step creates the account, its room name and mascot', async ({ page }) => {
 	const username = uniqueUsername();
 	await page.goto('/');
 	await page.getByPlaceholder('yourname').fill(username);
-	await page.getByRole('button', { name: 'Claim username' }).click();
-	await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
-	const code = (await page.getByTestId('account-key').textContent()) ?? '';
-	await page.getByRole('button', { name: 'I saved it' }).click();
-	await expect(page.getByTestId('account-key')).toBeHidden();
+	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
+	await page.getByLabel('Repeat password').fill('not the same');
+	await expect(page.getByText('The passwords do not match.')).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Create my room' })).toBeDisabled();
+	await page.getByLabel('Repeat password').fill(PASSWORD);
+	await page.getByTitle('Ninja').click();
+	await page.getByRole('button', { name: 'Create my room' }).click();
+
+	await expect(page.getByText(`@${username}`, { exact: true }).first()).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Open my room' })).toBeVisible();
+	await expect(page.getByRole('img', { name: 'Ninja mascot' }).first()).toBeVisible();
 
 	await page.getByRole('button', { name: 'Sign out' }).click();
-	await page.getByRole('button', { name: 'I already have a username' }).click();
-	await page.getByLabel('Your sign-in code').fill(code);
+	await page.getByRole('button', { name: 'I already have an account' }).click();
+	await page.getByPlaceholder('yourname').fill(username);
+	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByRole('button', { name: 'Sign in' }).click();
-	await expect(page.getByText(`@${username}`, { exact: true })).toBeVisible();
-	await expect(page.getByRole('button', { name: 'New meeting' })).toBeVisible();
+	await expect(page.getByRole('button', { name: 'Open my room' })).toBeVisible();
 });
 
-test('creator lands on the pre-join screen as host', async ({ page }) => {
-	await signUp(page);
-	await page.goto('/');
-	await page.getByRole('button', { name: 'New meeting' }).click();
+test('the owner opens their room at /@username as host', async ({ page }) => {
+	const username = await signUp(page);
+	await openMyRoom(page);
 
-	await expect(page).toHaveURL(/\/r\/[0-9A-Za-z]{22}$/);
+	await expect(page).toHaveURL(new RegExp(`/@${username}$`));
 	await expect(page.getByRole('heading', { name: 'Ready to join?' })).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Join now' })).toBeVisible();
+	await expect(page.getByText('Your room')).toBeVisible();
 });
 
-test('someone else opening the link must ask to join', async ({ page, browser }) => {
-	await signUp(page);
-	await page.goto('/');
-	await page.getByRole('button', { name: 'New meeting' }).click();
-	await expect(page).toHaveURL(/\/r\//);
+test('someone else opening /@username must ask to join', async ({ page, browser }) => {
+	const username = await signUp(page);
+	await openMyRoom(page);
 
 	const guest = await (await browser.newContext()).newPage();
-	await guest.goto(page.url());
+	await guest.goto(`/@${username}`);
 	await expect(guest.getByRole('button', { name: 'Ask to join' })).toBeVisible();
+	await expect(guest.getByText(`@${username}'s room`)).toBeVisible();
 });
 
-test('unknown room shows a not-found error', async ({ page }) => {
-	await page.goto('/r/aaaaaaaaaaaaaaaaaaaaaa');
-	await expect(page.getByText('This meeting does not exist or has ended.')).toBeVisible();
+test('a room that is not open says so', async ({ page }) => {
+	await page.goto('/@nobodyhere');
+	await expect(page.getByText('@nobodyhere is not live right now', { exact: false })).toBeVisible();
 });

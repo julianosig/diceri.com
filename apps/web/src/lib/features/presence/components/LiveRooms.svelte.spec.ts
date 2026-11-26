@@ -6,7 +6,6 @@ import LiveRooms from './LiveRooms.svelte';
 
 const open = {
 	code: 'aaaaaaaaaaaaaaaaaaaaaa',
-	title: 'Spanish practice',
 	owner: 'ana',
 	entry: 'open',
 	mascot: 'dragon',
@@ -15,7 +14,6 @@ const open = {
 } satisfies RankedRoom;
 const approval = {
 	code: 'bbbbbbbbbbbbbbbbbbbbbb',
-	title: 'Coffee chat',
 	owner: 'bob',
 	entry: 'approval',
 	mascot: 'robot',
@@ -24,7 +22,7 @@ const approval = {
 } satisfies RankedRoom;
 
 describe('LiveRooms', () => {
-	it('ranks listed rooms with title, host and how to get in', async () => {
+	it('ranks listed rooms by owner and links to their @ room', async () => {
 		await render(LiveRooms, {
 			snapshot: { online: 9, liveRooms: 3, ranking: [open, approval] }
 		});
@@ -32,13 +30,11 @@ describe('LiveRooms', () => {
 		await expect.element(page.getByRole('heading', { name: '9 online now' })).toBeVisible();
 		await expect.element(page.getByText('3 live rooms')).toBeVisible();
 		const first = page.getByRole('link', {
-			name: '#1 Spanish practice hosted by @ana: 5 people, hearing Português (Brasil), English. join now'
+			name: '#1 @ana: 5 people, hearing Português (Brasil), English. join now'
 		});
-		await expect.element(first).toHaveAttribute('href', '/r/aaaaaaaaaaaaaaaaaaaaaa');
+		await expect.element(first).toHaveAttribute('href', '/@ana');
 		await expect
-			.element(
-				page.getByRole('link', { name: /^#2 Coffee chat hosted by @bob: 2 people.*ask to join$/ })
-			)
+			.element(page.getByRole('link', { name: /^#2 @bob: 2 people.*ask to join$/ }))
 			.toBeVisible();
 	});
 

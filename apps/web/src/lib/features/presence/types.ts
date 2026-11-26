@@ -4,7 +4,6 @@ import type { RoomEntry } from '#lib/features/room/index.ts';
 export interface RankedRoom {
 	/** Link code of a listed room (its host chose to publish it). */
 	code: string;
-	title: string;
 	/** Username of the room's owner. */
 	owner: string;
 	entry: RoomEntry;

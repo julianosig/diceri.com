@@ -1,5 +1,6 @@
 <script lang="ts">
-	import { CircleUserRound, LogOut } from '@lucide/svelte';
+	import { LogOut } from '@lucide/svelte';
+	import { MascotAvatar } from '#lib/features/room/index.ts';
 	import type { AccountSession } from '../account-session.svelte.ts';
 
 	interface Props {
@@ -9,11 +10,12 @@
 	let { session }: Props = $props();
 </script>
 
-{#if session.username}
+{#if session.account}
+	{@const account = session.account}
 	<div class="flex items-center gap-3 text-sm">
-		<span class="flex items-center gap-1.5 font-medium">
-			<CircleUserRound class="size-5 text-brand-500" aria-hidden="true" />
-			<span>@{session.username}</span>
+		<span class="flex items-center gap-2 font-medium">
+			<MascotAvatar mascot={account.mascot} size={28} decorative />
+			<span>@{account.username}</span>
 		</span>
 		<button
 			type="button"

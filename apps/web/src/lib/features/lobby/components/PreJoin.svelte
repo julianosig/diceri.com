@@ -15,9 +15,7 @@
 
 	interface Props {
 		roomId: string;
-		/** What the meeting is called and who hosts it. */
-		title: string;
-		/** Username of the room's owner. */
+		/** Username of the room's owner, which is also the room's name. */
 		owner: string;
 		/** The room's animated symbol. */
 		mascot: string;
@@ -29,7 +27,7 @@
 		onjoin: (profile: Profile, deviceId: string | undefined) => void;
 	}
 
-	let { roomId, title, owner, mascot, open, isHost, busy, error, onjoin }: Props = $props();
+	let { roomId, owner, mascot, open, isHost, busy, error, onjoin }: Props = $props();
 	const copy = $derived(joinCopy(isHost, open));
 
 	const preview = new MicPreview();
@@ -98,10 +96,8 @@
 	<form class="flex flex-col items-center gap-5 text-center" onsubmit={submit}>
 		<div class="flex flex-col items-center gap-1">
 			<MascotAvatar {mascot} size={88} class="mb-1 shadow-md" />
-			<p class="text-lg font-semibold">{title}</p>
-			{#if !isHost}
-				<p class="text-sm text-ink-muted">Hosted by @{owner}</p>
-			{/if}
+			<p class="text-lg font-semibold">@{owner}</p>
+			<p class="text-sm text-ink-muted">{isHost ? 'Your room' : `@${owner}'s room`}</p>
 		</div>
 		<h1 class="text-3xl font-normal">{copy.heading}</h1>
 		<p class="text-sm text-ink-muted">{copy.hint}</p>

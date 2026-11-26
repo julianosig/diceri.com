@@ -1,6 +1,7 @@
-export { default as CreateRoomForm } from './components/CreateRoomForm.svelte';
 export { default as MascotAvatar } from './components/MascotAvatar.svelte';
-export { createRoom, getRoom } from './room-api.ts';
+export { default as MascotPicker } from './components/MascotPicker.svelte';
+export { default as OpenRoomForm } from './components/OpenRoomForm.svelte';
+export { getUserRoom, openRoom } from './room-api.ts';
 export { loadHostKey, saveHostKey } from './host-keys.ts';
-export { MASCOTS, mascotLabel, mascotUrl, type MascotId } from './mascots.ts';
-export type { CreatedRoom, MediaCredentials, NewRoom, Room, RoomEntry } from './types.ts';
+export { MASCOTS, mascotLabel, mascotUrl, randomMascot, type MascotId } from './mascots.ts';
+export type { MediaCredentials, OpenedRoom, Room, RoomEntry, RoomOptions } from './types.ts';

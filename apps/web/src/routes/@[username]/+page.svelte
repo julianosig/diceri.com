@@ -9,7 +9,7 @@
 </script>
 
 <svelte:head>
-	<title>{data.room.title} · Diceri</title>
+	<title>@{data.room.owner} · Diceri</title>
 </svelte:head>
 
 {#key data.room.code}

@@ -1,17 +1,17 @@
 import { ApiError, requestJson, requestVoid } from '#lib/api/http-client.ts';
-import type { Account, RegisteredAccount } from './types.ts';
+import type { Account, Credentials, Registration } from './types.ts';
 
 /** The session lives in an HttpOnly cookie the browser sends by itself. */
-export function register(username: string, fetchFn?: typeof fetch): Promise<RegisteredAccount> {
-	return requestJson<RegisteredAccount>('/accounts', {
-		method: 'POST',
-		body: { username },
-		fetchFn
-	});
+export function register(registration: Registration, fetchFn?: typeof fetch): Promise<Account> {
+	return requestJson<Account>('/accounts', { method: 'POST', body: registration, fetchFn });
 }
 
-export function signIn(key: string, fetchFn?: typeof fetch): Promise<Account> {
-	return requestJson<Account>('/accounts/session', { method: 'POST', body: { key }, fetchFn });
+export function signIn(credentials: Credentials, fetchFn?: typeof fetch): Promise<Account> {
+	return requestJson<Account>('/accounts/session', {
+		method: 'POST',
+		body: credentials,
+		fetchFn
+	});
 }
 
 /** The signed-in account, or `null` when there is no session. */

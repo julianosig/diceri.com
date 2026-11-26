@@ -14,10 +14,9 @@
 	let { snapshot }: Props = $props();
 
 	function describe(room: RankedRoom, rank: number): string {
-		const host = ` hosted by @${room.owner}`;
 		const heard = room.languages.map(languageLabel).join(', ');
 		const action = room.entry === 'open' ? 'join now' : 'ask to join';
-		return `#${String(rank)} ${room.title}${host}: ${peopleLabel(room.people)}${heard ? `, hearing ${heard}` : ''}. ${action}`;
+		return `#${String(rank)} @${room.owner}: ${peopleLabel(room.people)}${heard ? `, hearing ${heard}` : ''}. ${action}`;
 	}
 </script>
 
@@ -43,7 +42,7 @@
 
 	{#if !snapshot || snapshot.ranking.length === 0}
 		<p class="px-2 py-3 text-sm text-white/60">
-			No public rooms right now. Create one, turn on “Show on the live board” and top it.
+			No public rooms right now. Open yours, turn on “Show on the live board” and top it.
 		</p>
 	{:else}
 		<ol class="flex flex-col gap-0.5">
@@ -52,7 +51,7 @@
 				{@const tags = languageTags(room)}
 				<li>
 					<a
-						href={resolve('/r/[room]', { room: room.code })}
+						href={resolve('/@[username]', { username: room.owner })}
 						aria-label={describe(room, index + 1)}
 						class="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-tile focus-visible:bg-tile focus-visible:outline-none"
 					>
@@ -72,9 +71,9 @@
 							class="ring-2 ring-white/10 group-hover:ring-white/25"
 						/>
 						<span class="flex min-w-0 flex-1 flex-col" aria-hidden="true">
-							<span class="truncate font-semibold text-white">{room.title}</span>
+							<span class="truncate font-semibold text-white">@{room.owner}</span>
 							<span class="truncate text-xs text-white/60">
-								by @{room.owner}{tags ? ` · ${tags}` : ''}
+								{tags || 'just started'}
 							</span>
 						</span>
 						<span class="flex shrink-0 items-center -space-x-1.5" aria-hidden="true">

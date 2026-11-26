@@ -104,7 +104,6 @@
 		{:else}
 			<PreJoin
 				{roomId}
-				title={room.title}
 				owner={room.owner}
 				mascot={room.mascot}
 				open={room.entry === 'open'}

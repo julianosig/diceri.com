@@ -1,4 +1,4 @@
-import { signUp } from './support/accounts.ts';
+import { openMyRoom, signUp } from './support/accounts.ts';
 import { chromium, expect, test, type Browser, type Page } from '@playwright/test';
 
 /**
@@ -72,8 +72,7 @@ test('three people hear each other translated into their own language', async ({
 		test.skip(!probe.ok(), 'API not reachable');
 
 		await signUp(ana.page);
-		await ana.page.goto('/');
-		await ana.page.getByRole('button', { name: 'New meeting' }).click();
+		await openMyRoom(ana.page);
 		await fillProfile(ana);
 		await ana.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(ana.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
@@ -99,8 +98,7 @@ test('a person alone can hear their own voice translated', async ({ baseURL }) =
 	const bob = await launch('Bob', 'en', url);
 	try {
 		await signUp(bob.page);
-		await bob.page.goto('/');
-		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await openMyRoom(bob.page);
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
@@ -126,8 +124,7 @@ test('detects the spoken language regardless of the output language', async ({ b
 	const bob = await launch('Bob', 'en', url, 'pt-BR');
 	try {
 		await signUp(bob.page);
-		await bob.page.goto('/');
-		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await openMyRoom(bob.page);
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
@@ -150,8 +147,7 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 	const bob = await launch('Bob', 'en', url);
 	try {
 		await signUp(bob.page);
-		await bob.page.goto('/');
-		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await openMyRoom(bob.page);
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: /Record my voice/ }).click();
 		await expect(bob.page.getByText('Recording · read aloud')).toBeVisible();
@@ -182,8 +178,7 @@ test('previewing in the language you speak explains there is nothing to translat
 	const bob = await launch('Bob', 'en', url);
 	try {
 		await signUp(bob.page);
-		await bob.page.goto('/');
-		await bob.page.getByRole('button', { name: 'New meeting' }).click();
+		await openMyRoom(bob.page);
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
@@ -207,8 +202,7 @@ test('when the host ends the call everyone gets the transcript', async ({ baseUR
 	const bob = await launch('Bob', 'en', url);
 	try {
 		await signUp(ana.page);
-		await ana.page.goto('/');
-		await ana.page.getByRole('button', { name: 'New meeting' }).click();
+		await openMyRoom(ana.page);
 		await fillProfile(ana);
 		await ana.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(ana.page.getByRole('button', { name: 'Leave call' })).toBeVisible({

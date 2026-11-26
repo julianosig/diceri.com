@@ -5,28 +5,25 @@ export type RoomEntry = 'open' | 'approval';
 export interface Room {
 	/** UUIDv7: identifies the room, grants nothing. */
 	id: string;
-	/** The shareable link code (`/r/<code>`); every room API path takes it. */
+	/** The code every lobby API path takes. */
 	code: string;
 	maxParticipants: number;
-	title: string;
-	/** Username of the account that owns (hosts) the room. */
+	/** The owner's username, which is also the room's name (`/@owner`). */
 	owner: string;
 	entry: RoomEntry;
 	/** The room's animated symbol; see `mascots.ts`. */
 	mascot: string;
 }
 
-/** Mirrors `CreateRoomRequest`: what the host chooses when creating a room. */
-export interface NewRoom {
-	title: string;
-	/** Show on the public live board (title and host name). */
+/** Mirrors `OpenRoomRequest`: how the owner runs their room this time. */
+export interface RoomOptions {
+	/** Show on the public live board. */
 	listed: boolean;
 	entry: RoomEntry;
-	mascot: string;
 }
 
-/** Returned once on creation; `hostKey` proves the creator is the host. */
-export interface CreatedRoom extends Room {
+/** Returned to the owner; `hostKey` proves they are the host. */
+export interface OpenedRoom extends Room {
 	hostKey: string;
 }
 

@@ -1,9 +1,18 @@
-/** `GET /api/v1/accounts/me`. */
+/** `GET /api/v1/accounts/me`: the username is also the name of the person's room. */
 export interface Account {
 	username: string;
+	/** The mascot of the person's room. */
+	mascot: string;
 }
 
-/** `POST /api/v1/accounts`: the key comes back once; it signs in on other devices. */
-export interface RegisteredAccount extends Account {
-	key: string;
+/** The single onboarding step (the password is typed twice in the form). */
+export interface Registration {
+	username: string;
+	password: string;
+	mascot: string;
+}
+
+export interface Credentials {
+	username: string;
+	password: string;
 }

@@ -1,4 +1,4 @@
-import { signUp } from './support/accounts.ts';
+import { openMyRoom, signUp } from './support/accounts.ts';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
 /**
@@ -7,23 +7,20 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
  */
 async function skipWithoutMedia(page: Page): Promise<string> {
 	const username = await signUp(page);
-	const room = (await (
-		await page.request.post('/api/v1/rooms', { data: { title: 'Probe' } })
-	).json()) as {
-		id: string;
+	const room = (await (await page.request.post('/api/v1/rooms', { data: {} })).json()) as {
+		code: string;
 		hostKey: string;
 	};
-	const session = await page.request.post(`/api/v1/rooms/${room.id}/host-session`, {
+	const session = await page.request.post(`/api/v1/rooms/${room.code}/host-session`, {
 		headers: { 'x-diceri-key': room.hostKey },
-		data: { name: 'Probe' }
+		data: { name: 'Probe', outputLanguage: 'en' }
 	});
 	test.skip(session.status() === 503, 'LiveKit is not configured (set DICERI_LIVEKIT_* in .env)');
 	return username;
 }
 
 async function hostJoins(page: Page): Promise<string> {
-	await page.goto('/');
-	await page.getByRole('button', { name: 'New meeting' }).click();
+	await openMyRoom(page);
 	await page.getByLabel('Your name').fill('Host');
 	await page.getByRole('button', { name: 'Join now' }).click();
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
@@ -89,20 +86,17 @@ test('a public open room is on the live board and anyone can walk in', async ({
 	browser
 }) => {
 	const owner = await skipWithoutMedia(page);
-	const title = `Open room ${String(Date.now())}`;
 	await page.goto('/');
-	await page.getByLabel('Room title').fill(title);
 	await page.getByRole('switch', { name: 'Show on the live board' }).click();
 	await page.getByText('Anyone can join').click();
-	await page.getByTitle('Dragon').click();
-	await expect(page.getByRole('radio', { name: 'Dragon' })).toBeChecked();
-	await page.getByRole('button', { name: 'New meeting' }).click();
+	await page.getByRole('button', { name: 'Open my room' }).click();
+	await expect(page).toHaveURL(new RegExp(`/@${owner}$`));
 	await page.getByLabel('Your name').fill('Host');
 	await page.getByRole('button', { name: 'Join now' }).click();
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
 
 	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
-	const room = visitor.getByRole('link', { name: new RegExp(`${title} hosted by @${owner}`) });
+	const room = visitor.getByRole('link', { name: new RegExp(`^#\\d+ @${owner}:`) });
 	// Snapshots are cached for 10 s, so reload until the room shows up.
 	await expect
 		.poll(
@@ -116,8 +110,8 @@ test('a public open room is on the live board and anyone can walk in', async ({
 		.toBe(1);
 	await room.click();
 
-	await expect(visitor.getByText(title)).toBeVisible();
-	await expect(visitor.getByText(`Hosted by @${owner}`)).toBeVisible();
+	await expect(visitor).toHaveURL(new RegExp(`/@${owner}$`));
+	await expect(visitor.getByText(`@${owner}'s room`)).toBeVisible();
 	await expect(visitor.getByRole('img', { name: 'Dragon mascot' })).toBeVisible();
 	await visitor.getByLabel('Your name').fill('Walk-in');
 	await visitor.getByRole('button', { name: 'Join now' }).click();
