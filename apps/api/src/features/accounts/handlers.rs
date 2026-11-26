@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::{Query, State};
+use axum::extract::{Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use diceri_application::use_cases::{Registration, SignedIn};
@@ -98,6 +98,21 @@ pub(crate) async fn availability(
         username: username.to_string(),
         available,
     }))
+}
+
+/// `GET /users/{username}`: the public profile behind `/@username`, so a room that is
+/// not live can still show its mascot. Unclaimed or malformed names are a 404.
+pub(crate) async fn profile(
+    State(state): State<AppState>,
+    Path(username): Path<String>,
+) -> Result<Json<AccountResponse>, ApiError> {
+    let username: Username = username.parse().map_err(|_| ApiError::NotFound)?;
+    let account = state
+        .accounts
+        .profile(&username)
+        .await?
+        .ok_or(ApiError::NotFound)?;
+    Ok(Json(AccountResponse::from(&account)))
 }
 
 pub(crate) async fn me(CurrentAccount(account): CurrentAccount) -> Json<AccountResponse> {

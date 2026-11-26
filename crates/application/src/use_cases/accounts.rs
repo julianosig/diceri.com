@@ -108,6 +108,16 @@ impl AccountService {
         Ok(self.accounts.find_by_username(username).await?.is_none())
     }
 
+    /// The public face of `username` (handle and mascot), or `None` while unclaimed.
+    /// Like `is_available`, it shows only what a visit to `/@username` shows.
+    pub async fn profile(&self, username: &Username) -> Result<Option<Account>, AccountError> {
+        Ok(self
+            .accounts
+            .find_by_username(username)
+            .await?
+            .map(|stored| stored.account))
+    }
+
     pub async fn sign_in(
         &self,
         username: &Username,

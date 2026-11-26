@@ -7,6 +7,7 @@
 //! | POST | `/accounts/session` | — (`{ username, password }`) |
 //! | GET | `/accounts/available?username=` | — (`{ username, available }`) |
 //! | GET | `/accounts/me` | session cookie |
+//! | GET | `/users/{username}` | — (`{ username, mascot }`, 404 while unclaimed) |
 //! | POST | `/accounts/sign-out` | session cookie (optional) |
 
 mod handlers;
@@ -25,5 +26,6 @@ pub(crate) fn routes() -> Router<AppState> {
         .route("/accounts/session", post(handlers::sign_in))
         .route("/accounts/available", get(handlers::availability))
         .route("/accounts/me", get(handlers::me))
+        .route("/users/{username}", get(handlers::profile))
         .route("/accounts/sign-out", post(handlers::sign_out))
 }

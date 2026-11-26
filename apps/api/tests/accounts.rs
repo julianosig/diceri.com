@@ -108,3 +108,17 @@ async fn usernames_can_be_checked_before_signing_up() {
     assert_eq!(check("dora").await.1["available"], false);
     assert_eq!(check("a").await.0, StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn a_claimed_username_has_a_public_profile() {
+    let app = app(false);
+    let (status, _) = send(&app, "GET", "/api/v1/users/dora", None, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+    sign_up(&app, "dora").await;
+    let (status, profile) = send(&app, "GET", "/api/v1/users/Dora", None, None).await;
+    assert_eq!(status, StatusCode::OK);
+    assert_eq!(profile["username"], "dora");
+    assert!(profile["mascot"].is_string());
+    let (status, _) = send(&app, "GET", "/api/v1/users/a!", None, None).await;
+    assert_eq!(status, StatusCode::NOT_FOUND);
+}

@@ -56,6 +56,19 @@ async fn a_username_is_available_until_claimed() {
 }
 
 #[tokio::test]
+async fn a_profile_shows_the_handle_and_mascot_once_claimed() {
+    let (accounts, _) = service();
+    assert!(accounts.profile(&name("ana")).await.unwrap().is_none());
+    accounts
+        .register(registration("ana", "correct horse"))
+        .await
+        .unwrap();
+    let profile = accounts.profile(&name("Ana")).await.unwrap().unwrap();
+    assert_eq!(profile.username, name("ana"));
+    assert_eq!(profile.mascot, Mascot::Dragon);
+}
+
+#[tokio::test]
 async fn usernames_are_unique() {
     let (accounts, _) = service();
     accounts
