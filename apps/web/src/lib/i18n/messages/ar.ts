@@ -18,6 +18,7 @@ export const ar: Messages = {
 		headline: 'البديل لـ Google Meet',
 		promise: 'حيث تتحدث وتستمع بلغتك أنت.',
 		voice: 'يسمعونك بلغتهم — بصوتك أنت.',
+		openSource: 'مفتوح المصدر على GitHub',
 		illustration: 'رسم توضيحي: شخص يتحدث، وDiceri يترجم في المنتصف، والشخص الآخر يسمعه بلغته.'
 	},
 	onboarding: {

@@ -12,6 +12,7 @@ export const ja: Messages = {
 		headline: 'Google Meet の代わりに。',
 		promise: '自分の言語で話して、自分の言語で聞ける。',
 		voice: '相手には、相手の言語で、あなた自身の声で届きます。',
+		openSource: 'GitHub でオープンソース公開中',
 		illustration: 'イラスト：一人が話し、真ん中で Diceri が翻訳し、もう一人が自分の言語で聞きます。'
 	},
 	onboarding: {

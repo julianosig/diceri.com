@@ -12,6 +12,7 @@ export const fr: Messages = {
 		headline: 'L’alternative à Google Meet',
 		promise: 'où vous parlez et écoutez dans votre propre langue.',
 		voice: 'Ils vous entendent dans leur langue — avec votre propre voix.',
+		openSource: 'Open source sur GitHub',
 		illustration:
 			'Illustration : une personne parle, Diceri traduit au milieu et l’autre personne l’entend dans sa propre langue.'
 	},
