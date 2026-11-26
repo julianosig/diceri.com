@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Sparkles } from '@lucide/svelte';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { MASCOTS, type MascotId } from '../mascots.ts';
 	import MascotAvatar from './MascotAvatar.svelte';
 
@@ -14,7 +15,7 @@
 <fieldset class="flex flex-col gap-2">
 	<legend class="mb-1 flex items-center gap-1.5 text-base font-semibold">
 		<Sparkles class="size-4 text-brand-500" aria-hidden="true" />
-		Room mascot
+		{i18n.t.mascots.legend}
 	</legend>
 	<div class="grid grid-cols-6 gap-1.5">
 		{#each MASCOTS as mascot (mascot.id)}
@@ -25,7 +26,7 @@
 						? 'bg-brand-500/15 ring-2 ring-brand-500'
 						: 'opacity-70 hover:opacity-100'
 				]}
-				title={mascot.label}
+				title={i18n.t.mascots.names[mascot.id]}
 			>
 				<input
 					type="radio"
@@ -36,7 +37,7 @@
 					onchange={() => {
 						onchange(mascot.id);
 					}}
-					aria-label={mascot.label}
+					aria-label={i18n.t.mascots.names[mascot.id]}
 				/>
 				<MascotAvatar mascot={mascot.id} size={44} decorative class="w-full" />
 			</label>

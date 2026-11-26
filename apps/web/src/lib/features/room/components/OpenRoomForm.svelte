@@ -3,6 +3,7 @@
 	import { resolve } from '$app/paths';
 	import { DoorOpen, LoaderCircle, ShieldCheck, Video } from '@lucide/svelte';
 	import { Button, Toggle } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { saveHostKey } from '../host-keys.ts';
 	import { openRoom } from '../room-api.ts';
 	import type { RoomEntry } from '../types.ts';
@@ -16,10 +17,11 @@
 
 	let { username, mascot }: Props = $props();
 
-	const ENTRIES: { value: RoomEntry; label: string; icon: typeof ShieldCheck }[] = [
-		{ value: 'approval', label: 'I approve each person', icon: ShieldCheck },
-		{ value: 'open', label: 'Anyone can join', icon: DoorOpen }
-	];
+	const t = $derived(i18n.t.openRoom);
+	const ENTRIES = $derived([
+		{ value: 'approval' as RoomEntry, label: t.approval, icon: ShieldCheck },
+		{ value: 'open' as RoomEntry, label: t.open, icon: DoorOpen }
+	]);
 
 	let listed = $state(false);
 	let entry = $state<RoomEntry>('approval');
@@ -42,22 +44,22 @@
 	}
 </script>
 
-<form class="flex w-full max-w-md flex-col gap-5 text-left" onsubmit={submit}>
+<form class="flex w-full max-w-md flex-col gap-5 text-start" onsubmit={submit}>
 	<div class="flex items-center gap-3">
 		<MascotAvatar {mascot} size={56} />
 		<div class="flex flex-col">
 			<h2 class="text-xl font-bold">@{username}</h2>
-			<p class="text-sm text-ink-muted">Your room lives at diceri.com/@{username}</p>
+			<p class="text-sm text-ink-muted">{t.livesAt(username)}</p>
 		</div>
 	</div>
 	<Toggle
 		checked={listed}
-		label="Show on the live board"
-		description="Anyone on the home page sees your room and can open it."
+		label={t.listed}
+		description={t.listedHint}
 		onchange={(value: boolean) => (listed = value)}
 	/>
 	<fieldset class="flex flex-col gap-2">
-		<legend class="mb-1 text-base font-semibold">Who gets in</legend>
+		<legend class="mb-1 text-base font-semibold">{t.whoGetsIn}</legend>
 		<div class="grid grid-cols-2 gap-2">
 			{#each ENTRIES as option (option.value)}
 				{@const Icon = option.icon}
@@ -77,20 +79,20 @@
 		</div>
 		{#if entry === 'open'}
 			<p class="text-xs text-ink-muted">
-				Anyone who knows your @ walks straight in while the room is open.
+				{t.openHint}
 			</p>
 		{/if}
 	</fieldset>
 	<Button size="lg" type="submit" disabled={pending}>
 		{#if pending}
 			<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
-			Opening…
+			{t.submitting}
 		{:else}
 			<Video class="size-5" aria-hidden="true" />
-			Open my room
+			{t.submit}
 		{/if}
 	</Button>
 	{#if failed}
-		<p role="alert" class="text-sm text-red-600">Could not open your room. Try again.</p>
+		<p role="alert" class="text-sm text-red-600">{t.failed}</p>
 	{/if}
 </form>

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { LogOut } from '@lucide/svelte';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { MascotAvatar } from '#lib/features/room/index.ts';
 	import type { AccountSession } from '../account-session.svelte.ts';
 
@@ -23,7 +24,7 @@
 			onclick={() => session.signOut()}
 		>
 			<LogOut class="size-4" aria-hidden="true" />
-			Sign out
+			{i18n.t.header.signOut}
 		</button>
 	</div>
 {/if}

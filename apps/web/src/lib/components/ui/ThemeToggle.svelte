@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { Moon, Sun } from '@lucide/svelte';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { cn } from '#lib/utils/cn.ts';
 	import { theme } from './theme.svelte.ts';
 
@@ -8,7 +9,7 @@
 	}
 
 	let { class: className }: Props = $props();
-	const next = $derived(theme.current === 'dark' ? 'light' : 'dark');
+	const label = $derived(theme.current === 'dark' ? i18n.t.header.toLight : i18n.t.header.toDark);
 </script>
 
 <button
@@ -17,8 +18,8 @@
 		'inline-flex size-9 items-center justify-center rounded-full text-ink-muted transition-colors hover:bg-surface-raised hover:text-ink focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:outline-none',
 		className
 	)}
-	aria-label={`Switch to ${next} theme`}
-	title={`Switch to ${next} theme`}
+	aria-label={label}
+	title={label}
 	onclick={() => {
 		theme.toggle();
 	}}

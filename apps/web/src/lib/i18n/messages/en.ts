@@ -1,0 +1,77 @@
+/**
+ * English: the source catalogue. Its shape is the `Messages` type every other language
+ * must fill completely (the compiler checks it). Keep strings short; functions take the
+ * values they interpolate.
+ */
+export const en = {
+	meta: { title: 'Diceri — the call you know, in every language' },
+	header: {
+		signOut: 'Sign out',
+		language: 'Language',
+		toDark: 'Switch to dark theme',
+		toLight: 'Switch to light theme'
+	},
+	hero: {
+		headline: 'The call you already know.',
+		promise: 'Now in every language.',
+		illustration:
+			'Illustration: one person speaks, Diceri translates in the middle, and the other person hears it in their own language.'
+	},
+	onboarding: {
+		label: 'Login or claim your room username',
+		usernamePlaceholder: 'yourname',
+		checking: (handle: string) => `Checking @${handle}…`,
+		available: (handle: string) => `@${handle} is available — claim it`,
+		welcomeBack: (handle: string) => `Welcome back, @${handle}`,
+		invalid: '3–20 letters (a–z), numbers or _, starting with a letter.',
+		checkFailed: 'Could not check the name. Try again.',
+		password: 'Password',
+		repeatPassword: 'Repeat password',
+		newPasswordPlaceholder: (min: number) => `At least ${String(min)} characters`,
+		passwordPlaceholder: 'Your password',
+		repeatPlaceholder: 'Type it again',
+		passwordsMatch: 'Passwords match',
+		tooShort: (min: number) => `Use at least ${String(min)} characters.`,
+		tooLong: (max: number) => `Use at most ${String(max)} characters.`,
+		mismatch: 'The passwords do not match.',
+		create: 'Create my room',
+		creating: 'Creating…',
+		signIn: 'Sign in',
+		signingIn: 'Signing in…',
+		taken: 'That username was just taken.',
+		wrongPassword: 'Wrong password.',
+		failed: 'Something went wrong. Try again.'
+	},
+	mascots: {
+		legend: 'Room mascot',
+		names: {
+			wizard: 'Wizard',
+			robot: 'Robot',
+			astronaut: 'Astronaut',
+			alien: 'Alien',
+			ninja: 'Ninja',
+			dragon: 'Dragon',
+			knight: 'Knight',
+			ghost: 'Ghost',
+			cybercat: 'Cyber cat',
+			slime: 'Slime',
+			pirate: 'Space pirate',
+			gamer: 'Gamer'
+		}
+	},
+	openRoom: {
+		livesAt: (username: string) => `Your room lives at diceri.com/@${username}`,
+		listed: 'Show on the live board',
+		listedHint: 'Anyone on the home page sees your room and can open it.',
+		whoGetsIn: 'Who gets in',
+		approval: 'I approve each person',
+		open: 'Anyone can join',
+		openHint: 'Anyone who knows your @ walks straight in while the room is open.',
+		submit: 'Open my room',
+		submitting: 'Opening…',
+		failed: 'Could not open your room. Try again.'
+	},
+	footer: { freeSoftware: 'Free software', sourceCode: 'Source code' }
+};
+
+export type Messages = typeof en;

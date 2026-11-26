@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { AccountBadge, AccountSession, Onboarding } from '#lib/features/account/index.ts';
 	import { HeroAnimation } from '#lib/features/landing/index.ts';
-	import { Logo, ThemeToggle } from '#lib/components/ui/index.ts';
+	import { LanguageSelect, Logo, ThemeToggle } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
 
 	/** AGPL section 13: users of the network service can get its source. */
@@ -16,13 +17,14 @@
 </script>
 
 <svelte:head>
-	<title>Diceri — the call you know, in every language</title>
+	<title>{i18n.t.meta.title}</title>
 </svelte:head>
 
 <header class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
 	<Logo class="h-11 sm:h-14" />
 	<div class="flex items-center gap-2">
 		<AccountBadge session={account} />
+		<LanguageSelect />
 		<ThemeToggle />
 	</div>
 </header>
@@ -33,9 +35,9 @@
 	<HeroAnimation class="max-w-5xl" />
 	<div class="flex max-w-3xl flex-col items-center gap-8">
 		<h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-			The call you already know.<br />
+			{i18n.t.hero.headline}<br />
 			<span class="bg-gradient-to-r from-brand-violet to-brand-500 bg-clip-text text-transparent">
-				Now in every language.
+				{i18n.t.hero.promise}
 			</span>
 		</h1>
 		{#if account.account}
@@ -45,9 +47,9 @@
 		{/if}
 	</div>
 	<footer class="mt-auto text-xs text-ink-muted">
-		Free software under the
+		{i18n.t.footer.freeSoftware} ·
 		<a class="underline" href="{SOURCE_URL}/blob/main/LICENSE">AGPL-3.0</a>
 		·
-		<a class="underline" href={SOURCE_URL}>Source code</a>
+		<a class="underline" href={SOURCE_URL}>{i18n.t.footer.sourceCode}</a>
 	</footer>
 </main>

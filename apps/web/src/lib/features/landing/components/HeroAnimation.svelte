@@ -4,6 +4,7 @@
 	import leftPerson from '#lib/assets/hero/left-person.svg';
 	import rightPerson from '#lib/assets/hero/right-person.svg';
 	import { Logo } from '#lib/components/ui/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { cn } from '#lib/utils/cn.ts';
 	import { CYCLE_MS, LANGUAGE_PAIRS, nextPair } from '../language-pairs.ts';
 	import HeroPerson from './HeroPerson.svelte';
@@ -51,7 +52,8 @@
 <div
 	class={cn('banner relative aspect-[6/1] w-full', className)}
 	role="img"
-	aria-label="Illustration: one person speaks, Diceri translates in the middle, and the other person hears it in their own language."
+	aria-label={i18n.t.hero.illustration}
+	dir="ltr"
 >
 	<svg class="absolute inset-0 h-full w-full" viewBox="0 0 1200 200" aria-hidden="true">
 		<path class="link link-in" d="M 285 122 Q 400 60 525 78" />
