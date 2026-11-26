@@ -23,10 +23,12 @@ wins. An inline script in `app.html` applies it before first paint.
 
 ## Home illustration
 
-`static/hero/diceri-banner.{webp,gif}` (+ a still frame for reduced motion): a 6:1 strip
-where "Olá!" from Brazil goes through Diceri and arrives as "こんにちは!" in Japan.
-Generated with Codex as a 4-frame sheet stacked vertically (the first, taller 2×2
-version was cut to this strip to keep the promise above the fold).
+A 6:1 strip (`HeroAnimation.svelte`): the scene is a text-free image generated with
+Codex in four aligned variants, `static/hero/scene-{light,dark}{,-glow}.webp` (~22 kB
+each). The speech is HTML on top: a line said on the left travels into Diceri, Diceri
+glows, and the same line arrives translated at the listener, labelled with each
+language. Pairs live in `language-pairs.ts`; add one there, no new image needed. Reduced
+motion shows both lines at once.
 
 ## Promise
 
