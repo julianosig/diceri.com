@@ -7,7 +7,22 @@ to declare", chosen as a domain hack for `diceri.com`.
 
 ## Logo
 
-`apps/web/src/lib/assets/favicon.svg` (also used by `Logo.svelte`): a twenty-sided die
+The lockup is one SVG: the mark, the wordmark **Diceri** and its meaning underneath,
+*from Latin dicere: to speak*. `Logo.svelte` inlines it (so the text uses the page font
+and colour); `apps/web/static/logo.svg` is the standalone copy for sharing.
+
+## Promise
+
+> The call you already know. **Now in every language.**
+> Talk the way you always do. Everyone hears you live in their own language — in your
+> own voice.
+
+It anchors on something everyone has used (a video call) and names the moat: live
+translation spoken back in the speaker's own (consented, cloned) voice.
+
+## Mark
+
+`apps/web/src/lib/assets/favicon.svg`: a twenty-sided die
 whose outline is a speech bubble. Speaking is the product; the d20 is a nod to the
 geek culture of the room mascots. Violet `#7c3aed` and blue `#2563eb` facets with
 white gaps. The concept was explored with Codex image generation and redrawn by hand

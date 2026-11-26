@@ -8,9 +8,9 @@ edit wins; nested files only add detail, they never contradict this one.
 
 ## 1. Product
 
-Diceri is a Google-Meet-inspired app for **link-joined meetings without accounts, with
-live voice translation**. One person creates a room and shares the link; the
-other joins. Each listener picks the language they want to hear, and the other
+Diceri is a Google-Meet-inspired app for **video calls with live voice translation**.
+Each account (username + password, no email) owns one room named after it
+(`diceri.com/@username`); guests join without an account. Each listener picks the language they want to hear, and the other
 person's speech is transcribed, translated and re-spoken **in a voice that
 sounds like the original speaker** (with explicit consent, see §9).
 
@@ -142,10 +142,12 @@ function-length limits but not from file limits.
 
 ## 9. Security, privacy and consent
 
-- Rooms are private by default: only hosts who opt in show their room's title and their
-  name on the public live board ([ADR 0008](docs/decisions/0008-named-rooms-and-live-board.md)).
-  Room ids are 128-bit random (22 base62 chars); never
-  expose sequential or database ids.
+- Rooms are private by default: only owners who opt in appear on the public live
+  board ([ADR 0008](docs/decisions/0008-named-rooms-and-live-board.md)). A room's
+  address (`/@username`) is guessable, so its entry policy (host approval by
+  default) is what protects it ([ADR 0011](docs/decisions/0011-password-accounts-and-personal-rooms.md)).
+  Ids are UUIDv7 and never grant access (§14); never expose sequential ids.
+- Passwords are hashed with Argon2id; sessions are random tokens stored hashed.
 - Media tokens (LiveKit JWTs) are minted only by `apps/api`, scoped to one
   room, and short-lived (5–10 min).
 - **Voice cloning requires explicit opt-in** from the speaker for that call.
