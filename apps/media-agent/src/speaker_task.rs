@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use diceri_application::ports::{STT_SAMPLE_RATE, VoiceId};
 use diceri_domain::LanguageCode;
-use diceri_media::{PipelineOutput, SpeakerConfig, SpeakerPipeline};
+use diceri_media::{Conversation, PipelineOutput, SpeakerConfig, SpeakerPipeline};
 use futures_util::StreamExt as _;
 use livekit::track::RemoteAudioTrack;
 use livekit::webrtc::audio_stream::native::NativeAudioStream;
@@ -28,6 +28,7 @@ pub(crate) async fn run(
     speaker: Speaker,
     providers: Arc<Providers>,
     output: Arc<dyn PipelineOutput>,
+    conversation: Arc<Conversation>,
     targets: watch::Receiver<Vec<LanguageCode>>,
 ) {
     let stream = match providers.stt.open(&speaker.hints).await {
@@ -52,6 +53,7 @@ pub(crate) async fn run(
         providers.translator.clone(),
         providers.tts.clone(),
         output,
+        conversation,
     )
     .run(stream.events, targets)
     .await;

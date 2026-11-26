@@ -2,18 +2,18 @@ use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use diceri_application::ports::{
-    SpeechAudio, SpeechRequest, TextToSpeech, TextToSpeechError, TranscriptEvent,
+    ContextTurn, SpeechAudio, SpeechRequest, TextToSpeech, TextToSpeechError, TranscriptEvent,
     TranslationRequest, Translator, TranslatorError, VoiceId,
 };
 use diceri_domain::LanguageCode;
 use tokio::sync::{mpsc, watch};
 
 use super::{SpeakerConfig, SpeakerPipeline};
-use crate::{Caption, CaptionKind, PipelineOutput};
+use crate::{Caption, CaptionKind, Conversation, PipelineOutput};
 
 /// Translates by tagging the text with the target language: "[en] Olá".
 struct TaggingTranslator {
-    contexts: Mutex<Vec<Vec<String>>>,
+    contexts: Mutex<Vec<Vec<ContextTurn>>>,
 }
 
 #[async_trait]
@@ -96,6 +96,16 @@ impl Harness {
     }
 
     async fn run_with(events: Vec<TranscriptEvent>, targets: &[&str], tts: FakeTts) -> Self {
+        Self::run_in(events, targets, tts, Arc::new(Conversation::default())).await
+    }
+
+    /// Runs Ana's pipeline in an existing call's conversation.
+    async fn run_in(
+        events: Vec<TranscriptEvent>,
+        targets: &[&str],
+        tts: FakeTts,
+        conversation: Arc<Conversation>,
+    ) -> Self {
         let tts = Arc::new(tts);
         let output = Arc::new(RecordingOutput::default());
         let translator = Arc::new(TaggingTranslator {
@@ -107,8 +117,13 @@ impl Harness {
             voice: VoiceId("clone".to_owned()),
             fallback_voice: VoiceId("stock".to_owned()),
         };
-        let pipeline =
-            SpeakerPipeline::new(config, translator.clone(), tts.clone(), output.clone());
+        let pipeline = SpeakerPipeline::new(
+            config,
+            translator.clone(),
+            tts.clone(),
+            output.clone(),
+            conversation,
+        );
         let (tx, rx) = mpsc::channel(64);
         for event in events {
             tx.send(Ok(event)).await.unwrap();
@@ -183,10 +198,13 @@ async fn keeps_phrase_order_per_language_and_passes_context() {
         vec!["[en] um", "[en] dois", "[en] três"]
     );
     let contexts = harness.translator.contexts.lock().unwrap();
-    assert_eq!(
-        contexts.last().unwrap(),
-        &vec!["um".to_owned(), "dois".to_owned()]
-    );
+    let last: Vec<&str> = contexts
+        .last()
+        .unwrap()
+        .iter()
+        .map(|t| t.text.as_str())
+        .collect();
+    assert_eq!(last, ["um", "dois"]);
 }
 
 #[tokio::test]
@@ -253,6 +271,7 @@ async fn an_unchanged_translation_is_captioned_but_not_spoken() {
         Arc::new(EchoTranslator),
         Arc::new(FakeTts::default()),
         output.clone(),
+        Arc::new(Conversation::default()),
     );
     let (tx, rx) = mpsc::channel(8);
     for event in phrase_in("Alô.", "es") {
@@ -270,4 +289,72 @@ async fn an_unchanged_translation_is_captioned_but_not_spoken() {
         .count();
     assert_eq!(translations, 1);
     assert_eq!(output.spoken.lock().unwrap().len(), 0);
+}
+
+#[tokio::test]
+async fn translates_knowing_what_the_others_said() {
+    let conversation = Arc::new(Conversation::default());
+    conversation.record("bob", "Shall we meet at the park?");
+    let harness = Harness::run_in(phrase("sim"), &["en"], FakeTts::default(), conversation).await;
+    let contexts = harness.translator.contexts.lock().unwrap();
+    let turn = &contexts.last().unwrap()[0];
+    assert_eq!((turn.label.as_str(), turn.by_speaker), ("A", false));
+    assert_eq!(turn.text, "Shall we meet at the park?");
+}
+
+/// Streams a two-sentence translation in pieces, as Gemini does.
+struct StreamingTranslator;
+
+#[async_trait]
+impl Translator for StreamingTranslator {
+    async fn translate(&self, _: TranslationRequest<'_>) -> Result<String, TranslatorError> {
+        Err(TranslatorError::Empty)
+    }
+
+    async fn translate_stream(
+        &self,
+        _: TranslationRequest<'_>,
+        pieces: mpsc::Sender<String>,
+    ) -> Result<(), TranslatorError> {
+        for piece in ["Good morning, every", "one. How are", " you today?"] {
+            pieces.send(piece.to_owned()).await.unwrap();
+        }
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn speaks_the_first_sentence_before_the_translation_ends() {
+    let output = Arc::new(RecordingOutput::default());
+    let config = SpeakerConfig {
+        speaker: "ana".to_owned(),
+        fallback_language: lang("pt-BR"),
+        voice: VoiceId("clone".to_owned()),
+        fallback_voice: VoiceId("stock".to_owned()),
+    };
+    let pipeline = SpeakerPipeline::new(
+        config,
+        Arc::new(StreamingTranslator),
+        Arc::new(FakeTts::default()),
+        output.clone(),
+        Arc::new(Conversation::default()),
+    );
+    let (tx, rx) = mpsc::channel(8);
+    for event in phrase("Bom dia a todos. Como vocês estão hoje?") {
+        tx.send(Ok(event)).await.unwrap();
+    }
+    drop(tx);
+    let (_targets, targets_rx) = watch::channel(vec![lang("en")]);
+    pipeline.run(rx, targets_rx).await;
+    let spoken: Vec<usize> = output.spoken.lock().unwrap().iter().map(|s| s.2).collect();
+    assert_eq!(
+        spoken,
+        ["Good morning, everyone.".len(), "How are you today?".len()]
+    );
+    let captions = output.captions.lock().unwrap();
+    let last = captions
+        .iter()
+        .rfind(|c| c.kind == CaptionKind::Translation)
+        .unwrap();
+    assert_eq!(last.text, "Good morning, everyone. How are you today?");
 }

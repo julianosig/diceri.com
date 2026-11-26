@@ -6,7 +6,7 @@ use anyhow::Context as _;
 use diceri_application::ports::{MediaAccessIssuer as _, MediaParticipant, MediaRole, VoiceId};
 use diceri_domain::{LanguageCode, RoomId};
 use diceri_infra::{OUTPUT_LANGUAGE_ATTRIBUTE, VOICE_ATTRIBUTE};
-use diceri_media::PipelineOutput;
+use diceri_media::{Conversation, PipelineOutput};
 use livekit::prelude::{
     RemoteParticipant, RemoteTrack, RemoteTrackPublication, Room, RoomEvent, RoomOptions,
 };
@@ -59,6 +59,8 @@ async fn serve(
     providers: &Arc<Providers>,
 ) {
     let output: Arc<dyn PipelineOutput> = Arc::new(LiveKitOutput::new(room.local_participant()));
+    // One conversation per call: every speaker is translated knowing what the others said.
+    let conversation = Arc::new(Conversation::default());
     let mut speakers = Speakers::default();
     let mut last_human = Instant::now();
     let mut idle_check = tokio::time::interval(IDLE_CHECK);
@@ -67,7 +69,7 @@ async fn serve(
             event = events.recv() => {
                 match event {
                     None | Some(RoomEvent::Disconnected { .. }) => break,
-                    Some(event) => speakers.handle(event, room, providers, &output),
+                    Some(event) => speakers.handle(event, room, providers, &output, &conversation),
                 }
                 speakers.refresh_targets(room);
             }
@@ -98,6 +100,7 @@ impl Speakers {
         room: &Room,
         providers: &Arc<Providers>,
         output: &Arc<dyn PipelineOutput>,
+        conversation: &Arc<Conversation>,
     ) {
         if let RoomEvent::ParticipantDisconnected(participant) = &event {
             if let Some(voice) = self.clones.remove(participant.identity().as_str()) {
@@ -127,6 +130,7 @@ impl Speakers {
             speaker,
             providers.clone(),
             output.clone(),
+            conversation.clone(),
             receiver,
         ));
     }

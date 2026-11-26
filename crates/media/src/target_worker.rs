@@ -2,18 +2,22 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use diceri_application::ports::{
-    SpeechAudio, SpeechRequest, TextToSpeech, TextToSpeechError, TranslationRequest, Translator,
+    ContextTurn, SpeechAudio, SpeechRequest, TextToSpeech, TextToSpeechError, TranslationRequest,
+    Translator,
 };
 use diceri_domain::LanguageCode;
 use tokio::sync::mpsc;
 use tokio::task::JoinHandle;
 
+use crate::clauses::Clauses;
 use crate::voice_choice::VoiceChoice;
 use crate::{Caption, CaptionKind, PipelineOutput};
 
 /// Phrases waiting per target language; beyond this the speaker is far ahead
 /// of playback and new phrases are dropped instead of piling up delay.
 const QUEUE_DEPTH: usize = 4;
+/// Translation pieces in flight between the translator and speech.
+const PIECES: usize = 64;
 
 /// One phrase to translate and speak in a target language.
 #[derive(Debug)]
@@ -22,9 +26,12 @@ pub(crate) struct PhraseJob {
     pub text: String,
     /// Detected language of this phrase (falls back to the declared one).
     pub source: LanguageCode,
-    pub context: Vec<String>,
+    /// The recent conversation of the call, from everyone in it.
+    pub context: Vec<ContextTurn>,
     /// When the speaker finished the phrase; the origin of latency metrics.
     pub ended_at: Instant,
+    /// How long the recognizer took to close the phrase after its last partial text.
+    pub stt_wait_ms: u128,
 }
 
 /// Everything a worker needs, shared by all of a speaker's workers.
@@ -57,26 +64,83 @@ async fn run(deps: Arc<WorkerDeps>, target: LanguageCode, mut jobs: mpsc::Receiv
     }
 }
 
+/// Milliseconds from the end of the phrase to each stage, for one target language.
+#[derive(Debug, Default)]
+struct Timing {
+    first_piece_ms: Option<u128>,
+    translated_ms: Option<u128>,
+    first_audio_ms: Option<u128>,
+    parts: usize,
+}
+
+/// Translates as a stream and speaks each part as soon as it is complete, so the
+/// listener hears the first sentence while the rest is still being translated.
 async fn process(deps: &WorkerDeps, target: &LanguageCode, job: PhraseJob) {
-    let Some(translated) = translate(deps, target, &job).await else {
-        return;
+    let (pieces, received) = mpsc::channel(PIECES);
+    let request = TranslationRequest {
+        text: &job.text,
+        source: &job.source,
+        target,
+        context: &job.context,
     };
-    let translated_ms = job.ended_at.elapsed().as_millis();
+    let translate = async {
+        if let Err(error) = deps.translator.translate_stream(request, pieces).await {
+            tracing::warn!(%error, %target, "translation failed");
+        }
+    };
+    let ((), timing) = tokio::join!(translate, speak_as_translated(deps, target, &job, received));
+    if timing.parts > 0 {
+        log_latency(target, &job, &timing);
+    }
+}
+
+async fn speak_as_translated(
+    deps: &WorkerDeps,
+    target: &LanguageCode,
+    job: &PhraseJob,
+    mut received: mpsc::Receiver<String>,
+) -> Timing {
+    let mut timing = Timing::default();
+    let mut clauses = Clauses::default();
+    let mut translated = String::new();
+    while let Some(piece) = received.recv().await {
+        timing
+            .first_piece_ms
+            .get_or_insert(job.ended_at.elapsed().as_millis());
+        translated.push_str(&piece);
+        for part in clauses.push(&piece) {
+            caption(deps, target, job, &translated).await;
+            speak(deps, target, job, &part, &mut timing).await;
+        }
+    }
+    timing.translated_ms = Some(job.ended_at.elapsed().as_millis());
+    if translated.trim().is_empty() {
+        return timing;
+    }
+    caption(deps, target, job, &translated).await;
+    let Some(rest) = clauses.finish() else {
+        return timing;
+    };
+    // A misdetected short phrase ("Alô.") can come back unchanged; repeating the
+    // speaker's own words adds nothing, so only the caption is kept.
+    if timing.parts == 0 && same_words(&translated, &job.text) {
+        return timing;
+    }
+    speak(deps, target, job, &rest, &mut timing).await;
+    timing
+}
+
+/// The translation so far, as one caption line that grows until the phrase is done.
+async fn caption(deps: &WorkerDeps, target: &LanguageCode, job: &PhraseJob, text: &str) {
     deps.output
         .caption(Caption {
             speaker: deps.speaker.clone(),
             language: target.clone(),
             kind: CaptionKind::Translation,
             phrase: job.phrase,
-            text: translated.clone(),
+            text: text.trim().to_owned(),
         })
         .await;
-    // A misdetected short phrase ("Alô.") can come back unchanged; repeating the
-    // speaker's own words adds nothing, so only the caption is kept.
-    if same_words(&translated, &job.text) {
-        return;
-    }
-    speak(deps, target, &job, &translated, translated_ms).await;
 }
 
 /// Equal ignoring case, punctuation and spacing.
@@ -90,31 +154,20 @@ fn same_words(a: &str, b: &str) -> bool {
     normalize(a) == normalize(b)
 }
 
-async fn translate(deps: &WorkerDeps, target: &LanguageCode, job: &PhraseJob) -> Option<String> {
-    let request = TranslationRequest {
-        text: &job.text,
-        source: &job.source,
-        target,
-        context: &job.context,
-    };
-    deps.translator
-        .translate(request)
-        .await
-        .inspect_err(|error| tracing::warn!(%error, %target, "translation failed"))
-        .ok()
-}
-
 async fn speak(
     deps: &WorkerDeps,
     target: &LanguageCode,
     job: &PhraseJob,
     text: &str,
-    translated_ms: u128,
+    timing: &mut Timing,
 ) {
     let Some(audio) = synthesize(deps, target, text).await else {
         return;
     };
-    log_latency(target, job, translated_ms);
+    timing
+        .first_audio_ms
+        .get_or_insert(job.ended_at.elapsed().as_millis());
+    timing.parts += 1;
     deps.output.speak(&deps.speaker, target, audio).await;
 }
 
@@ -158,10 +211,20 @@ fn warn_failed(error: &TextToSpeechError, target: &LanguageCode) {
     tracing::warn!(%error, %target, "synthesis failed");
 }
 
-/// Milliseconds from the end of the phrase to translation and to first speech.
-fn log_latency(target: &LanguageCode, job: &PhraseJob, translated_ms: u128) {
-    let speech_ms = job.ended_at.elapsed().as_millis();
-    tracing::info!(%target, phrase = job.phrase, translated_ms, speech_ms, "phrase latency");
+/// One line per phrase and language with every stage, measured from the end of the
+/// phrase: recognizer wait, first and last translation piece, first audio, all audio.
+fn log_latency(target: &LanguageCode, job: &PhraseJob, timing: &Timing) {
+    tracing::info!(
+        %target,
+        phrase = job.phrase,
+        stt_wait_ms = job.stt_wait_ms,
+        first_piece_ms = timing.first_piece_ms,
+        translated_ms = timing.translated_ms,
+        first_audio_ms = timing.first_audio_ms,
+        speech_ms = job.ended_at.elapsed().as_millis(),
+        parts = timing.parts,
+        "phrase latency"
+    );
 }
 
 #[cfg(test)]

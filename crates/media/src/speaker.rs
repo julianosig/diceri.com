@@ -8,14 +8,11 @@ use diceri_application::ports::{
 use diceri_domain::LanguageCode;
 use tokio::sync::{mpsc, watch};
 
-use crate::context::RollingContext;
+use crate::conversation::Conversation;
 use crate::segmenter::{SegmentUpdate, Segmenter};
 use crate::target_worker::{PhraseJob, TargetWorker, WorkerDeps};
 use crate::voice_choice::VoiceChoice;
 use crate::{Caption, CaptionKind, PipelineOutput};
-
-/// Phrases of context given to the translator.
-const CONTEXT_PHRASES: usize = 3;
 
 /// Who is speaking and how their translations should sound.
 #[derive(Debug, Clone)]
@@ -30,27 +27,20 @@ pub struct SpeakerConfig {
 }
 
 /// Per-stream mutable state of a running pipeline.
+#[derive(Default)]
 struct StreamState {
     segmenter: Segmenter,
-    context: RollingContext,
+    /// When the recognizer last updated the phrase in progress.
+    last_progress: Option<Instant>,
     workers: HashMap<LanguageCode, TargetWorker>,
     phrase: u64,
-}
-
-impl Default for StreamState {
-    fn default() -> Self {
-        Self {
-            segmenter: Segmenter::default(),
-            context: RollingContext::new(CONTEXT_PHRASES),
-            workers: HashMap::new(),
-            phrase: 0,
-        }
-    }
 }
 
 /// Translates one speaker into every other language present in the room.
 pub struct SpeakerPipeline {
     deps: Arc<WorkerDeps>,
+    /// The whole call's recent turns, shared with the other speakers' pipelines.
+    conversation: Arc<Conversation>,
 }
 
 impl std::fmt::Debug for SpeakerPipeline {
@@ -58,7 +48,7 @@ impl std::fmt::Debug for SpeakerPipeline {
         formatter
             .debug_struct("SpeakerPipeline")
             .field("speaker", &self.deps.speaker)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
@@ -71,6 +61,7 @@ impl SpeakerPipeline {
         translator: Arc<dyn Translator>,
         tts: Arc<dyn TextToSpeech>,
         output: Arc<dyn PipelineOutput>,
+        conversation: Arc<Conversation>,
     ) -> Self {
         let deps = WorkerDeps {
             speaker: config.speaker,
@@ -82,6 +73,7 @@ impl SpeakerPipeline {
         };
         Self {
             deps: Arc::new(deps),
+            conversation,
         }
     }
 
@@ -112,6 +104,7 @@ impl SpeakerPipeline {
     ) {
         match state.segmenter.push(event) {
             Some(SegmentUpdate::Progress(text)) => {
+                state.last_progress = Some(Instant::now());
                 self.caption(CaptionKind::Partial, state.phrase, text).await;
             }
             Some(SegmentUpdate::Phrase { text, language }) => {
@@ -121,7 +114,7 @@ impl SpeakerPipeline {
                     .await;
                 let targets = Self::targets(targets, &source);
                 self.dispatch(state, &text, &source, targets);
-                state.context.push(text);
+                self.conversation.record(&self.deps.speaker, &text);
                 state.phrase += 1;
             }
             None => {}
@@ -136,8 +129,12 @@ impl SpeakerPipeline {
         source: &LanguageCode,
         targets: Vec<LanguageCode>,
     ) {
-        let context = state.context.snapshot();
+        let context = self.conversation.context_for(&self.deps.speaker);
         let ended_at = Instant::now();
+        let stt_wait_ms = state
+            .last_progress
+            .take()
+            .map_or(0, |at| ended_at.duration_since(at).as_millis());
         for target in targets {
             let worker = state
                 .workers
@@ -149,6 +146,7 @@ impl SpeakerPipeline {
                 source: source.clone(),
                 context: context.clone(),
                 ended_at,
+                stt_wait_ms,
             };
             if worker.jobs.try_send(job).is_err() {
                 tracing::warn!(%target, "dropping phrase: listener queue full");

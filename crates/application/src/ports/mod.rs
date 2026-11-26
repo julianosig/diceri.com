@@ -31,5 +31,5 @@ pub use text_to_speech::{
     SpeechAudio, SpeechRequest, TTS_SAMPLE_RATE, TextToSpeech, TextToSpeechError, VoiceId,
 };
 pub use translation_dispatcher::{DispatchError, TranslationDispatcher};
-pub use translator::{TranslationRequest, Translator, TranslatorError};
+pub use translator::{ContextTurn, TranslationRequest, Translator, TranslatorError};
 pub use voice_cloner::{VoiceCloneError, VoiceCloner, VoiceSample};
