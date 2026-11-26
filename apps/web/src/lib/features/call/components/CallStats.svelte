@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { Activity } from '@lucide/svelte';
+	import SettingsSection from './SettingsSection.svelte';
 	import type { TransportMetrics } from '../transport-stats.ts';
 	import type { CallMetrics } from '../stats-poller.ts';
 
@@ -18,25 +20,29 @@
 	);
 </script>
 
-<table class="w-full text-left text-sm">
-	<thead class="text-xs text-ink-muted">
-		<tr>
-			<th class="font-normal"></th>
-			<th class="font-normal">Bitrate</th>
-			<th class="font-normal">Loss</th>
-			<th class="font-normal">Jitter</th>
-			<th class="font-normal">Round trip</th>
-		</tr>
-	</thead>
-	<tbody class="tabular-nums">
-		{#each rows as row (row.label)}
-			<tr>
-				<th class="py-1 font-medium">{row.label}</th>
-				<td>{format(row.m?.bitrateKbps, 'kbps')}</td>
-				<td>{format(row.m?.lossPercent, '%')}</td>
-				<td>{format(row.m?.jitterMs, 'ms')}</td>
-				<td>{format(row.m?.roundTripMs, 'ms')}</td>
-			</tr>
-		{/each}
-	</tbody>
-</table>
+<SettingsSection title="Connection" icon={Activity}>
+	<div class="rounded-xl border border-ink-muted/15 px-4 py-3">
+		<table class="w-full text-start text-sm">
+			<thead class="text-xs text-ink-muted">
+				<tr>
+					<th class="pb-2 text-start font-normal"><span class="sr-only">Direction</span></th>
+					<th class="pb-2 text-end font-normal">Bitrate</th>
+					<th class="pb-2 text-end font-normal">Loss</th>
+					<th class="pb-2 text-end font-normal">Jitter</th>
+					<th class="pb-2 text-end font-normal">RTT</th>
+				</tr>
+			</thead>
+			<tbody class="tabular-nums">
+				{#each rows as row (row.label)}
+					<tr>
+						<th class="py-1 text-start text-xs font-medium text-ink-muted">{row.label}</th>
+						<td class="py-1 text-end">{format(row.m?.bitrateKbps, 'kbps')}</td>
+						<td class="py-1 text-end">{format(row.m?.lossPercent, '%')}</td>
+						<td class="py-1 text-end">{format(row.m?.jitterMs, 'ms')}</td>
+						<td class="py-1 text-end">{format(row.m?.roundTripMs, 'ms')}</td>
+					</tr>
+				{/each}
+			</tbody>
+		</table>
+	</div>
+</SettingsSection>

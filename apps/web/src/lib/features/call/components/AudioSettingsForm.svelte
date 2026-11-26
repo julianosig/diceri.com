@@ -1,90 +1,104 @@
 <script lang="ts">
-	import { Toggle } from '#lib/components/ui/index.ts';
+	import { AudioLines, Mic, Sparkles, UserRound, VolumeX } from '@lucide/svelte';
+	import { SegmentedControl, Toggle } from '#lib/components/ui/index.ts';
 	import type { AudioSettings, EnhancedFilter } from '../audio-settings.ts';
+	import AudioMeter from './AudioMeter.svelte';
+	import SettingsSection from './SettingsSection.svelte';
 
 	interface Props {
 		settings: AudioSettings;
 		devices: MediaDeviceInfo[];
+		/** Outgoing level, after the filters, for the meter. */
+		level: number;
+		muted: boolean;
 		onchange: (patch: Partial<AudioSettings>) => void;
 	}
 
-	let { settings, devices, onchange }: Props = $props();
+	let { settings, devices, level, muted, onchange }: Props = $props();
 
-	const filters: { value: EnhancedFilter; label: string; hint: string }[] = [
-		{ value: 'off', label: 'Off', hint: 'Browser processing only.' },
-		{ value: 'noise', label: 'Noise', hint: 'Removes background noise, keeps all voices.' },
+	const filters = [
+		{ value: 'off', label: 'Off', icon: VolumeX, hint: 'Browser processing only.' },
+		{
+			value: 'noise',
+			label: 'Noise',
+			icon: Sparkles,
+			hint: 'Removes background noise, keeps all voices.'
+		},
 		{
 			value: 'voice',
 			label: 'My voice only',
+			icon: UserRound,
 			hint: 'Also removes other people talking nearby (billed separately).'
 		}
-	];
+	] as const satisfies readonly {
+		value: EnhancedFilter;
+		label: string;
+		icon: unknown;
+		hint: string;
+	}[];
 	const enhanced = $derived(settings.enhancedFilter !== 'off');
 </script>
 
-<div class="flex flex-col gap-4">
-	<label class="flex flex-col gap-1 text-sm font-medium">
-		Microphone
-		<select
-			class="select-field rounded-lg bg-surface-raised py-2 ps-3"
-			value={settings.deviceId ?? ''}
-			onchange={(event) => {
-				onchange({ deviceId: event.currentTarget.value || undefined });
-			}}
-		>
-			<option value="">System default</option>
-			{#each devices as device (device.deviceId)}
-				<option value={device.deviceId}>{device.label || 'Microphone'}</option>
-			{/each}
-		</select>
-	</label>
+<SettingsSection title="Microphone" icon={Mic}>
+	<select
+		class="w-full select-field rounded-lg bg-surface-raised py-2 ps-3 text-sm"
+		aria-label="Microphone"
+		value={settings.deviceId ?? ''}
+		onchange={(event) => {
+			onchange({ deviceId: event.currentTarget.value || undefined });
+		}}
+	>
+		<option value="">System default</option>
+		{#each devices as device (device.deviceId)}
+			<option value={device.deviceId}>{device.label || 'Microphone'}</option>
+		{/each}
+	</select>
+	<AudioMeter {level} {muted} />
+</SettingsSection>
 
-	<fieldset class="flex flex-col gap-2">
-		<legend class="mb-1 text-sm font-medium">AI noise filter (Krisp)</legend>
-		<div class="flex gap-2" role="radiogroup">
-			{#each filters as filter (filter.value)}
-				<button
-					type="button"
-					role="radio"
-					aria-checked={settings.enhancedFilter === filter.value}
-					title={filter.hint}
-					class="flex-1 rounded-lg bg-surface-raised px-3 py-2 text-sm aria-checked:bg-brand-500 aria-checked:text-white"
-					onclick={() => {
-						onchange({ enhancedFilter: filter.value });
-					}}
-				>
-					{filter.label}
-				</button>
-			{/each}
-		</div>
+<SettingsSection title="Noise and echo" icon={AudioLines}>
+	<div class="flex flex-col gap-2">
+		<p class="text-sm font-medium">AI noise filter (Krisp)</p>
+		<SegmentedControl
+			label="AI noise filter (Krisp)"
+			options={filters}
+			value={settings.enhancedFilter}
+			onchange={(enhancedFilter: EnhancedFilter) => {
+				onchange({ enhancedFilter });
+			}}
+		/>
 		<p class="text-xs text-ink-muted">
 			{filters.find((f) => f.value === settings.enhancedFilter)?.hint}
 		</p>
-	</fieldset>
-
-	<Toggle
-		label="Echo cancellation"
-		description="Prevents the other person's voice from coming back through your mic."
-		checked={settings.echoCancellation}
-		onchange={(echoCancellation: boolean) => {
-			onchange({ echoCancellation });
-		}}
-	/>
-	<Toggle
-		label="Browser noise suppression"
-		description={enhanced ? 'Disabled while the AI filter is on.' : 'Basic built-in filter.'}
-		checked={settings.noiseSuppression && !enhanced}
-		disabled={enhanced}
-		onchange={(noiseSuppression: boolean) => {
-			onchange({ noiseSuppression });
-		}}
-	/>
-	<Toggle
-		label="Auto gain"
-		description="Keeps your volume steady."
-		checked={settings.autoGainControl}
-		onchange={(autoGainControl: boolean) => {
-			onchange({ autoGainControl });
-		}}
-	/>
-</div>
+	</div>
+	<div class="divide-y divide-ink-muted/15 rounded-xl border border-ink-muted/15">
+		<Toggle
+			class="px-4 py-3"
+			label="Echo cancellation"
+			description="Stops the other person's voice from coming back through your mic."
+			checked={settings.echoCancellation}
+			onchange={(echoCancellation: boolean) => {
+				onchange({ echoCancellation });
+			}}
+		/>
+		<Toggle
+			class="px-4 py-3"
+			label="Browser noise suppression"
+			description={enhanced ? 'Off while the AI filter is on.' : 'Basic built-in filter.'}
+			checked={settings.noiseSuppression && !enhanced}
+			disabled={enhanced}
+			onchange={(noiseSuppression: boolean) => {
+				onchange({ noiseSuppression });
+			}}
+		/>
+		<Toggle
+			class="px-4 py-3"
+			label="Auto gain"
+			description="Keeps your volume steady."
+			checked={settings.autoGainControl}
+			onchange={(autoGainControl: boolean) => {
+				onchange({ autoGainControl });
+			}}
+		/>
+	</div>
+</SettingsSection>

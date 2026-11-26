@@ -4,7 +4,6 @@
 	import type { CallPanel } from '../call-layout.ts';
 	import type { AudioSettings } from '../audio-settings.ts';
 	import type { CallSession, MonitorMode } from '../call-session.svelte.ts';
-	import AudioMeter from './AudioMeter.svelte';
 	import AudioSettingsForm from './AudioSettingsForm.svelte';
 	import CallStats from './CallStats.svelte';
 	import ControlBar from './ControlBar.svelte';
@@ -98,18 +97,19 @@
 			</SidePanel>
 		{:else if panel === 'settings'}
 			<SidePanel title="Audio settings" onclose={() => (panel = 'none')}>
-				<AudioMeter level={session.level} muted={session.muted} />
+				<AudioSettingsForm
+					settings={session.settings}
+					devices={session.devices}
+					level={session.level}
+					muted={session.muted}
+					onchange={(patch: Partial<AudioSettings>) => session.updateSettings(patch)}
+				/>
 				<MonitorControls
 					mode={session.monitor}
 					previewLanguage={session.previewLanguage}
 					spokenLanguage={session.ownSpokenLanguage}
 					onchange={(mode: MonitorMode) => session.setMonitor(mode)}
 					onpreviewchange={(language: string) => session.setPreviewLanguage(language)}
-				/>
-				<AudioSettingsForm
-					settings={session.settings}
-					devices={session.devices}
-					onchange={(patch: Partial<AudioSettings>) => session.updateSettings(patch)}
 				/>
 				<CallStats metrics={session.metrics} />
 			</SidePanel>

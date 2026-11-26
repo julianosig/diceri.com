@@ -16,10 +16,10 @@
 	aria-label={title}
 >
 	<header class="flex items-center justify-between">
-		<h2 class="text-lg">{title}</h2>
+		<h2 class="text-lg font-semibold">{title}</h2>
 		<button
 			type="button"
-			class="rounded-full p-2 hover:bg-surface-raised"
+			class="-me-2 rounded-full p-2 text-ink-muted hover:bg-surface-raised hover:text-ink"
 			aria-label="Close panel"
 			onclick={onclose}
 		>
