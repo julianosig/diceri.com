@@ -1,11 +1,18 @@
-/** One room in the public ranking: no id or names, only size and languages. */
+import type { RoomEntry } from '#lib/features/room/index.ts';
+
+/** One listed room on the live board (hosts opt in when creating the room). */
 export interface RankedRoom {
+	id: string;
+	title: string;
+	/** Known once the host has joined. */
+	host: string | null;
+	entry: RoomEntry;
 	people: number;
 	/** Output languages heard in the room, most listened first. */
 	languages: string[];
 }
 
-/** `GET /api/v1/presence`. */
+/** `GET /api/v1/presence`: totals cover every room, the ranking only listed ones. */
 export interface Presence {
 	online: number;
 	liveRooms: number;

@@ -9,17 +9,24 @@
 	import type { Profile } from '../lobby-api.ts';
 	import { MicPreview } from '../mic-preview.svelte.ts';
 	import { VoiceRecorder } from '../voice-recorder.svelte.ts';
+	import { joinCopy } from '../join-copy.ts';
 	import VoiceSetup from './VoiceSetup.svelte';
 
 	interface Props {
 		roomId: string;
+		/** What the meeting is called and who hosts it (once they joined). */
+		title: string;
+		hostName: string | null;
+		/** Open rooms let guests straight in; others wait for the host. */
+		open: boolean;
 		isHost: boolean;
 		busy: boolean;
 		error?: string;
 		onjoin: (profile: Profile, deviceId: string | undefined) => void;
 	}
 
-	let { roomId, isHost, busy, error, onjoin }: Props = $props();
+	let { roomId, title, hostName, open, isHost, busy, error, onjoin }: Props = $props();
+	const copy = $derived(joinCopy(isHost, open));
 
 	const preview = new MicPreview();
 	// svelte-ignore state_referenced_locally
@@ -85,10 +92,14 @@
 	</section>
 
 	<form class="flex flex-col items-center gap-5 text-center" onsubmit={submit}>
-		<h1 class="text-3xl font-normal">{isHost ? 'Ready to join?' : 'Ask to join'}</h1>
-		<p class="text-sm text-ink-muted">
-			{isHost ? 'You are the host of this meeting.' : 'The host will see your name and let you in.'}
-		</p>
+		<div class="flex flex-col items-center gap-1">
+			<p class="text-lg font-semibold">{title}</p>
+			{#if hostName && !isHost}
+				<p class="text-sm text-ink-muted">Hosted by {hostName}</p>
+			{/if}
+		</div>
+		<h1 class="text-3xl font-normal">{copy.heading}</h1>
+		<p class="text-sm text-ink-muted">{copy.hint}</p>
 		<label class="w-full max-w-xs text-left text-sm">
 			<span class="mb-1 block text-ink-muted">Your name</span>
 			<input
@@ -117,7 +128,7 @@
 			onbeforerecord={() => preview.stop()}
 		/>
 		<Button type="submit" size="lg" disabled={!canJoin}>
-			{#if busy}Joining…{:else}{isHost ? 'Join now' : 'Ask to join'}{/if}
+			{#if busy}Joining…{:else}{copy.action}{/if}
 		</Button>
 		{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
 	</form>

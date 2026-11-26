@@ -9,9 +9,9 @@
 </script>
 
 <svelte:head>
-	<title>Meeting · Diceri</title>
+	<title>{data.room.title} · Diceri</title>
 </svelte:head>
 
 {#key data.room.id}
-	<MeetingFlow roomId={data.room.id} {hostKey} meetingUrl={page.url.href} />
+	<MeetingFlow room={data.room} {hostKey} meetingUrl={page.url.href} />
 {/key}

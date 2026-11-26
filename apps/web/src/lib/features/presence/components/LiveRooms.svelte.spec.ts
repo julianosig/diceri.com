@@ -1,33 +1,47 @@
 import { page } from 'vitest/browser';
 import { describe, expect, it } from 'vitest';
 import { render } from 'vitest-browser-svelte';
+import type { RankedRoom } from '../types.ts';
 import LiveRooms from './LiveRooms.svelte';
 
+const open = {
+	id: 'aaaaaaaaaaaaaaaaaaaaaa',
+	title: 'Spanish practice',
+	host: 'Ana',
+	entry: 'open',
+	people: 5,
+	languages: ['pt-BR', 'en']
+} satisfies RankedRoom;
+const approval = {
+	id: 'bbbbbbbbbbbbbbbbbbbbbb',
+	title: 'Coffee chat',
+	host: null,
+	entry: 'approval',
+	people: 2,
+	languages: ['es']
+} satisfies RankedRoom;
+
 describe('LiveRooms', () => {
-	it('shows who is online and ranks rooms without links or names', async () => {
+	it('ranks listed rooms with title, host and how to get in', async () => {
 		await render(LiveRooms, {
-			snapshot: {
-				online: 7,
-				liveRooms: 2,
-				ranking: [
-					{ people: 5, languages: ['pt-BR', 'en'] },
-					{ people: 2, languages: ['es'] }
-				]
-			}
+			snapshot: { online: 9, liveRooms: 3, ranking: [open, approval] }
 		});
 
-		await expect.element(page.getByRole('heading', { name: '7 online now' })).toBeVisible();
-		await expect.element(page.getByText('2 live rooms')).toBeVisible();
-		const rows = page.getByRole('listitem');
+		await expect.element(page.getByRole('heading', { name: '9 online now' })).toBeVisible();
+		await expect.element(page.getByText('3 live rooms')).toBeVisible();
+		const first = page.getByRole('link', {
+			name: '#1 Spanish practice hosted by Ana: 5 people, hearing Português (Brasil), English. join now'
+		});
+		await expect.element(first).toHaveAttribute('href', '/r/aaaaaaaaaaaaaaaaaaaaaa');
 		await expect
-			.element(rows.nth(0))
-			.toHaveAccessibleName('#1: 5 people, hearing Português (Brasil), English');
-		await expect.element(rows.nth(1)).toHaveAccessibleName('#2: 2 people, hearing Español');
-		expect(page.getByRole('link').all()).toHaveLength(0);
+			.element(page.getByRole('link', { name: /^#2 Coffee chat: 2 people.*ask to join$/ }))
+			.toBeVisible();
 	});
 
-	it('invites to start the first room when nobody is online', async () => {
-		await render(LiveRooms, { snapshot: { online: 0, liveRooms: 0, ranking: [] } });
-		await expect.element(page.getByText('Quiet right now', { exact: false })).toBeVisible();
+	it('invites hosts to go public when nothing is listed', async () => {
+		await render(LiveRooms, { snapshot: { online: 2, liveRooms: 1, ranking: [] } });
+		await expect
+			.element(page.getByText('No public rooms right now', { exact: false }))
+			.toBeVisible();
 	});
 });

@@ -67,7 +67,9 @@ test('three people hear each other translated into their own language', async ({
 	const bob = await launch('Bob', 'en', url);
 	const carla = await launch('Carla', 'es', url);
 	try {
-		const probe = await ana.page.request.post(`${url}/api/v1/rooms`);
+		const probe = await ana.page.request.post(`${url}/api/v1/rooms`, {
+			data: { title: 'Probe' }
+		});
 		test.skip(!probe.ok(), 'API not reachable');
 
 		await ana.page.goto('/');

@@ -1,23 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { avatarHue, avatars, channelName, peopleLabel } from './ranking.ts';
-
-const room = (people: number, languages: string[]) => ({ people, languages });
+import { avatarHue, avatars, languageTags, peopleLabel } from './ranking.ts';
 
 describe('ranking', () => {
-	it('names a room after its base languages, like a channel', () => {
-		expect(channelName(room(3, ['pt-BR', 'en', 'pt-PT']))).toBe('pt-en');
-		expect(channelName(room(1, []))).toBe('lounge');
+	it('lists base languages once', () => {
+		expect(languageTags({ languages: ['pt-BR', 'en', 'pt-PT'] })).toBe('pt · en');
+		expect(languageTags({ languages: [] })).toBe('');
 	});
 
 	it('caps avatar dots and counts the rest', () => {
-		expect(avatars(room(3, []))).toEqual({ shown: 3, hidden: 0 });
-		expect(avatars(room(8, []))).toEqual({ shown: 5, hidden: 3 });
+		expect(avatars({ people: 3 })).toEqual({ shown: 3, hidden: 0 });
+		expect(avatars({ people: 8 })).toEqual({ shown: 5, hidden: 3 });
 	});
 
-	it('gives stable, distinct avatar hues', () => {
-		const r = room(2, ['en']);
-		expect(avatarHue(r, 0)).toBe(avatarHue(r, 0));
-		expect(avatarHue(r, 0)).not.toBe(avatarHue(r, 1));
+	it('gives stable, distinct avatar hues per room', () => {
+		const room = { id: 'abcdefghijklmnopqrstuv' };
+		expect(avatarHue(room, 0)).toBe(avatarHue(room, 0));
+		expect(avatarHue(room, 0)).not.toBe(avatarHue(room, 1));
 	});
 
 	it('pluralizes people', () => {

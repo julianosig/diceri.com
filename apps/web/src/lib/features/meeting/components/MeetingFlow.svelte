@@ -11,15 +11,18 @@
 		WaitingScreen,
 		type Profile
 	} from '#lib/features/lobby/index.ts';
+	import type { Room } from '#lib/features/room/index.ts';
 	import { MeetingFlow } from '../meeting-flow.svelte.ts';
 
 	interface Props {
-		roomId: string;
+		room: Room;
 		hostKey: string | undefined;
 		meetingUrl: string;
 	}
 
-	let { roomId, hostKey, meetingUrl }: Props = $props();
+	let { room, hostKey, meetingUrl }: Props = $props();
+	// svelte-ignore state_referenced_locally
+	const roomId = room.id;
 
 	// One flow per page visit; the route remounts this component for another room.
 	// svelte-ignore state_referenced_locally
@@ -100,6 +103,9 @@
 		{:else}
 			<PreJoin
 				{roomId}
+				title={room.title}
+				hostName={room.hostName}
+				open={room.entry === 'open'}
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}
 				error={flow.error}

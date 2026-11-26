@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { LivePresence, LiveRooms } from '#lib/features/presence/index.ts';
-	import { CreateRoomButton } from '#lib/features/room/index.ts';
+	import { CreateRoomForm } from '#lib/features/room/index.ts';
 
 	/** AGPL section 13: users of the network service can get its source. */
 	const SOURCE_URL = 'https://github.com/julianosig/diceri.com';
@@ -22,7 +22,7 @@
 			Start an anonymous meeting, share the link, and each person hears the other in their own
 			language — in a voice that sounds like the speaker.
 		</p>
-		<CreateRoomButton />
+		<CreateRoomForm />
 	</div>
 	<LiveRooms snapshot={presence.snapshot} />
 	<footer class="mt-auto text-xs text-ink-muted">

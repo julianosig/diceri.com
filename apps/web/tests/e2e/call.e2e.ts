@@ -2,7 +2,9 @@ import { expect, test, type Browser, type Page } from '@playwright/test';
 
 /** Skips when the API has no media server configured (no DICERI_LIVEKIT_*). */
 async function skipWithoutMedia(page: Page): Promise<void> {
-	const room = (await (await page.request.post('/api/v1/rooms')).json()) as {
+	const room = (await (
+		await page.request.post('/api/v1/rooms', { data: { title: 'Probe' } })
+	).json()) as {
 		id: string;
 		hostKey: string;
 	};
@@ -76,24 +78,42 @@ test('host can hear themselves through the server', async ({ page }) => {
 	);
 });
 
-test('the home page counts people in calls', async ({ page, browser }) => {
+test('a public open room is on the live board and anyone can walk in', async ({
+	page,
+	browser
+}) => {
 	await skipWithoutMedia(page);
-	await hostJoins(page);
-	const visitor = await (await browser.newContext()).newPage();
-	const online = visitor.getByTestId('online-count');
-	// Snapshots are cached for 10 s, so reload until the call shows up.
+	const title = `Open room ${String(Date.now())}`;
+	await page.goto('/');
+	await page.getByLabel('Room title').fill(title);
+	await page.getByRole('switch', { name: 'Show on the live board' }).click();
+	await page.getByText('Anyone can join').click();
+	await page.getByRole('button', { name: 'New meeting' }).click();
+	await page.getByLabel('Your name').fill('Host');
+	await page.getByRole('button', { name: 'Join now' }).click();
+	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
+
+	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
+	const room = visitor.getByRole('link', { name: new RegExp(`${title} hosted by Host`) });
+	// Snapshots are cached for 10 s, so reload until the room shows up.
 	await expect
 		.poll(
 			async () => {
 				await visitor.goto('/');
-				await expect(online).not.toHaveText('–');
-				return Number.parseInt((await online.textContent()) ?? '0', 10);
+				await expect(visitor.getByTestId('online-count')).not.toHaveText('–');
+				return room.count();
 			},
 			{ timeout: 40_000, intervals: [2_000, 5_000] }
 		)
-		.toBeGreaterThan(0);
-	await expect(visitor.getByRole('listitem').first()).toHaveAccessibleName(
-		/^#1: \d+ (person|people)/
-	);
-	await expect(visitor.getByRole('link', { name: /\/r\// })).toHaveCount(0);
+		.toBe(1);
+	await room.click();
+
+	await expect(visitor.getByText(title)).toBeVisible();
+	await expect(visitor.getByText('Hosted by Host')).toBeVisible();
+	await visitor.getByLabel('Your name').fill('Walk-in');
+	await visitor.getByRole('button', { name: 'Join now' }).click();
+	await expect(visitor.getByRole('button', { name: 'Leave call' })).toBeVisible({
+		timeout: 20_000
+	});
+	await expect(page.getByRole('article', { name: 'Walk-in' })).toBeVisible({ timeout: 20_000 });
 });

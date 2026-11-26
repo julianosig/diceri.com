@@ -2,7 +2,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { ApiError } from '#lib/api/http-client.ts';
 import { createRoom, getRoom } from './room-api.ts';
 
-const room = { id: 'abcdefghijklmnopqrstuv', maxParticipants: 2 };
+const room = {
+	id: 'abcdefghijklmnopqrstuv',
+	maxParticipants: 2,
+	title: 'Coffee chat',
+	hostName: null,
+	entry: 'approval'
+};
+const newRoom = { title: 'Coffee chat', listed: false, entry: 'approval' } as const;
 
 function fakeFetch(status: number, body: unknown) {
 	return vi.fn<typeof fetch>(() => Promise.resolve(Response.json(body, { status })));
@@ -11,10 +18,10 @@ function fakeFetch(status: number, body: unknown) {
 describe('room api', () => {
 	it('creates a room with POST /api/v1/rooms', async () => {
 		const fetchFn = fakeFetch(201, { ...room, hostKey: 'k' });
-		await expect(createRoom(fetchFn)).resolves.toEqual({ ...room, hostKey: 'k' });
+		await expect(createRoom(newRoom, fetchFn)).resolves.toEqual({ ...room, hostKey: 'k' });
 		expect(fetchFn).toHaveBeenCalledWith(
 			'/api/v1/rooms',
-			expect.objectContaining({ method: 'POST' })
+			expect.objectContaining({ method: 'POST', body: JSON.stringify(newRoom) })
 		);
 	});
 

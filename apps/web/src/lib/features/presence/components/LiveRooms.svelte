@@ -1,7 +1,7 @@
 <script lang="ts">
-	import { Volume2 } from '@lucide/svelte';
+	import { resolve } from '$app/paths';
 	import { languageLabel } from '#lib/features/translation/index.ts';
-	import { avatarHue, avatars, channelName, peopleLabel } from '../ranking.ts';
+	import { avatarHue, avatars, languageTags, peopleLabel } from '../ranking.ts';
 	import type { Presence, RankedRoom } from '../types.ts';
 
 	interface Props {
@@ -12,8 +12,10 @@
 	let { snapshot }: Props = $props();
 
 	function describe(room: RankedRoom, rank: number): string {
+		const host = room.host ? ` hosted by ${room.host}` : '';
 		const heard = room.languages.map(languageLabel).join(', ');
-		return `#${String(rank)}: ${peopleLabel(room.people)}${heard ? `, hearing ${heard}` : ''}`;
+		const action = room.entry === 'open' ? 'join now' : 'ask to join';
+		return `#${String(rank)} ${room.title}${host}: ${peopleLabel(room.people)}${heard ? `, hearing ${heard}` : ''}. ${action}`;
 	}
 </script>
 
@@ -38,44 +40,59 @@
 
 	{#if !snapshot || snapshot.ranking.length === 0}
 		<p class="px-2 py-3 text-sm text-white/60">
-			Quiet right now. Start a meeting and top the board.
+			No public rooms right now. Create one, turn on “Show on the live board” and top it.
 		</p>
 	{:else}
 		<ol class="flex flex-col gap-0.5">
-			{#each snapshot.ranking as room, index (index)}
+			{#each snapshot.ranking as room, index (room.id)}
 				{@const dots = avatars(room)}
-				<li
-					class="flex items-center gap-2.5 rounded-lg px-2 py-1.5 transition-colors hover:bg-tile"
-					aria-label={describe(room, index + 1)}
-				>
-					<span
-						class={[
-							'w-5 text-center text-xs font-bold tabular-nums',
-							index === 0 ? 'text-gold' : 'text-white/50'
-						]}
+				{@const tags = languageTags(room)}
+				<li>
+					<a
+						href={resolve('/r/[room]', { room: room.id })}
+						aria-label={describe(room, index + 1)}
+						class="group flex items-center gap-3 rounded-lg px-2 py-2 transition-colors hover:bg-tile focus-visible:bg-tile focus-visible:outline-none"
 					>
-						{index + 1}
-					</span>
-					<Volume2 class="size-4 shrink-0 text-white/50" aria-hidden="true" />
-					<span class="truncate font-medium text-white/90">{channelName(room)}</span>
-					<span class="ml-auto flex shrink-0 items-center -space-x-1.5" aria-hidden="true">
-						{#each { length: dots.shown }, dot (dot)}
-							<span
-								class="size-5 rounded-full ring-2 ring-stage"
-								style:background-color="oklch(0.7 0.14 {avatarHue(room, dot)})"
-							></span>
-						{/each}
-						{#if dots.hidden > 0}
-							<span
-								class="flex size-5 items-center justify-center rounded-full bg-control text-[10px] ring-2 ring-stage"
-							>
-								+{dots.hidden}
+						<span
+							class={[
+								'w-5 shrink-0 text-center text-sm font-bold tabular-nums',
+								index === 0 ? 'text-gold' : 'text-white/50'
+							]}
+							aria-hidden="true"
+						>
+							{index + 1}
+						</span>
+						<span class="flex min-w-0 flex-1 flex-col" aria-hidden="true">
+							<span class="truncate font-semibold text-white">{room.title}</span>
+							<span class="truncate text-xs text-white/60">
+								{room.host ? `by ${room.host}` : 'starting…'}{tags ? ` · ${tags}` : ''}
 							</span>
-						{/if}
-					</span>
-					<span class="w-6 text-right text-xs text-white/60 tabular-nums" aria-hidden="true">
-						{room.people}
-					</span>
+						</span>
+						<span class="flex shrink-0 items-center -space-x-1.5" aria-hidden="true">
+							{#each { length: dots.shown }, dot (dot)}
+								<span
+									class="size-5 rounded-full ring-2 ring-stage group-hover:ring-tile"
+									style:background-color="oklch(0.7 0.14 {avatarHue(room, dot)})"
+								></span>
+							{/each}
+							{#if dots.hidden > 0}
+								<span
+									class="flex size-5 items-center justify-center rounded-full bg-control text-[10px] ring-2 ring-stage"
+								>
+									+{dots.hidden}
+								</span>
+							{/if}
+						</span>
+						<span
+							class={[
+								'shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold',
+								room.entry === 'open' ? 'bg-online text-stage' : 'bg-control text-white'
+							]}
+							aria-hidden="true"
+						>
+							{room.entry === 'open' ? 'Join' : 'Ask'}
+						</span>
+					</a>
 				</li>
 			{/each}
 		</ol>
