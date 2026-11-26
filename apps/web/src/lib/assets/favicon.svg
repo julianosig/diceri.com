@@ -1,7 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="2 1 91 96">
   <title>Diceri</title>
-  <!-- A twenty-sided die that is also a speech bubble: Diceri, from Latin dicere, "to say". -->
-  <g stroke="#ffffff" stroke-width="3" stroke-linejoin="round">
+  <!--
+    The Diceri mark (a twenty-sided die that is also a speech bubble), same facets as
+    Logo.svelte. The gaps take the tab's colour, like the logo takes the page's: white on
+    light tabs, near-black on dark ones, so the mark reads solid at 16 px.
+  -->
+  <style>
+    g { stroke: #ffffff; }
+    @media (prefers-color-scheme: dark) { g { stroke: #0f1117; } }
+  </style>
+  <g stroke-width="2" stroke-linejoin="round">
     <polygon points="50,4 10,27 28,34" fill="#7c3aed"/>
     <polygon points="50,4 28,34 72,34" fill="#2563eb"/>
     <polygon points="50,4 72,34 90,27" fill="#7c3aed"/>
