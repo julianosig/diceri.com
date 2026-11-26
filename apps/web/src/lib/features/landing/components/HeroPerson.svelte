@@ -21,7 +21,8 @@
 	One person of the home banner. The drawing stays still; the voice is drawn on top in
 	code, so the banner shows speech being translated, not text.
 -->
-<div class={cn('absolute bottom-0 h-[94%]', className)}>
+<!-- Smaller on phones, so the Diceri mark between them can be larger. -->
+<div class={cn('absolute bottom-0 h-[70%] sm:h-[94%]', className)}>
 	<img {src} alt="" class="h-full w-auto" />
 	{#key cycle}
 		{#if cue === 'talk'}

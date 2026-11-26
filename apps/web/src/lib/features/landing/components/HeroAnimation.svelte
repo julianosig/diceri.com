@@ -50,12 +50,17 @@
 	translated, travels on and is heard by the right person.
 -->
 <div
-	class={cn('banner relative aspect-[6/1] w-full', className)}
+	class={cn('banner relative aspect-[9/2] w-full sm:aspect-[6/1]', className)}
 	role="img"
 	aria-label={i18n.t.hero.illustration}
 	dir="ltr"
 >
-	<svg class="absolute inset-0 h-full w-full" viewBox="0 0 1200 200" aria-hidden="true">
+	<svg
+		class="absolute inset-0 h-full w-full"
+		viewBox="0 0 1200 200"
+		preserveAspectRatio="none"
+		aria-hidden="true"
+	>
 		<path class="link link-in" d="M 285 122 Q 400 60 525 78" />
 		<path class="link link-out" d="M 675 78 Q 800 60 915 122" />
 	</svg>
@@ -65,7 +70,7 @@
 	{#key index}
 		<span class="halo" aria-hidden="true"></span>
 	{/key}
-	<div class="mark absolute top-1/2 left-1/2 h-[82%] -translate-x-1/2 -translate-y-1/2">
+	<div class="mark absolute top-1/2 left-1/2 h-[96%] -translate-x-1/2 -translate-y-1/2 sm:h-[82%]">
 		<Logo layout="stacked" class="h-full" />
 	</div>
 
@@ -96,15 +101,17 @@
 		fill: none;
 		stroke: var(--color-ink-muted);
 		stroke-opacity: 0.55;
-		stroke-width: 4;
+		/* The SVG stretches with the banner; keep dots round and evenly spaced in pixels. */
+		vector-effect: non-scaling-stroke;
+		stroke-width: 3.5px;
 		stroke-linecap: round;
-		stroke-dasharray: 0.1 14;
+		stroke-dasharray: 0.1px 11px;
 		animation: flow 1.2s linear infinite;
 	}
 
 	@keyframes flow {
 		to {
-			stroke-dashoffset: -14.1;
+			stroke-dashoffset: -11.1px;
 		}
 	}
 
