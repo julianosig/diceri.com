@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount } from 'svelte';
+	import { onMount, type Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { CallScreen, MeetingInfoCard } from '#lib/features/call/index.ts';
@@ -18,9 +18,11 @@
 		room: Room;
 		hostKey: string | undefined;
 		meetingUrl: string;
+		/** The site header, shown around the call (pre-join, waiting, end) but not in it. */
+		header?: Snippet;
 	}
 
-	let { room, hostKey, meetingUrl }: Props = $props();
+	let { room, hostKey, meetingUrl, header }: Props = $props();
 	// Every room API path and the visible meeting code use the link code.
 	// svelte-ignore state_referenced_locally
 	const roomId = room.code;
@@ -71,7 +73,8 @@
 		{/snippet}
 	</CallScreen>
 {:else}
-	<main class="flex min-h-dvh flex-col items-center justify-center py-10">
+	{@render header?.()}
+	<main class={['flex flex-col items-center py-10', header ? 'pt-6' : 'min-h-dvh justify-center']}>
 		{#if flow.phase === 'waiting'}
 			<WaitingScreen
 				status={flow.knock.status}

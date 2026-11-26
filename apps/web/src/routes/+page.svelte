@@ -1,8 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import { AccountBadge, AccountSession, Onboarding } from '#lib/features/account/index.ts';
-	import { HeroAnimation } from '#lib/features/landing/index.ts';
-	import { LanguageSelect, ThemeToggle } from '#lib/components/ui/index.ts';
+	import { AccountSession, Onboarding } from '#lib/features/account/index.ts';
+	import { SiteHeader } from '#lib/features/landing/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
 
@@ -21,18 +20,11 @@
 	<title>{i18n.t.meta.title}</title>
 </svelte:head>
 
-<header class="mx-auto flex w-full max-w-5xl items-center justify-between gap-4 px-4 py-4">
-	<LanguageSelect class="-ms-2" />
-	<div class="flex items-center gap-2">
-		<AccountBadge session={account} />
-		<ThemeToggle />
-	</div>
-</header>
+<SiteHeader session={account} />
 
 <main
-	class="mx-auto flex min-h-[calc(100dvh-5rem)] max-w-5xl flex-col items-center gap-10 px-4 pt-2 pb-6 text-center sm:pt-6"
+	class="mx-auto flex min-h-[calc(100dvh-14rem)] max-w-5xl flex-col items-center gap-10 px-4 pt-6 pb-6 text-center sm:pt-8"
 >
-	<HeroAnimation class="max-w-5xl" />
 	<div class="flex max-w-3xl flex-col items-center gap-8">
 		<h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
 			{i18n.t.hero.headline}<br />
