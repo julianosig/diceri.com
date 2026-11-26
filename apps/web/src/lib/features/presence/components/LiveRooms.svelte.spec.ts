@@ -9,6 +9,7 @@ const open = {
 	title: 'Spanish practice',
 	owner: 'ana',
 	entry: 'open',
+	mascot: 'dragon',
 	people: 5,
 	languages: ['pt-BR', 'en']
 } satisfies RankedRoom;
@@ -17,6 +18,7 @@ const approval = {
 	title: 'Coffee chat',
 	owner: 'bob',
 	entry: 'approval',
+	mascot: 'robot',
 	people: 2,
 	languages: ['es']
 } satisfies RankedRoom;

@@ -94,6 +94,8 @@ test('a public open room is on the live board and anyone can walk in', async ({
 	await page.getByLabel('Room title').fill(title);
 	await page.getByRole('switch', { name: 'Show on the live board' }).click();
 	await page.getByText('Anyone can join').click();
+	await page.getByTitle('Dragon').click();
+	await expect(page.getByRole('radio', { name: 'Dragon' })).toBeChecked();
 	await page.getByRole('button', { name: 'New meeting' }).click();
 	await page.getByLabel('Your name').fill('Host');
 	await page.getByRole('button', { name: 'Join now' }).click();
@@ -116,6 +118,7 @@ test('a public open room is on the live board and anyone can walk in', async ({
 
 	await expect(visitor.getByText(title)).toBeVisible();
 	await expect(visitor.getByText(`Hosted by @${owner}`)).toBeVisible();
+	await expect(visitor.getByRole('img', { name: 'Dragon mascot' })).toBeVisible();
 	await visitor.getByLabel('Your name').fill('Walk-in');
 	await visitor.getByRole('button', { name: 'Join now' }).click();
 	await expect(visitor.getByRole('button', { name: 'Leave call' })).toBeVisible({

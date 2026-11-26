@@ -12,6 +12,8 @@ export interface Room {
 	/** Username of the account that owns (hosts) the room. */
 	owner: string;
 	entry: RoomEntry;
+	/** The room's animated symbol; see `mascots.ts`. */
+	mascot: string;
 }
 
 /** Mirrors `CreateRoomRequest`: what the host chooses when creating a room. */
@@ -20,6 +22,7 @@ export interface NewRoom {
 	/** Show on the public live board (title and host name). */
 	listed: boolean;
 	entry: RoomEntry;
+	mascot: string;
 }
 
 /** Returned once on creation; `hostKey` proves the creator is the host. */

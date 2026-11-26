@@ -106,6 +106,7 @@
 				{roomId}
 				title={room.title}
 				owner={room.owner}
+				mascot={room.mascot}
 				open={room.entry === 'open'}
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}

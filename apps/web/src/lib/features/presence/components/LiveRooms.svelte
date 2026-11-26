@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { Radio } from '@lucide/svelte';
+	import { MascotAvatar } from '#lib/features/room/index.ts';
 	import { languageLabel } from '#lib/features/translation/index.ts';
 	import { avatarHue, avatars, languageTags, peopleLabel } from '../ranking.ts';
 	import type { Presence, RankedRoom } from '../types.ts';
@@ -32,7 +34,8 @@
 			</span>
 			<span><span data-testid="online-count">{snapshot?.online ?? '–'}</span> online now</span>
 		</h2>
-		<span class="text-xs text-white/60">
+		<span class="flex items-center gap-1 text-xs text-white/60">
+			<Radio class="size-3.5" aria-hidden="true" />
 			{snapshot?.liveRooms ?? 0}
 			{snapshot?.liveRooms === 1 ? 'live room' : 'live rooms'}
 		</span>
@@ -62,6 +65,12 @@
 						>
 							{index + 1}
 						</span>
+						<MascotAvatar
+							mascot={room.mascot}
+							size={40}
+							decorative
+							class="ring-2 ring-white/10 group-hover:ring-white/25"
+						/>
 						<span class="flex min-w-0 flex-1 flex-col" aria-hidden="true">
 							<span class="truncate font-semibold text-white">{room.title}</span>
 							<span class="truncate text-xs text-white/60">

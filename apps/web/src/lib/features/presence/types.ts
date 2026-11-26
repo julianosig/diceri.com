@@ -8,6 +8,8 @@ export interface RankedRoom {
 	/** Username of the room's owner. */
 	owner: string;
 	entry: RoomEntry;
+	/** The room's animated symbol. */
+	mascot: string;
 	people: number;
 	/** Output languages heard in the room, most listened first. */
 	languages: string[];

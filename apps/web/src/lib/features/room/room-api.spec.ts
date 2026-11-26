@@ -8,9 +8,15 @@ const room = {
 	maxParticipants: 2,
 	title: 'Coffee chat',
 	owner: 'ana',
+	mascot: 'wizard',
 	entry: 'approval'
 };
-const newRoom = { title: 'Coffee chat', listed: false, entry: 'approval' } as const;
+const newRoom = {
+	title: 'Coffee chat',
+	listed: false,
+	entry: 'approval',
+	mascot: 'wizard'
+} as const;
 
 function fakeFetch(status: number, body: unknown) {
 	return vi.fn<typeof fetch>(() => Promise.resolve(Response.json(body, { status })));
