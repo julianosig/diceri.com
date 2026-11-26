@@ -29,7 +29,7 @@
 </script>
 
 <section
-	class="flex w-full max-w-xs flex-col gap-3 rounded-tile border border-ink-muted/20 p-4 text-left"
+	class="flex w-full flex-col gap-3 rounded-tile border border-ink-muted/20 p-4 text-start"
 	aria-label="Your voice"
 	aria-live="polite"
 >
