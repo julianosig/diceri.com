@@ -102,6 +102,12 @@ impl AccountService {
         self.start_session(account).await
     }
 
+    /// Whether `username` is still free (usernames are public room addresses, so this
+    /// reveals nothing a visit to `/@username` would not).
+    pub async fn is_available(&self, username: &Username) -> Result<bool, AccountError> {
+        Ok(self.accounts.find_by_username(username).await?.is_none())
+    }
+
     pub async fn sign_in(
         &self,
         username: &Username,

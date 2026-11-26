@@ -45,6 +45,17 @@ async fn registering_signs_in_and_keeps_the_mascot() {
 }
 
 #[tokio::test]
+async fn a_username_is_available_until_claimed() {
+    let (accounts, _) = service();
+    assert!(accounts.is_available(&name("ana")).await.unwrap());
+    accounts
+        .register(registration("ana", "correct horse"))
+        .await
+        .unwrap();
+    assert!(!accounts.is_available(&name("ANA")).await.unwrap());
+}
+
+#[tokio::test]
 async fn usernames_are_unique() {
     let (accounts, _) = service();
     accounts

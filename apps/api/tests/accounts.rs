@@ -89,3 +89,22 @@ async fn signing_out_ends_the_session() {
     let (status, _, _) = exchange(&app, "GET", "/api/v1/accounts/me", &with_session, None).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
 }
+
+#[tokio::test]
+async fn usernames_can_be_checked_before_signing_up() {
+    let app = app(false);
+    let check = |name: &'static str| {
+        let app = app.clone();
+        async move {
+            let uri = format!("/api/v1/accounts/available?username={name}");
+            send(&app, "GET", &uri, None, None).await
+        }
+    };
+    assert_eq!(
+        check("Dora").await.1,
+        json!({ "username": "dora", "available": true })
+    );
+    sign_up(&app, "dora").await;
+    assert_eq!(check("dora").await.1["available"], false);
+    assert_eq!(check("a").await.0, StatusCode::BAD_REQUEST);
+}

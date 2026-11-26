@@ -5,6 +5,7 @@
 //! | --- | --- | --- |
 //! | POST | `/accounts` | — (`{ username, password, mascot }`) |
 //! | POST | `/accounts/session` | — (`{ username, password }`) |
+//! | GET | `/accounts/available?username=` | — (`{ username, available }`) |
 //! | GET | `/accounts/me` | session cookie |
 //! | POST | `/accounts/sign-out` | session cookie (optional) |
 
@@ -22,6 +23,7 @@ pub(crate) fn routes() -> Router<AppState> {
     Router::new()
         .route("/accounts", post(handlers::register))
         .route("/accounts/session", post(handlers::sign_in))
+        .route("/accounts/available", get(handlers::availability))
         .route("/accounts/me", get(handlers::me))
         .route("/accounts/sign-out", post(handlers::sign_out))
 }

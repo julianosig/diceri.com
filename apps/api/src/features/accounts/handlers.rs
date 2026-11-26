@@ -1,5 +1,5 @@
 use axum::Json;
-use axum::extract::State;
+use axum::extract::{Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use diceri_application::use_cases::{Registration, SignedIn};
@@ -73,6 +73,31 @@ pub(crate) async fn sign_in(
     let password: Password = body.password.parse().map_err(|_| ApiError::Unauthorized)?;
     let account = state.accounts.sign_in(&username, &password).await?;
     Ok(signed_in(&state, &account))
+}
+
+#[derive(Debug, Deserialize)]
+pub(crate) struct AvailabilityQuery {
+    username: String,
+}
+
+#[derive(Debug, Serialize)]
+pub(crate) struct AvailabilityResponse {
+    /// The username as it would be stored (lowercase, without `@`).
+    username: String,
+    available: bool,
+}
+
+/// `GET /accounts/available?username=…`: lets onboarding continue only with a free name.
+pub(crate) async fn availability(
+    State(state): State<AppState>,
+    Query(query): Query<AvailabilityQuery>,
+) -> Result<Json<AvailabilityResponse>, ApiError> {
+    let username: Username = query.username.parse().map_err(invalid)?;
+    let available = state.accounts.is_available(&username).await?;
+    Ok(Json(AvailabilityResponse {
+        username: username.to_string(),
+        available,
+    }))
 }
 
 pub(crate) async fn me(CurrentAccount(account): CurrentAccount) -> Json<AccountResponse> {
