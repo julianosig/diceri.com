@@ -16,6 +16,9 @@
 	--color-tile: oklch(0.3 0.01 255);
 	--color-control: oklch(0.36 0.01 255);
 	--color-danger: oklch(0.6 0.2 25);
+	/* Presence: the "someone is here" green and the top-ranked gold. */
+	--color-online: oklch(0.74 0.17 150);
+	--color-gold: oklch(0.83 0.15 85);
 	--radius-tile: 1rem;
 	--font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
 }
