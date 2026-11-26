@@ -3,6 +3,7 @@
 //! Routes are grouped by feature under `features/`. This crate wires adapters
 //! from `diceri-infra` into use cases from `diceri-application`.
 
+pub mod backup;
 mod config;
 mod error;
 mod features;

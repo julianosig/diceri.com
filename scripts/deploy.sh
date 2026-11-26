@@ -17,13 +17,17 @@ done
 
 (cd "$root" && just build)
 mkdir -p "$release" "$units"
+# The database lives in $data: owner-only (AGENTS.md §14, rule 23).
+chmod 700 "$data"
 cp "$root/target/release/diceri-api" "$root/target/release/diceri-media-agent" "$release/"
+cp "$root/scripts/backup-db.sh" "$release/"
 rm -rf "$release/web" && cp -r "$root/apps/web/build" "$release/web"
 ln -sfn "$release" "$data/current"
 
-cp "$root"/deploy/systemd/*.service "$units/"
+cp "$root"/deploy/systemd/*.service "$root"/deploy/systemd/*.timer "$units/"
 systemctl --user daemon-reload
 systemctl --user enable diceri-api diceri-agent diceri-tunnel >/dev/null
+systemctl --user enable --now diceri-backup.timer >/dev/null
 systemctl --user restart diceri-agent diceri-api diceri-tunnel
 
 # Keep the three newest releases for a quick rollback (re-point `current`, restart).

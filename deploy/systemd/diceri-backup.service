@@ -1,0 +1,7 @@
+[Unit]
+Description=Diceri accounts database snapshot
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/diceri/production.env
+ExecStart=%h/.local/share/diceri/current/backup-db.sh

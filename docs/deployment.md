@@ -33,6 +33,17 @@ then `systemctl --user restart diceri-api diceri-agent`.
 Logs: `journalctl --user -u diceri-api -f` (JSON; ids and timings only, never audio,
 transcripts or keys).
 
+## Database and backups
+
+Accounts live in SQLite at `DICERI_DATABASE_URL` (production:
+`~/.local/share/diceri/diceri.db`, directory `0700`). Migrations run at API startup.
+
+`diceri-backup.timer` runs `backup-db.sh` daily: `diceri-api backup <file>` writes a
+`VACUUM INTO` snapshot to `~/.local/share/diceri/backups/`, checks it with
+`PRAGMA integrity_check` and keeps the 7 newest. Restore: stop `diceri-api`, copy a
+snapshot over `diceri.db` (delete the old `-wal`/`-shm` files), start it again.
+Run `systemctl --user start diceri-backup` to take one on demand.
+
 ## Isolation from development
 
 Production uses its own ports (8100/8105 vs 8090/8095) and `DICERI_DEPLOYMENT=prod`,

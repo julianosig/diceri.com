@@ -1,7 +1,8 @@
 //! Binary entry point. Keep this file thin: load config, init telemetry, serve.
+//! `diceri-api backup <file>` writes a database snapshot instead of serving.
 
 use anyhow::Context as _;
-use diceri_api::{AppState, Config, build_router, shutdown_signal, telemetry};
+use diceri_api::{AppState, Config, backup, build_router, shutdown_signal, telemetry};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -11,6 +12,13 @@ async fn main() -> anyhow::Result<()> {
     diceri_infra::install_tls_provider();
     let config = Config::from_env().context("invalid configuration")?;
     telemetry::init(&config.log_format);
+
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if let [command, target] = args.as_slice()
+        && command == "backup"
+    {
+        return backup::run(&config, std::path::Path::new(target)).await;
+    }
 
     let listener = TcpListener::bind(config.bind_address)
         .await
