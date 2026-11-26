@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { cn } from '#lib/utils/cn.ts';
+	import { MEANING_PATH, WORDMARK_PATH } from './logo-paths.ts';
 
 	interface Props {
 		/** Show the meaning ("from Latin dicere: to speak") under the wordmark. */
@@ -12,10 +13,11 @@
 
 <!--
 	The Diceri lockup as one SVG: the mark (a d20 that is also a speech bubble), the
-	wordmark and its meaning. Inline so the text uses the page font and colour.
+	wordmark and its meaning, all outlines (no font needed). Text follows the theme's
+	ink colour; the facet gaps follow the surface colour.
 -->
 <svg
-	viewBox={tagline ? '0 0 364 100' : '0 0 236 100'}
+	viewBox={tagline ? '0 0 390 100' : '0 0 250 100'}
 	class={cn('h-10 w-auto text-ink', className)}
 	role="img"
 	aria-label={tagline ? 'Diceri, from Latin dicere: to speak' : 'Diceri'}
@@ -33,19 +35,8 @@
 		<polygon points="90,70 50,64 50,94" fill="#7c3aed" />
 		<polygon points="10,70 32,84 5,97" fill="#7c3aed" />
 	</g>
-	<text
-		x="110"
-		y={tagline ? 56 : 66}
-		fill="currentColor"
-		font-size="50"
-		font-weight="700"
-		letter-spacing="-1.5"
-	>
-		Diceri
-	</text>
+	<path fill="currentColor" d={WORDMARK_PATH} transform={tagline ? undefined : 'translate(0 10)'} />
 	{#if tagline}
-		<text x="112" y="88" fill="currentColor" opacity="0.65" font-size="21" font-style="italic">
-			from Latin <tspan font-weight="700">dicere</tspan>: to speak
-		</text>
+		<path fill="currentColor" fill-opacity="0.65" d={MEANING_PATH} />
 	{/if}
 </svg>
