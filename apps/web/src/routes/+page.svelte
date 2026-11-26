@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { AccountSession, Onboarding } from '#lib/features/account/index.ts';
-	import { SiteHeader } from '#lib/features/landing/index.ts';
+	import { Headline, SiteHeader } from '#lib/features/landing/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { OpenRoomForm } from '#lib/features/room/index.ts';
 
@@ -26,12 +26,7 @@
 	class="mx-auto flex min-h-[calc(100dvh-14rem)] max-w-5xl flex-col items-center gap-10 px-4 pt-6 pb-6 text-center sm:pt-8"
 >
 	<div class="flex max-w-3xl flex-col items-center gap-8">
-		<h1 class="text-4xl font-semibold tracking-tight text-balance sm:text-6xl">
-			{i18n.t.hero.headline}<br />
-			<span class="bg-gradient-to-r from-brand-violet to-brand-500 bg-clip-text text-transparent">
-				{i18n.t.hero.promise}
-			</span>
-		</h1>
+		<Headline />
 		{#if account.account}
 			<OpenRoomForm username={account.account.username} mascot={account.account.mascot} />
 		{:else if account.account === null}
