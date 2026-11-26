@@ -26,7 +26,7 @@
 	<label class="flex flex-col gap-1 text-sm font-medium">
 		Microphone
 		<select
-			class="rounded-lg bg-surface-raised px-3 py-2"
+			class="select-field rounded-lg bg-surface-raised py-2 ps-3"
 			value={settings.deviceId ?? ''}
 			onchange={(event) => {
 				onchange({ deviceId: event.currentTarget.value || undefined });

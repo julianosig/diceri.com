@@ -86,7 +86,7 @@
 	<label class="w-full text-start text-sm">
 		<span class="mb-1 block text-ink-muted">Hear everyone in</span>
 		<select
-			class="w-full rounded-lg border border-ink-muted/30 bg-surface px-3 py-2 text-base"
+			class="w-full select-field rounded-lg border border-ink-muted/30 bg-surface py-2 ps-3 text-base"
 			bind:value={outputLanguage}
 		>
 			{#each LANGUAGES as option (option.code)}
@@ -100,7 +100,7 @@
 			<Mic class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 			<span class="sr-only">Microphone</span>
 			<select
-				class="w-full truncate rounded-lg bg-surface-raised px-3 py-2 text-base"
+				class="w-full select-field truncate rounded-lg bg-surface-raised py-2 ps-3 text-base"
 				value={preview.deviceId ?? ''}
 				onchange={(event) => preview.start(event.currentTarget.value || undefined)}
 			>
