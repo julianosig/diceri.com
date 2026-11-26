@@ -1,5 +1,9 @@
 <script lang="ts">
 	import { Volume2 } from '@lucide/svelte';
+	// Imported (not in static/) so the build gives them content-hashed names: a new
+	// version always gets a new URL and no cache can serve a stale scene.
+	import sceneDark from '#lib/assets/hero/scene-dark.webp';
+	import sceneLight from '#lib/assets/hero/scene-light.webp';
 	import { theme } from '#lib/components/ui/index.ts';
 	import { cn } from '#lib/utils/cn.ts';
 	import { CYCLE_MS, LANGUAGE_PAIRS, nextPair } from '../language-pairs.ts';
@@ -50,7 +54,7 @@
 		<span class="halo" aria-hidden="true"></span>
 	{/key}
 	<img
-		src="/hero/scene-{scene}.webp"
+		src={scene === 'dark' ? sceneDark : sceneLight}
 		width="1200"
 		height="197"
 		alt=""
