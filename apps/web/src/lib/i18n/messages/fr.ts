@@ -235,6 +235,9 @@ export const fr: Messages = {
 		copied: 'Transcription copiée'
 	},
 	plans: {
+		betaSpots: (left: number, total: number) =>
+			`Bêta privée : il reste ${String(left)} places sur ${String(total)}.`,
+		betaFull: 'Bêta privée : toutes les places sont prises pour le moment.',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} sur ${String(total)} min utilisées ce mois-ci`,
 		freeLine: (minutes: number) => `Gratuit : ${String(minutes)} min d’appels chaque mois.`

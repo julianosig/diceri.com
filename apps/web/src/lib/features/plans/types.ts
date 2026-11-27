@@ -18,3 +18,9 @@ export interface Usage {
 	monthlyMinutes: number;
 	callMinutes: number;
 }
+
+/** The private beta (`GET /api/v1/capabilities`): its size and free spots. */
+export interface BetaSpots {
+	spots: number;
+	spotsLeft: number;
+}

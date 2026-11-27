@@ -228,6 +228,9 @@ export const ja: Messages = {
 		copied: '文字起こしをコピーしました'
 	},
 	plans: {
+		betaSpots: (left: number, total: number) =>
+			`クローズドベータ：残り ${String(left)} / ${String(total)} 枠`,
+		betaFull: 'クローズドベータ：現在すべての枠が埋まっています。',
 		usedThisMonth: (used: number, total: number) =>
 			`今月${String(total)}分中${String(used)}分を使用`,
 		freeLine: (minutes: number) => `無料：毎月${String(minutes)}分まで通話できます。`

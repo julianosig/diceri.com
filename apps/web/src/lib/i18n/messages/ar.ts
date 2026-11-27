@@ -232,6 +232,9 @@ export const ar: Messages = {
 		copied: 'تم نسخ النص'
 	},
 	plans: {
+		betaSpots: (left: number, total: number) =>
+			`نسخة تجريبية خاصة: تبقّى ${String(left)} من ${String(total)} مكانًا`,
+		betaFull: 'نسخة تجريبية خاصة: جميع الأماكن مشغولة حاليًا.',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} من ${String(total)} د مستخدمة هذا الشهر`,
 		freeLine: (minutes: number) => `مجاني: ${String(minutes)} د من المكالمات كل شهر.`

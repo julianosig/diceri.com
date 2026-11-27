@@ -234,6 +234,9 @@ export const en = {
 		copied: 'Transcript copied'
 	},
 	plans: {
+		betaSpots: (left: number, total: number) =>
+			`Private beta: ${String(left)} of ${String(total)} spots left.`,
+		betaFull: 'Private beta: all spots are taken for now.',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} of ${String(total)} min used this month`,
 		freeLine: (minutes: number) => `Free: ${String(minutes)} min of calls every month.`

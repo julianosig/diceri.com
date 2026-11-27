@@ -228,6 +228,9 @@ export const hi: Messages = {
 		copied: 'ट्रांसक्रिप्ट कॉपी हो गया'
 	},
 	plans: {
+		betaSpots: (left: number, total: number) =>
+			`निजी बीटा: ${String(total)} में से ${String(left)} जगहें बाकी`,
+		betaFull: 'निजी बीटा: फ़िलहाल सभी जगहें भर चुकी हैं।',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} में से ${String(total)} मिनट इस महीने इस्तेमाल हुए`,
 		freeLine: (minutes: number) => `मुफ़्त: हर महीने ${String(minutes)} मिनट कॉल।`
