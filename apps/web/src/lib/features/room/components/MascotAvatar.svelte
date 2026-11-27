@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { cn } from '#lib/utils/cn.ts';
-	import { MASCOT_WEBP_WIDTHS, mascotLabel, mascotUrl } from '../mascots.ts';
+	import { mascotLabel, mascotUrl } from '../mascots.ts';
 
 	interface Props {
 		mascot: string;
@@ -15,18 +15,11 @@
 </script>
 
 <!--
-	Transparent animated WebP in two sizes, so the browser takes the sharp 250 px file only
-	when the avatar is large or the screen dense; GIF (1-bit transparency) as a fallback.
+	Transparent animated WebP at 128 px, whose edges are smoothly antialiased (a 250 px
+	version had near 1-bit edges that looked jagged); GIF (1-bit transparency) as a fallback.
 -->
 <picture class="contents">
-	<source
-		srcset="{mascotUrl(mascot, 'webp')} {MASCOT_WEBP_WIDTHS.webp}w, {mascotUrl(
-			mascot,
-			'webp-2x'
-		)} {MASCOT_WEBP_WIDTHS['webp-2x']}w"
-		sizes="{size}px"
-		type="image/webp"
-	/>
+	<source srcset={mascotUrl(mascot, 'webp')} type="image/webp" />
 	<img
 		src={mascotUrl(mascot, 'gif')}
 		alt={decorative ? '' : `${mascotLabel(mascot)} mascot`}

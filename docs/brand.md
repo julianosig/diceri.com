@@ -84,11 +84,11 @@ How they were made, so they can be extended consistently:
    background per mascot, same pose and size in every frame).
 2. The solid background was removed by flood fill from the frame edges (it stops at the
    dark outline, so light colours inside a character survive), the frames re-centred and
-   encoded as looping transparent animated WebP at 128 px (`webp/`, 12–35 kB) and at the
-   native 250 px (`webp-2x/`, 15–60 kB), plus a 128 px GIF with 1-bit transparency as
-   fallback, 140 ms per frame. `MascotAvatar` offers both WebPs in `srcset`, so small
-   avatars stay light and large or high-density ones stay sharp. Shown at most 128 px.
+   encoded as looping transparent animated WebP at 128 px (`webp/`, 12–35 kB), plus a
+   128 px GIF with 1-bit transparency as fallback, 140 ms per frame. Shown at most 128 px.
+   A 250 px WebP was dropped: its edges had almost no antialiasing and looked jagged when
+   large, while the 128 px one is smooth.
 
 Adding a mascot: generate it the same way, add the name to `Mascot` in
 `crates/domain/src/mascot.rs` and to `MASCOTS` in
-`apps/web/src/lib/features/room/mascots.ts`, and drop the files in `static/mascots/webp/`, `webp-2x/` and `gif/`.
+`apps/web/src/lib/features/room/mascots.ts`, and drop the files in `static/mascots/webp/` and `gif/`.
