@@ -15,12 +15,24 @@ use super::handlers::{parse_request_id, parse_room_code};
 use crate::features::CurrentAccount;
 use crate::{ApiError, AppState};
 
+/// Everyone speaks in their own trained voice (ADR 0014): with the requirement on,
+/// joining without a recorded voice is refused.
+fn require_voice(state: &AppState, body: &ProfileRequest) -> Result<(), ApiError> {
+    if state.voice_required && body.voice_id.is_none() {
+        return Err(ApiError::Validation(
+            "record your voice before joining the call".to_owned(),
+        ));
+    }
+    Ok(())
+}
+
 pub(crate) async fn host_session(
     State(state): State<AppState>,
     Path(code): Path<String>,
     CallerKey(key): CallerKey,
     Json(body): Json<ProfileRequest>,
 ) -> Result<Json<JoinResponse>, ApiError> {
+    require_voice(&state, &body)?;
     let code = parse_room_code(&code)?;
     // The host starting (or rejoining) the call spends the owner's plan minutes.
     state
@@ -42,6 +54,7 @@ pub(crate) async fn knock(
     Path(code): Path<String>,
     Json(body): Json<ProfileRequest>,
 ) -> Result<(StatusCode, Json<KnockResponse>), ApiError> {
+    require_voice(&state, &body)?;
     let knock = state
         .admission
         .knock(&parse_room_code(&code)?, body.profile()?)

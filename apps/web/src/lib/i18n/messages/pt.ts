@@ -111,6 +111,9 @@ export const pt: Messages = {
 		cancel: 'Cancelar'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`Leia uma frase curta por ${String(seconds)} segundos: todos ouvem suas traduções com a sua própria voz. Apagada quando você sair.`,
+		requiredToJoin: 'Grave sua voz para entrar.',
 		pro: 'Pro',
 		paidSoon: 'Em breve como recurso pago.',
 		section: 'Sua voz',

@@ -110,6 +110,9 @@ export const hi: Messages = {
 		cancel: 'रद्द करें'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`${String(seconds)} सेकंड तक एक छोटा वाक्य पढ़ें: सभी आपके अनुवाद आपकी अपनी आवाज़ में सुनेंगे। जाने पर हटा दी जाती है।`,
+		requiredToJoin: 'शामिल होने के लिए अपनी आवाज़ रिकॉर्ड करें।',
 		pro: 'Pro',
 		paidSoon: 'जल्द ही एक सशुल्क सुविधा के रूप में।',
 		section: 'आपकी आवाज़',

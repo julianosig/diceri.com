@@ -13,11 +13,20 @@
 		deviceId: string | undefined;
 		/** Releases the preview microphone before recording. */
 		onbeforerecord: () => Promise<void>;
-		/** Whether this deployment offers it (a paid feature, off until it ships). */
+		/** Whether this deployment offers it. */
 		available: boolean;
+		/** Joining needs it: everyone speaks in their own voice. */
+		required?: boolean;
 	}
 
-	let { recorder, language, deviceId, onbeforerecord, available }: Props = $props();
+	let {
+		recorder,
+		language,
+		deviceId,
+		onbeforerecord,
+		available,
+		required = false
+	}: Props = $props();
 	const progress = $derived(Math.min(100, (recorder.elapsed / RECORD_SECONDS) * 100));
 	const secondsLeft = $derived(Math.max(0, Math.ceil(RECORD_SECONDS - recorder.elapsed)));
 
@@ -99,7 +108,7 @@
 	{:else}
 		<p class="text-sm font-medium">{t.title}</p>
 		<p class="text-xs text-ink-muted">
-			{t.hint(RECORD_SECONDS)}
+			{required ? t.requiredHint(RECORD_SECONDS) : t.hint(RECORD_SECONDS)}
 		</p>
 		{#if recorder.error}<p role="alert" class="text-xs text-red-600">{t[recorder.error]}</p>{/if}
 		<Button size="sm" onclick={record}>

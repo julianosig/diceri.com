@@ -2,7 +2,7 @@
 //!
 //! | Method | Path | Auth |
 //! | --- | --- | --- |
-//! | GET | `/capabilities` | — (`{ voiceCloning, plans }`) |
+//! | GET | `/capabilities` | — (`{ voiceCloning, voiceRequired, plans }`) |
 
 use axum::extract::State;
 use axum::routing::get;
@@ -17,6 +17,8 @@ use crate::AppState;
 pub(crate) struct CapabilitiesResponse {
     /// Recording your own voice for translations (a paid feature, off until it ships).
     voice_cloning: bool,
+    /// Joining a call needs a recorded voice.
+    voice_required: bool,
     /// Every plan and its limits, free first (everyone's default).
     plans: Vec<PlanResponse>,
 }
@@ -53,6 +55,7 @@ async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesRespons
         .collect();
     Json(CapabilitiesResponse {
         voice_cloning: state.voices.is_some(),
+        voice_required: state.voice_required,
         plans,
     })
 }

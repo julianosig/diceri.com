@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted (stock-voice fallback superseded by 0014)
 date: 2026-11-25
 ---
 

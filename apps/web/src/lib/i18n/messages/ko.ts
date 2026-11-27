@@ -111,6 +111,9 @@ export const ko: Messages = {
 		cancel: '취소'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`짧은 문장을 ${String(seconds)}초 동안 읽어 주세요. 모두가 내 목소리로 번역을 듣게 돼요. 나가면 삭제돼요.`,
+		requiredToJoin: '참여하려면 목소리를 녹음하세요.',
 		pro: 'Pro',
 		paidSoon: '곧 유료 기능으로 제공됩니다.',
 		section: '내 목소리',

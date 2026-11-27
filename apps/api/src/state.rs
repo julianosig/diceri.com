@@ -47,6 +47,8 @@ pub struct AppState {
     pub secure_cookies: bool,
     /// One account per network; `None` when not enforced (no key configured).
     pub(crate) signup_networks: Option<SignupNetworks>,
+    /// Joining needs a recorded voice (only when voice cloning is configured).
+    pub voice_required: bool,
 }
 
 impl AppState {
@@ -104,6 +106,7 @@ impl AppState {
             .with_stores(accounts, usage)
             .with_limits(config.plans, config.capacity);
         state.secure_cookies = config.secure_cookies;
+        state.voice_required = config.voice_required && state.voices.is_some();
         if let Some(key) = config.network_key.clone() {
             let header = config
                 .client_ip_header
@@ -179,6 +182,7 @@ impl AppState {
             ),
             secure_cookies: false,
             signup_networks: None,
+            voice_required: false,
             admission: AdmissionService::new(repository, random, ids, media),
         }
     }

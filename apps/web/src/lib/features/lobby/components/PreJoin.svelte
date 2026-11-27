@@ -33,7 +33,10 @@
 	let name = $state(loadDisplayName());
 	let outputLanguage = $state(loadLanguage());
 	const recording = $derived(recorder.step === 'recording' || recorder.step === 'creating');
-	const canJoin = $derived(isValidDisplayName(name) && !busy && !recording);
+	/** Everyone speaks in their own trained voice (ADR 0014): joining waits for it. */
+	let voiceRequired = $state(false);
+	const needsVoice = $derived(voiceRequired && recorder.voiceId === undefined);
+	const canJoin = $derived(isValidDisplayName(name) && !busy && !recording && !needsVoice);
 
 	// Give the microphone back to the preview once a recording finishes.
 	$effect(() => {
@@ -42,13 +45,14 @@
 		}
 	});
 
-	/** Recording your own voice is a paid feature: offered only when switched on. */
+	/** Recording your own voice: offered only when this deployment has it. */
 	let voiceCloning = $state(false);
 
 	onMount(() => {
 		getCapabilities()
 			.then((capabilities) => {
 				voiceCloning = capabilities.voiceCloning;
+				voiceRequired = capabilities.voiceRequired;
 			})
 			.catch(() => {
 				voiceCloning = false;
@@ -143,6 +147,7 @@
 	</section>
 	<VoiceSetup
 		available={voiceCloning}
+		required={voiceRequired}
 		{recorder}
 		language={outputLanguage}
 		deviceId={preview.deviceId}
@@ -160,5 +165,6 @@
 			{i18n.t.lobby.askToJoin}
 		{/if}
 	</Button>
+	{#if needsVoice}<p class="text-sm text-ink-muted">{i18n.t.voice.requiredToJoin}</p>{/if}
 	{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
 </form>

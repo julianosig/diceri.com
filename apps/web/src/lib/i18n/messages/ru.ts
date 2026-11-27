@@ -111,6 +111,9 @@ export const ru: Messages = {
 		cancel: 'Отмена'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`Прочитайте короткую фразу в течение ${String(seconds)} секунд: все услышат ваши переводы вашим собственным голосом. Удаляется, когда вы выходите.`,
+		requiredToJoin: 'Запишите свой голос, чтобы войти.',
 		pro: 'Pro',
 		paidSoon: 'Скоро — как платная функция.',
 		section: 'Ваш голос',

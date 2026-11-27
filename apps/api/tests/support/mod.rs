@@ -132,17 +132,21 @@ pub(crate) fn app(media: bool) -> Router {
 
 /// App with media, a fake voice cloner and a recognizer that always hears words.
 pub(crate) fn app_with_voices() -> Router {
+    app_with_voices_required(false)
+}
+
+/// Voice cloning on; `required`: joining needs a recorded voice (ADR 0014).
+pub(crate) fn app_with_voices_required(required: bool) -> Router {
     let issuer: Arc<dyn MediaAccessIssuer> = Arc::new(FakeIssuer);
     let cloner: Arc<dyn VoiceCloner> = Arc::new(FakeCloner::default());
-    build_router(
-        AppState::in_memory_with(
-            Some(issuer),
-            Some(cloner),
-            Some(Arc::new(FakeRecognizer)),
-            "test",
-        ),
-        &Config::for_tests(),
-    )
+    let mut state = AppState::in_memory_with(
+        Some(issuer),
+        Some(cloner),
+        Some(Arc::new(FakeRecognizer)),
+        "test",
+    );
+    state.voice_required = required;
+    build_router(state, &Config::for_tests())
 }
 
 /// Posts a raw body with a content type.

@@ -113,6 +113,9 @@ export const en = {
 		cancel: 'Cancel'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`Read one short sentence for ${String(seconds)} seconds: everyone hears your translations in your own voice. Deleted when you leave.`,
+		requiredToJoin: 'Record your voice to join.',
 		pro: 'Pro',
 		paidSoon: 'Coming soon as a paid feature.',
 		section: 'Your voice',

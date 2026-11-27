@@ -12,8 +12,9 @@ Diceri is a Google-Meet-inspired app for **video calls with live voice translati
 Each account (username + password, no email) owns one room named after it
 (`diceri.com/@username`); everyone who joins a call signs in first
 ([ADR 0013](docs/decisions/0013-accounts-to-join-and-per-network-limit.md)). Each listener
-picks the language they want to hear, and the other person's speech is transcribed, translated and re-spoken **in a voice that
-sounds like the original speaker** (with explicit consent, see §9).
+picks the language they want to hear, and the other person's speech is transcribed,
+translated and re-spoken **in the original speaker's own recorded voice** (with explicit
+consent, see §9).
 
 Architecture overview: [`docs/architecture.md`](docs/architecture.md).
 Decisions: [`docs/decisions/`](docs/decisions/). Research backing the stack:
@@ -152,9 +153,11 @@ function-length limits but not from file limits.
 - Passwords are hashed with Argon2id; sessions are random tokens stored hashed.
 - Media tokens (LiveKit JWTs) are minted only by `apps/api`, scoped to one
   room, and short-lived (5–10 min).
-- **Voice cloning requires explicit opt-in** from the speaker for that call.
-  Without consent, use a stock voice. Clones are deleted when the call ends.
-  See [ADR 0006](docs/decisions/0006-voice-cloning-consent.md).
+- **Voice cloning requires explicit opt-in** from the speaker for that call, and joining
+  requires it: translations are spoken only in the speaker's own recorded voice, never a
+  stock voice (captions only if the clone is refused). Clones are deleted when the call
+  ends. See [ADR 0006](docs/decisions/0006-voice-cloning-consent.md) and
+  [ADR 0014](docs/decisions/0014-own-voice-required-to-join.md).
 - Never log audio, transcripts or provider API keys. Log ids and timings only.
 - CORS uses an explicit origin allow-list; never `Any`.
 

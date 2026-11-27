@@ -66,8 +66,10 @@ pub struct Config {
     pub network_key: Option<SecretString>,
     /// Accounts one network may sign up when `network_key` is set.
     pub accounts_per_network: u32,
-    /// Recording your own voice for translations (a paid feature, off until it ships).
+    /// Recording your own voice for translations (`DICERI_VOICE_CLONING`).
     pub voice_cloning: bool,
+    /// Joining a call needs a recorded voice (ADR 0014); only with `voice_cloning`.
+    pub voice_required: bool,
     /// What each plan allows (`DICERI_<PLAN>_CALL_MINUTES`, `..._DAILY_MINUTES`).
     pub plans: PlanCatalogue,
     /// Limits across every account (`DICERI_MAX_LIVE_CALLS`, `DICERI_MONTHLY_CALL_MINUTES`).
@@ -122,6 +124,7 @@ impl Config {
                 .map_or(Ok(DEFAULT_ACCOUNTS_PER_NETWORK), |raw| raw.parse())
                 .context("DICERI_ACCOUNTS_PER_NETWORK must be a whole number")?,
             voice_cloning: env::var("DICERI_VOICE_CLONING").is_ok_and(|value| value == "true"),
+            voice_required: env::var("DICERI_VOICE_REQUIRED").is_ok_and(|value| value == "true"),
             plans: plans_from_env()?,
             capacity: capacity_from_env()?,
         })
@@ -147,6 +150,7 @@ impl Config {
             network_key: None,
             accounts_per_network: DEFAULT_ACCOUNTS_PER_NETWORK,
             voice_cloning: false,
+            voice_required: false,
             plans: PlanCatalogue::default(),
             capacity: Capacity::default(),
         }

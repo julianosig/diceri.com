@@ -81,9 +81,10 @@ export function recordVoice(roomId: string, sample: Blob) {
 	});
 }
 
-/** What this deployment offers (recording your own voice is a paid feature). */
+/** What this deployment offers: recording your own voice, and whether joining needs it. */
 export interface Capabilities {
 	voiceCloning: boolean;
+	voiceRequired: boolean;
 }
 
 export function getCapabilities(fetchFn?: typeof fetch) {

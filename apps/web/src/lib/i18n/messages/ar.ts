@@ -115,6 +115,9 @@ export const ar: Messages = {
 		cancel: 'إلغاء'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`اقرأ جملة قصيرة لمدة ${String(seconds)} ثوانٍ: سيسمع الجميع ترجماتك بصوتك أنت. تُحذف عند مغادرتك.`,
+		requiredToJoin: 'سجّل صوتك للانضمام.',
 		pro: 'Pro',
 		paidSoon: 'قريبًا كميزة مدفوعة.',
 		section: 'صوتك',

@@ -111,6 +111,9 @@ export const ja: Messages = {
 		cancel: 'キャンセル'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`短い文を${String(seconds)}秒間読み上げてください。翻訳はあなた自身の声で相手に届きます。退出すると削除されます。`,
+		requiredToJoin: '参加するには声を録音してください。',
 		pro: 'Pro',
 		paidSoon: '近日、有料機能として提供予定です。',
 		section: 'あなたの声',

@@ -112,6 +112,9 @@ export const es: Messages = {
 		cancel: 'Cancelar'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`Lee una frase corta durante ${String(seconds)} segundos: todos oirán tus traducciones con tu propia voz. Se borra al salir.`,
+		requiredToJoin: 'Graba tu voz para entrar.',
 		pro: 'Pro',
 		paidSoon: 'Muy pronto como función de pago.',
 		section: 'Tu voz',

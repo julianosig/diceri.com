@@ -88,3 +88,20 @@ async fn a_silent_recording_is_never_cloned() {
     let (status, _) = post_bytes(&app, &uri, Some("audio/webm"), vec![1; SAMPLE]).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn joining_needs_a_recorded_voice_when_required() {
+    let app = support::app_with_voices_required(true);
+    let (_, capabilities) = send(&app, "GET", "/api/v1/capabilities", None, None).await;
+    assert_eq!(capabilities["voiceRequired"], true);
+    let (id, host_key) = create_room(&app).await;
+    let uri = format!("/api/v1/rooms/{id}/host-session");
+    let without = json!({ "name": "Ana", "outputLanguage": "pt-BR" });
+    let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(without)).await;
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+    let recorded = format!("/api/v1/rooms/{id}/voices");
+    let (_, body) = post_bytes(&app, &recorded, Some("audio/wav"), speech()).await;
+    let with = json!({ "name": "Ana", "outputLanguage": "pt-BR", "voiceId": body["voiceId"] });
+    let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(with)).await;
+    assert_eq!(status, StatusCode::OK);
+}

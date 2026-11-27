@@ -112,6 +112,9 @@ export const it: Messages = {
 		cancel: 'Annulla'
 	},
 	voice: {
+		requiredHint: (seconds: number) =>
+			`Leggi una frase breve per ${String(seconds)} secondi: tutti sentiranno le tue traduzioni con la tua voce. Viene cancellata quando esci.`,
+		requiredToJoin: 'Registra la tua voce per entrare.',
 		pro: 'Pro',
 		paidSoon: 'Presto disponibile come funzione a pagamento.',
 		section: 'La tua voce',
