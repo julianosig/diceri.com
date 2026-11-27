@@ -39,6 +39,16 @@ arrives translated at the listener, labelled with each language. Pairs live in
 `language-pairs.ts`; add one there, no new art needed. Reduced motion shows both lines
 at once.
 
+### README animation
+
+`docs/assets/diceri-{dark,light}.gif` are the live home banner and headline, recorded from
+the web app with Playwright: the page clock is paused (`page.clock.pauseAt`) and every CSS
+animation is frozen and stepped 100 ms per frame through the Web Animations API, so the
+two language pairs play in sync; the page background is set to GitHub's (`#0d1117` /
+`#ffffff`). Frames are encoded with one shared palette, and each frame stores only the
+pixels that changed (the rest is transparent), which keeps each GIF under 1 MB. Record
+them again whenever the banner changes.
+
 ## Promise
 
 > **The Google Meet alternative**
