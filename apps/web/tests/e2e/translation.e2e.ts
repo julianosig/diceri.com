@@ -40,9 +40,10 @@ async function fillProfile(person: Person): Promise<void> {
 	await person.page.getByLabel('Hear everyone in').selectOption(person.language);
 }
 
-async function admit(host: Page, guest: Person): Promise<void> {
+/** `guest` signs up, opens `room` (the host's `/@username`) and is admitted by `host`. */
+async function admit(host: Page, room: string, guest: Person): Promise<void> {
 	await signUp(guest.page);
-	await guest.page.goto(host.url());
+	await guest.page.goto(room);
 	await fillProfile(guest);
 	await guest.page.getByRole('button', { name: 'Ask to join' }).click();
 	await expect(host.getByText(`${guest.name} wants to join this call`)).toBeVisible({
@@ -73,14 +74,14 @@ test('three people hear each other translated into their own language', async ({
 		test.skip(!probe.ok(), 'API not reachable');
 
 		await signUp(ana.page);
-		await openMyRoom(ana.page);
+		const room = await openMyRoom(ana.page);
 		await fillProfile(ana);
 		await ana.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(ana.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
 			timeout: 20_000
 		});
-		await admit(ana.page, bob);
-		await admit(ana.page, carla);
+		await admit(ana.page, room, bob);
+		await admit(ana.page, room, carla);
 
 		await expectCaption(bob, 'Ana', /contract/i);
 		await expectCaption(carla, 'Ana', /contrato/i);
@@ -101,13 +102,13 @@ test('detects the spoken language regardless of the output language', async ({ b
 	const ana = await launch('Ana', 'es', url);
 	try {
 		await signUp(bob.page);
-		await openMyRoom(bob.page);
+		const room = await openMyRoom(bob.page);
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
 			timeout: 20_000
 		});
-		await admit(bob.page, ana);
+		await admit(bob.page, room, ana);
 
 		await expectCaption(ana, 'Bob', /mañana|tarde/i);
 	} finally {
@@ -126,7 +127,7 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 	const ana = await launch('Ana', 'pt-BR', url);
 	try {
 		await signUp(bob.page);
-		await openMyRoom(bob.page);
+		const room = await openMyRoom(bob.page);
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: /Record my voice/ }).click();
 		await expect(bob.page.getByText('Recording · read aloud')).toBeVisible();
@@ -141,7 +142,7 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
 			timeout: 20_000
 		});
-		await admit(bob.page, ana);
+		await admit(bob.page, room, ana);
 		// The fixture is a synthetic voice, which the provider refuses to clone-speak,
 		// so this also proves the stock-voice fallback keeps translations flowing.
 		await expectCaption(ana, 'Bob', /parque/i);
@@ -157,13 +158,13 @@ test('when the host ends the call everyone gets the transcript', async ({ baseUR
 	const bob = await launch('Bob', 'en', url);
 	try {
 		await signUp(ana.page);
-		await openMyRoom(ana.page);
+		const room = await openMyRoom(ana.page);
 		await fillProfile(ana);
 		await ana.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(ana.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
 			timeout: 20_000
 		});
-		await admit(ana.page, bob);
+		await admit(ana.page, room, bob);
 		// Both phrases must be in before ending, or the transcripts can miss one.
 		await expectCaption(bob, 'Ana', /contract/i);
 		await expectCaption(ana, 'Bob', /tempo/i);

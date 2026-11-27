@@ -1,29 +1,18 @@
 <script lang="ts">
 	import { refreshAll } from '$app/navigation';
 	import { page } from '$app/state';
-	import { AccountSession, Onboarding } from '#lib/features/account/index.ts';
 	import { SiteHeader } from '#lib/features/landing/index.ts';
-	import { i18n } from '#lib/i18n/index.ts';
 	import { MeetingFlow } from '#lib/features/meeting/index.ts';
-	import { loadHostKey, MascotAvatar, RoomOffline } from '#lib/features/room/index.ts';
+	import { RoomOffline } from '#lib/features/room/index.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	/** Host access needs both the saved key and the owner signed in (signing out ends it). */
-	const hostKey = $derived(data.room && data.isOwner ? loadHostKey(data.room.code) : undefined);
 	/**
 	 * A room counts as live for visitors only while someone is in its call: an opened room
 	 * nobody joined (or everyone left) shows as not live instead of a door nobody answers.
-	 * The host (holding the host key) always gets their pre-join screen to start it.
 	 */
-	const open = $derived(data.room !== null && (hostKey !== undefined || data.room.people !== 0));
+	const open = $derived(data.room !== null && data.room.people !== 0);
 	const mascot = $derived(data.room?.mascot ?? data.profile?.mascot ?? null);
-
-	/** Only accounts join calls: a signed-out visitor signs in or up first, then pre-join. */
-	const session = new AccountSession();
-	$effect(() => {
-		if (session.account) void refreshAll();
-	});
 
 	/** How often a visitor at a claimed, not-live room looks again. */
 	const RECHECK_MS = 4000;
@@ -46,25 +35,9 @@
 	<title>@{data.username} · Diceri</title>
 </svelte:head>
 
-{#if data.room && open && !hostKey && !data.signedIn}
-	<SiteHeader />
-	<main class="flex justify-center px-4 pt-6 pb-16">
-		<Onboarding {session}>
-			{#snippet intro()}
-				<!-- Whose room this is, and in plain words why an account comes first. -->
-				<div class="flex flex-col items-center gap-3 text-center">
-					{#if mascot}<MascotAvatar {mascot} size={112} />{/if}
-					<h1 class="text-3xl font-semibold tracking-tight">
-						{i18n.t.lobby.joinRoomTitle(data.username)}
-					</h1>
-					<p class="text-ink-muted">{i18n.t.lobby.joinRoomHint}</p>
-				</div>
-			{/snippet}
-		</Onboarding>
-	</main>
-{:else if data.room && open}
+{#if data.room && open}
 	{#key data.room.code}
-		<MeetingFlow room={data.room} {hostKey} meetingUrl={page.url.href}>
+		<MeetingFlow room={data.room} hostKey={undefined} meetingUrl={page.url.href}>
 			{#snippet header()}<SiteHeader />{/snippet}
 		</MeetingFlow>
 	{/key}

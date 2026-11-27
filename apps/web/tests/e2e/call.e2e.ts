@@ -19,12 +19,13 @@ async function skipWithoutMedia(page: Page): Promise<string> {
 	return username;
 }
 
+/** The host opens their room and joins; returns the room's address for guests. */
 async function hostJoins(page: Page): Promise<string> {
-	await openMyRoom(page);
+	const room = await openMyRoom(page);
 	await page.getByLabel('Your name').fill('Host');
 	await page.getByRole('button', { name: 'Join now' }).click();
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
-	return page.url();
+	return room;
 }
 
 async function guestAsks(browser: Browser, url: string): Promise<Page> {
@@ -119,14 +120,14 @@ test('people see each other on camera, and turning it off shows the avatar', asy
 	browser
 }) => {
 	await skipWithoutMedia(page);
-	await openMyRoom(page);
+	const room = await openMyRoom(page);
 	// Pre-join previews the (fake) camera, on by default.
 	await expect(page.getByRole('region', { name: 'Camera' }).locator('video')).toBeVisible();
 	await page.getByLabel('Your name').fill('Host');
 	await page.getByRole('button', { name: 'Join now' }).click();
 	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
 
-	const guest = await guestAsks(browser, page.url());
+	const guest = await guestAsks(browser, room);
 	await page.getByRole('button', { name: 'Admit' }).click();
 	const hostTile = guest.getByRole('article', { name: 'Host' });
 	await expect(hostTile.locator('video')).toBeVisible({ timeout: 20_000 });

@@ -22,9 +22,15 @@ export async function signUp(page: Page): Promise<string> {
 	return username;
 }
 
-/** From the home page, opens the signed-in person's room and lands on `/@username`. */
-export async function openMyRoom(page: Page): Promise<void> {
+/**
+ * From the home page, opens the signed-in person's room: the host stays on `/open`.
+ * Returns the room's address for guests, `/@username`.
+ */
+export async function openMyRoom(page: Page): Promise<string> {
 	await page.goto('/');
-	await page.getByRole('button', { name: 'Open my room' }).click();
-	await expect(page).toHaveURL(/\/@[a-z][a-z0-9_]+$/);
+	await page.getByRole('link', { name: 'Open my room' }).click();
+	await expect(page).toHaveURL(/\/open$/);
+	await expect(page.getByText('Who gets in')).toBeVisible();
+	const me = (await (await page.request.get('/api/v1/accounts/me')).json()) as { username: string };
+	return `/@${me.username}`;
 }

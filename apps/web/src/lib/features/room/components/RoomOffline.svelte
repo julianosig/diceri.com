@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { House, RotateCw, Sparkles, Video } from '@lucide/svelte';
+	import { House, LoaderCircle, RotateCw, Sparkles, Video } from '@lucide/svelte';
 	import { buttonVariants } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import MascotAvatar from './MascotAvatar.svelte';
@@ -11,13 +11,26 @@
 		/** The owner's mascot, or `null` when nobody has claimed this username yet. */
 		mascot: string | null;
 		/** Looks again: the owner may have just opened the room. */
-		onretry: () => void;
+		onretry: () => Promise<void>;
 	}
 
 	let { username, mascot, onretry }: Props = $props();
 	const t = $derived(i18n.t.roomOffline);
 	const claimed = $derived(mascot !== null);
 	const home = resolve('/');
+	const openOwn = resolve('/open');
+	const claimHref = $derived(
+		resolve(`/signin?claim=${encodeURIComponent(username)}&next=${encodeURIComponent('/open')}`)
+	);
+	/** Looking again takes a moment: the button shows it, then the page shows the answer. */
+	let retrying = $state(false);
+
+	async function retry(): Promise<void> {
+		retrying = true;
+		// Long enough to see, even when the answer comes back at once.
+		await Promise.all([onretry(), new Promise((done) => setTimeout(done, 600))]);
+		retrying = false;
+	}
 </script>
 
 <!--
@@ -44,20 +57,25 @@
 	</p>
 	<div class="flex w-full flex-col items-center justify-center gap-3 sm:flex-row">
 		{#if claimed}
-			<a class={buttonVariants({ size: 'lg' })} href={home}>
+			<a class={buttonVariants({ size: 'lg' })} href={openOwn}>
 				<Video class="size-5" aria-hidden="true" />
 				{t.createOwn}
 			</a>
 			<button
 				type="button"
 				class={buttonVariants({ size: 'lg', variant: 'ghost' })}
-				onclick={onretry}
+				disabled={retrying}
+				aria-busy={retrying}
+				onclick={() => void retry()}
 			>
-				<RotateCw class="size-5" aria-hidden="true" />
+				{#if retrying}<LoaderCircle
+						class="size-5 animate-spin"
+						aria-hidden="true"
+					/>{:else}<RotateCw class="size-5" aria-hidden="true" />{/if}
 				{t.tryAgain}
 			</button>
 		{:else}
-			<a class={buttonVariants({ size: 'lg' })} href="{home}?claim={encodeURIComponent(username)}">
+			<a class={buttonVariants({ size: 'lg' })} href={claimHref}>
 				<Sparkles class="size-5" aria-hidden="true" />
 				{t.claim(username)}
 			</a>
