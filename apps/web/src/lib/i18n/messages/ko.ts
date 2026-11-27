@@ -88,6 +88,9 @@ export const ko: Messages = {
 		home: '홈으로 돌아가기'
 	},
 	lobby: {
+		joinRoomTitle: (handle: string) => `@${handle} 참여하기`,
+		joinRoomHint:
+			'이 통화에 참여하려면 Diceri 사용자 이름으로 로그인하거나, 처음이라면 무료로 만들어 주세요. 1분이면 충분하고, 모두가 각자의 언어로 내 목소리 그대로 듣게 돼요.',
 		camera: '카메라',
 		cameraOn: '카메라 켜기',
 		cameraOff: '카메라 끄기',

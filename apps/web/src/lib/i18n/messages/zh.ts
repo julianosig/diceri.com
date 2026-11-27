@@ -87,6 +87,9 @@ export const zh: Messages = {
 		home: '返回首页'
 	},
 	lobby: {
+		joinRoomTitle: (handle: string) => `加入 @${handle}`,
+		joinRoomHint:
+			'要加入这次通话，请用你的 Diceri 用户名登录；如果是新用户，可以免费创建一个。只需一分钟，大家就能用自己的语言、听到你本人的声音。',
 		camera: '摄像头',
 		cameraOn: '打开摄像头',
 		cameraOff: '关闭摄像头',

@@ -91,6 +91,9 @@ export const en = {
 		home: 'Back to home'
 	},
 	lobby: {
+		joinRoomTitle: (handle: string) => `Join @${handle}`,
+		joinRoomHint:
+			'To join this call, sign in with your Diceri username, or create one for free if you are new. It takes a minute and lets everyone hear you in their own language, in your own voice.',
 		camera: 'Camera',
 		cameraOn: 'Turn camera on',
 		cameraOff: 'Turn camera off',

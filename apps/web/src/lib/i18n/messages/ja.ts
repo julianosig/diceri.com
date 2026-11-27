@@ -87,6 +87,9 @@ export const ja: Messages = {
 		home: 'ホームに戻る'
 	},
 	lobby: {
+		joinRoomTitle: (handle: string) => `@${handle} に参加`,
+		joinRoomHint:
+			'この通話に参加するには、Diceri のユーザー名でログインするか、初めての方は無料で作成してください。1分ほどで完了し、みなさんがそれぞれの言語で、あなた自身の声であなたの話を聞けるようになります。',
 		camera: 'カメラ',
 		cameraOn: 'カメラをオン',
 		cameraOff: 'カメラをオフ',

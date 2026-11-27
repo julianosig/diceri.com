@@ -89,6 +89,9 @@ export const it: Messages = {
 		home: 'Torna alla home'
 	},
 	lobby: {
+		joinRoomTitle: (handle: string) => `Entra in @${handle}`,
+		joinRoomHint:
+			'Per entrare in questa chiamata, accedi con il tuo nome utente Diceri o creane uno gratis se sei nuovo. Ci vuole un minuto e permette a tutti di sentirti nella loro lingua, con la tua voce.',
 		camera: 'Fotocamera',
 		cameraOn: 'Attiva fotocamera',
 		cameraOff: 'Disattiva fotocamera',

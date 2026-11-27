@@ -5,7 +5,7 @@
 	import { SiteHeader } from '#lib/features/landing/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { MeetingFlow } from '#lib/features/meeting/index.ts';
-	import { loadHostKey, RoomOffline } from '#lib/features/room/index.ts';
+	import { loadHostKey, MascotAvatar, RoomOffline } from '#lib/features/room/index.ts';
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
@@ -49,7 +49,18 @@
 {#if data.room && open && !hostKey && !data.signedIn}
 	<SiteHeader />
 	<main class="flex justify-center px-4 pt-6 pb-16">
-		<Onboarding {session} title={i18n.t.lobby.joinTitle} />
+		<Onboarding {session}>
+			{#snippet intro()}
+				<!-- Whose room this is, and in plain words why an account comes first. -->
+				<div class="flex flex-col items-center gap-3 text-center">
+					{#if mascot}<MascotAvatar {mascot} size={112} />{/if}
+					<h1 class="text-3xl font-semibold tracking-tight">
+						{i18n.t.lobby.joinRoomTitle(data.username)}
+					</h1>
+					<p class="text-ink-muted">{i18n.t.lobby.joinRoomHint}</p>
+				</div>
+			{/snippet}
+		</Onboarding>
 	</main>
 {:else if data.room && open}
 	{#key data.room.code}

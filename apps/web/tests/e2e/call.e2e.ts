@@ -97,7 +97,9 @@ test('anyone can walk into an open room at /@username', async ({ page, browser }
 	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
 	await visitor.goto(`/@${owner}`);
 	// Only accounts join: the visitor claims an @ (same flow as the home page) first.
-	await expect(visitor.getByRole('heading', { name: 'Join the meeting' })).toBeVisible();
+	await expect(visitor.getByRole('heading', { name: `Join @${owner}` })).toBeVisible();
+	await expect(visitor.getByText(/sign in with your Diceri username/)).toBeVisible();
+	await expect(visitor.getByPlaceholder('room_username')).toBeFocused();
 	await visitor.getByPlaceholder('room_username').fill(uniqueUsername());
 	await visitor.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await visitor.getByLabel('Repeat password').fill(PASSWORD);

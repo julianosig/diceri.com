@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { onMount, untrack } from 'svelte';
+	import { onMount, untrack, type Snippet } from 'svelte';
 	import {
 		AtSign,
 		CircleCheck,
@@ -29,11 +29,11 @@
 		session: AccountSession;
 		/** Pre-fills and checks a name (`/?claim=ana` from a free `/@ana`). */
 		initialUsername?: string;
-		/** The form's heading; "Open my room" by default. */
-		title?: string;
+		/** Replaces the "Open my room" heading (e.g. a room's mascot, name and a hint). */
+		intro?: Snippet;
 	}
 
-	let { session, initialUsername, title }: Props = $props();
+	let { session, initialUsername, intro }: Props = $props();
 
 	const usernames = new UsernameCheck();
 	$effect(() => () => {
@@ -137,9 +137,13 @@
 	/>
 {:else}
 	<form class="flex w-full max-w-md flex-col gap-5 text-start" onsubmit={submit}>
-		<h1 class="text-center text-3xl font-semibold tracking-tight">
-			{title ?? i18n.t.openRoom.submit}
-		</h1>
+		{#if intro}
+			{@render intro()}
+		{:else}
+			<h1 class="text-center text-3xl font-semibold tracking-tight">
+				{i18n.t.openRoom.submit}
+			</h1>
+		{/if}
 		<label class="flex flex-col gap-1">
 			<span class={labelClass}>{t.label}</span>
 			<span class={fieldClass} dir="ltr">

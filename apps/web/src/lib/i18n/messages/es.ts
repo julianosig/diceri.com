@@ -89,6 +89,9 @@ export const es: Messages = {
 		home: 'Volver al inicio'
 	},
 	lobby: {
+		joinRoomTitle: (handle: string) => `Entrar a @${handle}`,
+		joinRoomHint:
+			'Para unirte a esta llamada, inicia sesión con tu usuario de Diceri o crea uno gratis si eres nuevo. Lleva un minuto y hace que todos te escuchen en su idioma, con tu propia voz.',
 		camera: 'Cámara',
 		cameraOn: 'Activar cámara',
 		cameraOff: 'Desactivar cámara',
