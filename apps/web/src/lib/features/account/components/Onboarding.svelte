@@ -27,9 +27,11 @@
 		session: AccountSession;
 		/** Pre-fills and checks a name (`/?claim=ana` from a free `/@ana`). */
 		initialUsername?: string;
+		/** Set once the name is resolved and the full form shows (the page hides its headline). */
+		open?: boolean;
 	}
 
-	let { session, initialUsername }: Props = $props();
+	let { session, initialUsername, open = $bindable(false) }: Props = $props();
 
 	const usernames = new UsernameCheck();
 	$effect(() => () => {
@@ -91,26 +93,40 @@
 		}
 	}
 
-	/** Before a name is resolved only the @ field shows, centred; the open form reads left. */
-	const open = $derived(mode !== null);
+	/**
+	 * Before a name is resolved only the big @ field shows, centred; once resolved it becomes a
+	 * regular titled form, styled like the pre-join screen.
+	 */
+	$effect(() => {
+		open = mode !== null;
+	});
 
-	const fieldClass =
-		'flex items-center gap-3 rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500';
-	const inputClass = 'w-full bg-transparent py-3.5 text-xl font-semibold outline-none';
+	const fieldClass = $derived(
+		open
+			? 'flex items-center gap-2 rounded-lg border border-ink-muted/30 bg-surface px-3 focus-within:border-brand-500'
+			: 'flex items-center gap-3 rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500'
+	);
+	const inputClass = 'w-full bg-transparent py-2 text-base outline-none';
+	const labelClass = 'text-sm text-ink-muted';
 </script>
 
 <form
 	class={['flex w-full max-w-md flex-col gap-5', open ? 'text-start' : 'text-center']}
 	onsubmit={submit}
 >
-	<label class="flex flex-col gap-2">
-		<span class="text-xl font-bold">{t.label}</span>
+	{#if open}
+		<h1 class="text-center text-3xl font-semibold tracking-tight">{i18n.t.openRoom.submit}</h1>
+	{/if}
+	<label class={['flex flex-col', open ? 'gap-1' : 'gap-2']}>
+		<span class={open ? labelClass : 'text-xl font-bold'}>{t.label}</span>
 		<span class={[fieldClass, !open && 'justify-center']} dir="ltr">
 			<AtSign class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 			<input
 				class={[
-					'bg-transparent py-3.5 text-xl font-semibold outline-none',
-					open ? 'w-full' : 'field-sizing-content min-w-[9ch]'
+					'bg-transparent outline-none',
+					open
+						? 'w-full py-2 text-base'
+						: 'field-sizing-content min-w-[9ch] py-3.5 text-xl font-semibold'
 				]}
 				bind:value={username}
 				oninput={() => {
@@ -149,8 +165,8 @@
 	{/if}
 
 	{#if mode}
-		<label class="flex flex-col gap-2">
-			<span class="text-base font-semibold">{t.password}</span>
+		<label class="flex flex-col gap-1">
+			<span class={labelClass}>{t.password}</span>
 			<span class={fieldClass}>
 				<Lock class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 				<input
@@ -167,8 +183,8 @@
 		</label>
 	{/if}
 	{#if mode === 'create'}
-		<label class="flex flex-col gap-2">
-			<span class="text-base font-semibold">{t.repeatPassword}</span>
+		<label class="flex flex-col gap-1">
+			<span class={labelClass}>{t.repeatPassword}</span>
 			<span class={fieldClass}>
 				<LockKeyhole class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 				<input
@@ -198,7 +214,7 @@
 	{/if}
 
 	{#if mode}
-		<Button size="lg" type="submit" disabled={!canSubmit}>
+		<Button size="lg" type="submit" class="self-center" disabled={!canSubmit}>
 			{#if pending}
 				<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
 				{mode === 'create' ? t.creating : t.signingIn}

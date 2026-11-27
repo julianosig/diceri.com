@@ -13,7 +13,7 @@
 </script>
 
 <fieldset class="flex flex-col gap-2">
-	<legend class="mb-1 flex items-center gap-1.5 text-base font-semibold">
+	<legend class="mb-1 flex items-center gap-1.5 text-sm text-ink-muted">
 		<Sparkles class="size-4 text-brand-500" aria-hidden="true" />
 		{i18n.t.mascots.legend}
 	</legend>

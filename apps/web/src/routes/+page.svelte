@@ -18,6 +18,8 @@
 	 * your @ (login or claim), then opens your room as soon as you are in.
 	 */
 	let asked = $state(claim !== undefined);
+	/** The sign-in form has opened; it takes the headline's place. */
+	let formOpen = $state(false);
 	$effect(() => {
 		void account.load();
 	});
@@ -33,12 +35,12 @@
 	class="mx-auto flex min-h-[calc(100dvh-14rem)] max-w-5xl flex-col items-center gap-10 px-4 pt-6 pb-6 text-center sm:pt-8"
 >
 	<div class="flex max-w-3xl flex-col items-center gap-8">
-		<Headline />
+		{#if !formOpen}<Headline />{/if}
 		{#if account.account}
 			<OpenRoomButton username={account.account.username} autostart={asked} />
 		{:else if account.account === null}
 			{#if asked}
-				<Onboarding session={account} initialUsername={claim} />
+				<Onboarding session={account} initialUsername={claim} bind:open={formOpen} />
 			{:else}
 				<Button size="lg" class="w-full max-w-md" onclick={() => (asked = true)}>
 					<Video class="size-5" aria-hidden="true" />
