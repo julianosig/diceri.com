@@ -27,6 +27,8 @@ async fn the_account_shows_its_plan_and_todays_use() {
         json!({
             "usedToday": 0,
             "dailyMinutes": free.daily_minutes,
+            "usedThisMonth": 0,
+            "monthlyMinutes": free.monthly_minutes,
             "callMinutes": free.call_minutes
         })
     );

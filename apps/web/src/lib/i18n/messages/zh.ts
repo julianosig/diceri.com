@@ -213,6 +213,10 @@ export const zh: Messages = {
 		copied: '文字记录已复制'
 	},
 	plans: {
+		perMonth: (minutes: number) => `每月 ${String(minutes)} 分钟通话`,
+		price: (amount: string) => `${amount} / 月`,
+		usedThisMonth: (used: number, total: number) =>
+			`本月已用 ${String(used)}/${String(total)} 分钟`,
 		free: '免费',
 		pro: 'Pro',
 		team: 'Team',
@@ -220,7 +224,6 @@ export const zh: Messages = {
 		soon: '即将推出',
 		callUpTo: (minutes: number) => `每次通话最长 ${String(minutes)} 分钟`,
 		perDay: (minutes: number) => `每天 ${String(minutes)} 分钟通话`,
-		usedToday: (used: number, total: number) => `今天已用 ${String(used)}/${String(total)} 分钟`,
 		freeLine: (call: number, day: number) =>
 			`免费：每次通话最长 ${String(call)} 分钟，每天 ${String(day)} 分钟。`,
 		seePlans: '查看套餐',
@@ -229,6 +232,7 @@ export const zh: Messages = {
 		close: '关闭'
 	},
 	limits: {
+		quota: '你本月套餐的通话分钟数已用完，将在每月 1 日（UTC）重置。',
 		daily: '你今天的免费通话分钟数已用完，将在午夜（UTC）重置。',
 		monthly: '本月的免费额度已用完。付费套餐即将推出。',
 		busy: 'Diceri 当前已满负荷，请几分钟后再试。',

@@ -27,6 +27,9 @@ pub(crate) struct PlanResponse {
     plan: &'static str,
     call_minutes: u32,
     daily_minutes: u32,
+    monthly_minutes: u32,
+    /// US cents a month; 0 for free.
+    monthly_price_cents: u32,
 }
 
 pub(crate) fn routes() -> Router<AppState> {
@@ -43,6 +46,8 @@ async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesRespons
                 plan: plan.as_str(),
                 call_minutes: limits.call_minutes,
                 daily_minutes: limits.daily_minutes,
+                monthly_minutes: limits.monthly_minutes,
+                monthly_price_cents: limits.monthly_price_cents,
             }
         })
         .collect();

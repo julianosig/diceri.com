@@ -5,90 +5,15 @@
 use std::collections::HashSet;
 use std::sync::{Arc, Mutex, PoisonError};
 
-use diceri_domain::{Account, Plan, PlanLimits, Room, RoomId, Username};
+use diceri_domain::{Account, Room, RoomId, Username};
 
+use super::plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 use crate::ports::{
-    AccountRepository, AccountRepositoryError, Clock, MediaAccessError, MediaPresence,
-    MediaRoomCloser, RoomRepository, RoomRepositoryError, UsageRepository, UsageRepositoryError,
+    AccountRepository, Clock, MediaAccessError, MediaPresence, MediaRoomCloser, RoomRepository,
+    UsageRepository,
 };
 
 const DAY_MS: u64 = 86_400_000;
-
-/// What each plan allows. Free is everyone's default; the others are assigned by hand.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct PlanCatalogue {
-    pub free: PlanLimits,
-    pub pro: PlanLimits,
-    pub team: PlanLimits,
-}
-
-impl PlanCatalogue {
-    #[must_use]
-    pub fn limits(&self, plan: Plan) -> PlanLimits {
-        match plan {
-            Plan::Free => self.free,
-            Plan::Pro => self.pro,
-            Plan::Team => self.team,
-        }
-    }
-}
-
-impl Default for PlanCatalogue {
-    fn default() -> Self {
-        let limits = |call_minutes, daily_minutes| PlanLimits {
-            call_minutes,
-            daily_minutes,
-            participants: Room::DEFAULT_MAX_PARTICIPANTS,
-        };
-        Self {
-            free: limits(20, 40),
-            pro: limits(60, 300),
-            team: limits(120, 600),
-        }
-    }
-}
-
-/// Limits across every account, so the shared free capacity is never exhausted.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Capacity {
-    /// Calls with someone in them at once, across the whole service.
-    pub max_live_calls: usize,
-    /// Call minutes per calendar month (UTC), across every account.
-    pub monthly_minutes: u64,
-}
-
-impl Default for Capacity {
-    fn default() -> Self {
-        Self {
-            max_live_calls: 15,
-            monthly_minutes: 1_500,
-        }
-    }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum LimitError {
-    #[error("today's call minutes are used up")]
-    DailyMinutes,
-    #[error("this month's free capacity is used up")]
-    MonthlyCapacity,
-    #[error("too many calls are live right now")]
-    Busy,
-    #[error(transparent)]
-    Usage(#[from] UsageRepositoryError),
-    #[error(transparent)]
-    Accounts(#[from] AccountRepositoryError),
-    #[error(transparent)]
-    Rooms(#[from] RoomRepositoryError),
-}
-
-/// An account's plan, its limits and what it has used today.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct Allowance {
-    pub plan: Plan,
-    pub limits: PlanLimits,
-    pub used_today: u32,
-}
 
 /// Meters call minutes and enforces plan and capacity limits.
 #[derive(Clone)]
@@ -180,20 +105,27 @@ impl MeteringService {
         self.plans
     }
 
-    /// The account's plan, limits and minutes used today.
+    /// The account's plan, limits and minutes used today and this month.
     pub async fn allowance(&self, account: &Account) -> Result<Allowance, LimitError> {
+        let today = self.today();
+        let usage = &self.usage;
         Ok(Allowance {
             plan: account.plan,
             limits: self.plans.limits(account.plan),
-            used_today: self.usage.minutes_on(&account.id, self.today()).await?,
+            used_today: usage
+                .account_minutes_between(&account.id, today, today)
+                .await?,
+            used_this_month: usage
+                .account_minutes_between(&account.id, month_start(today), today)
+                .await?,
         })
     }
 
     /// Checks the owner may start or rejoin their room's call now.
     pub async fn admit(&self, account: &Account) -> Result<Allowance, LimitError> {
         let allowance = self.allowance(account).await?;
-        if allowance.used_today >= allowance.limits.daily_minutes {
-            return Err(LimitError::DailyMinutes);
+        if let Some(reached) = allowance.reached() {
+            return Err(reached);
         }
         let today = self.today();
         let month = self.usage.total_between(month_start(today), today).await?;
@@ -231,11 +163,7 @@ impl MeteringService {
             .limits
             .call_minutes
             .saturating_sub(room.call_minutes);
-        let day_left = allowance
-            .limits
-            .daily_minutes
-            .saturating_sub(allowance.used_today);
-        Ok(Some(call_left.min(day_left)))
+        Ok(Some(call_left.min(allowance.minutes_left())))
     }
 
     /// Runs once a minute: charges a minute to every call someone is in, and ends the
@@ -287,13 +215,12 @@ impl MeteringService {
         let Some(owner) = self.accounts.find_by_username(&room.owner).await? else {
             return Ok(self.rooms.update(room).await?);
         };
-        let limits = self.plans.limits(owner.account.plan);
-        let used_today = self
-            .usage
+        self.usage
             .add_minute(&owner.account.id, self.today())
             .await?;
+        let allowance = self.allowance(&owner.account).await?;
         let reached =
-            room.call_minutes >= limits.call_minutes || used_today >= limits.daily_minutes;
+            room.call_minutes >= allowance.limits.call_minutes || allowance.reached().is_some();
         if reached {
             room.end();
         }

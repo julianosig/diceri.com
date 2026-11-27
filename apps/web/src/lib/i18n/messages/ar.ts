@@ -219,6 +219,10 @@ export const ar: Messages = {
 		copied: 'تم نسخ النص'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} د من المكالمات شهريًا`,
+		price: (amount: string) => `${amount} / شهر`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} من ${String(total)} د مستخدمة هذا الشهر`,
 		free: 'مجاني',
 		pro: 'Pro',
 		team: 'Team',
@@ -226,8 +230,6 @@ export const ar: Messages = {
 		soon: 'قريبًا',
 		callUpTo: (minutes: number) => `مكالمات حتى ${String(minutes)} د`,
 		perDay: (minutes: number) => `${String(minutes)} د من المكالمات يوميًا`,
-		usedToday: (used: number, total: number) =>
-			`استُخدمت ${String(used)} من ${String(total)} د اليوم`,
 		freeLine: (call: number, day: number) =>
 			`مجاني: مكالمات حتى ${String(call)} د، و${String(day)} د يوميًا.`,
 		seePlans: 'عرض الخطط',
@@ -236,6 +238,7 @@ export const ar: Messages = {
 		close: 'إغلاق'
 	},
 	limits: {
+		quota: 'استخدمت دقائق المكالمات في خطتك لهذا الشهر. تتجدد في اليوم الأول من كل شهر (UTC).',
 		daily: 'استخدمت دقائق المكالمات المجانية لهذا اليوم. تتجدد عند منتصف الليل (UTC).',
 		monthly: 'نفدت السعة المجانية لهذا الشهر. الخطط المدفوعة قادمة قريبًا.',
 		busy: 'وصل Diceri إلى أقصى سعته الآن. حاول مرة أخرى بعد بضع دقائق.',

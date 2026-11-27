@@ -56,6 +56,9 @@ pub(crate) struct UsageResponse {
     /// Call minutes used today (UTC), charged while someone is in the owner's call.
     used_today: u32,
     daily_minutes: u32,
+    /// Call minutes used this calendar month (UTC), and what the plan includes.
+    used_this_month: u32,
+    monthly_minutes: u32,
     /// Longest single call.
     call_minutes: u32,
 }
@@ -146,6 +149,8 @@ pub(crate) async fn me(
         usage: UsageResponse {
             used_today: allowance.used_today,
             daily_minutes: allowance.limits.daily_minutes,
+            used_this_month: allowance.used_this_month,
+            monthly_minutes: allowance.limits.monthly_minutes,
             call_minutes: allowance.limits.call_minutes,
         },
     }))

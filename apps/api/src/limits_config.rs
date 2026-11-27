@@ -19,7 +19,7 @@ fn number<T: FromStr>(name: &str, default: T) -> anyhow::Result<T> {
     }
 }
 
-/// One plan's limits: `DICERI_<PLAN>_CALL_MINUTES` and `DICERI_<PLAN>_DAILY_MINUTES`.
+/// One plan: `DICERI_<PLAN>_{CALL,DAILY,MONTHLY}_MINUTES` and `DICERI_<PLAN>_PRICE_CENTS`.
 fn plan(prefix: &str, defaults: PlanLimits) -> anyhow::Result<PlanLimits> {
     Ok(PlanLimits {
         call_minutes: number(
@@ -29,6 +29,14 @@ fn plan(prefix: &str, defaults: PlanLimits) -> anyhow::Result<PlanLimits> {
         daily_minutes: number(
             &format!("DICERI_{prefix}_DAILY_MINUTES"),
             defaults.daily_minutes,
+        )?,
+        monthly_minutes: number(
+            &format!("DICERI_{prefix}_MONTHLY_MINUTES"),
+            defaults.monthly_minutes,
+        )?,
+        monthly_price_cents: number(
+            &format!("DICERI_{prefix}_PRICE_CENTS"),
+            defaults.monthly_price_cents,
         )?,
         participants: defaults.participants,
     })

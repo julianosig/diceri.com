@@ -10,6 +10,15 @@
 
 	let { plans, onclose }: Props = $props();
 	const t = $derived(i18n.t.plans);
+
+	/** Prices are in US dollars, written the visitor's way. */
+	function price(cents: number): string {
+		return new Intl.NumberFormat(i18n.locale, {
+			style: 'currency',
+			currency: 'USD',
+			minimumFractionDigits: cents % 100 === 0 ? 0 : 2
+		}).format(cents / 100);
+	}
 	let dialog = $state<HTMLDialogElement>();
 
 	$effect(() => {
@@ -56,6 +65,9 @@
 						{free ? t.yourPlan : t.soon}
 					</span>
 				</div>
+				<p class="text-2xl font-semibold">
+					{free ? t.free : t.price(price(info.monthlyPriceCents))}
+				</p>
 				<ul class="flex flex-col gap-1.5 text-sm">
 					<li class="flex items-center gap-2">
 						<Check class="size-4 shrink-0 text-online" aria-hidden="true" />
@@ -64,6 +76,10 @@
 					<li class="flex items-center gap-2">
 						<Check class="size-4 shrink-0 text-online" aria-hidden="true" />
 						{t.perDay(info.dailyMinutes)}
+					</li>
+					<li class="flex items-center gap-2">
+						<Check class="size-4 shrink-0 text-online" aria-hidden="true" />
+						{t.perMonth(info.monthlyMinutes)}
 					</li>
 					{#if !free}
 						<li class="flex items-center gap-2 text-ink-muted">

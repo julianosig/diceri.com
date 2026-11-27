@@ -219,6 +219,10 @@ export const en = {
 		copied: 'Transcript copied'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} min of calls a month`,
+		price: (amount: string) => `${amount} / month`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} of ${String(total)} min used this month`,
 		free: 'Free',
 		pro: 'Pro',
 		team: 'Team',
@@ -226,8 +230,6 @@ export const en = {
 		soon: 'Coming soon',
 		callUpTo: (minutes: number) => `Calls up to ${String(minutes)} min`,
 		perDay: (minutes: number) => `${String(minutes)} min of calls a day`,
-		usedToday: (used: number, total: number) =>
-			`${String(used)} of ${String(total)} min used today`,
 		freeLine: (call: number, day: number) =>
 			`Free: calls up to ${String(call)} min, ${String(day)} min a day.`,
 		seePlans: 'See plans',
@@ -236,6 +238,7 @@ export const en = {
 		close: 'Close'
 	},
 	limits: {
+		quota: "You've used this month's call minutes on your plan. They renew on the 1st (UTC).",
 		daily: "You've used today's free call minutes. They renew at midnight (UTC).",
 		monthly: "This month's free capacity is used up. Paid plans are coming soon.",
 		busy: 'Diceri is at capacity right now. Try again in a few minutes.',

@@ -46,16 +46,24 @@ impl UsageRepository for SqliteUsageRepository {
         Ok(whole(minutes))
     }
 
-    async fn minutes_on(&self, account: &AccountId, day: u32) -> Result<u32, UsageRepositoryError> {
-        // Served by `pk_call_minutes`.
-        let row: Option<(i64,)> =
-            sqlx::query_as("SELECT minutes FROM call_minutes WHERE account_id = ? AND utc_day = ?")
-                .bind(account.as_uuid())
-                .bind(i64::from(day))
-                .fetch_optional(&self.pool)
-                .await
-                .map_err(|e| storage(&e))?;
-        Ok(row.map_or(0, |(minutes,)| whole(minutes)))
+    async fn account_minutes_between(
+        &self,
+        account: &AccountId,
+        first_day: u32,
+        last_day: u32,
+    ) -> Result<u32, UsageRepositoryError> {
+        // Served by `pk_call_minutes` (account_id, utc_day).
+        let (total,): (i64,) = sqlx::query_as(
+            "SELECT COALESCE(SUM(minutes), 0) FROM call_minutes \
+             WHERE account_id = ? AND utc_day BETWEEN ? AND ?",
+        )
+        .bind(account.as_uuid())
+        .bind(i64::from(first_day))
+        .bind(i64::from(last_day))
+        .fetch_one(&self.pool)
+        .await
+        .map_err(|e| storage(&e))?;
+        Ok(whole(total))
     }
 
     async fn total_between(

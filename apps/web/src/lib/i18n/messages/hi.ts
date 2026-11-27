@@ -215,6 +215,10 @@ export const hi: Messages = {
 		copied: 'ट्रांसक्रिप्ट कॉपी हो गया'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} मिनट कॉल प्रति माह`,
+		price: (amount: string) => `${amount} / माह`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} में से ${String(total)} मिनट इस महीने इस्तेमाल हुए`,
 		free: 'मुफ़्त',
 		pro: 'Pro',
 		team: 'Team',
@@ -222,8 +226,6 @@ export const hi: Messages = {
 		soon: 'जल्द आ रहा है',
 		callUpTo: (minutes: number) => `${String(minutes)} मिनट तक की कॉल`,
 		perDay: (minutes: number) => `रोज़ ${String(minutes)} मिनट की कॉल`,
-		usedToday: (used: number, total: number) =>
-			`आज ${String(total)} में से ${String(used)} मिनट इस्तेमाल हुए`,
 		freeLine: (call: number, day: number) =>
 			`मुफ़्त: ${String(call)} मिनट तक की कॉल, रोज़ ${String(day)} मिनट।`,
 		seePlans: 'प्लान देखें',
@@ -232,6 +234,8 @@ export const hi: Messages = {
 		close: 'बंद करें'
 	},
 	limits: {
+		quota:
+			'आपने इस महीने अपने प्लान के कॉल मिनट इस्तेमाल कर लिए हैं। ये हर महीने की 1 तारीख (UTC) को फिर से मिलते हैं।',
 		daily: 'आपने आज के मुफ़्त कॉल मिनट इस्तेमाल कर लिए हैं। ये आधी रात (UTC) को फिर से मिलेंगे।',
 		monthly: 'इस महीने की मुफ़्त क्षमता ख़त्म हो गई है। पेड प्लान जल्द आ रहे हैं।',
 		busy: 'Diceri अभी पूरी क्षमता पर है। कुछ मिनट बाद फिर कोशिश करें।',

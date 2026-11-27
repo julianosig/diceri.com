@@ -219,6 +219,10 @@ export const fr: Messages = {
 		copied: 'Transcription copiée'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} min d’appels par mois`,
+		price: (amount: string) => `${amount} / mois`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} sur ${String(total)} min utilisées ce mois-ci`,
 		free: 'Gratuit',
 		pro: 'Pro',
 		team: 'Team',
@@ -226,8 +230,6 @@ export const fr: Messages = {
 		soon: 'Bientôt disponible',
 		callUpTo: (minutes: number) => `Appels jusqu’à ${String(minutes)} min`,
 		perDay: (minutes: number) => `${String(minutes)} min d’appels par jour`,
-		usedToday: (used: number, total: number) =>
-			`${String(used)} min utilisées sur ${String(total)} aujourd’hui`,
 		freeLine: (call: number, day: number) =>
 			`Gratuit : appels jusqu’à ${String(call)} min, ${String(day)} min par jour.`,
 		seePlans: 'Voir les offres',
@@ -237,6 +239,8 @@ export const fr: Messages = {
 		close: 'Fermer'
 	},
 	limits: {
+		quota:
+			'Vous avez utilisé les minutes d’appel de votre offre ce mois-ci. Elles se renouvellent le 1er (UTC).',
 		daily:
 			'Vous avez utilisé vos minutes d’appel gratuites du jour. Elles se renouvellent à minuit (UTC).',
 		monthly: 'La capacité gratuite de ce mois est épuisée. Les offres payantes arrivent bientôt.',

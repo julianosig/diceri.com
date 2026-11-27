@@ -214,6 +214,10 @@ export const ko: Messages = {
 		copied: '스크립트가 복사되었습니다'
 	},
 	plans: {
+		perMonth: (minutes: number) => `월 ${String(minutes)}분 통화`,
+		price: (amount: string) => `${amount} / 월`,
+		usedThisMonth: (used: number, total: number) =>
+			`이번 달 ${String(total)}분 중 ${String(used)}분 사용`,
 		free: '무료',
 		pro: 'Pro',
 		team: 'Team',
@@ -221,7 +225,6 @@ export const ko: Messages = {
 		soon: '출시 예정',
 		callUpTo: (minutes: number) => `통화당 최대 ${String(minutes)}분`,
 		perDay: (minutes: number) => `하루 ${String(minutes)}분 통화`,
-		usedToday: (used: number, total: number) => `오늘 ${String(total)}분 중 ${String(used)}분 사용`,
 		freeLine: (call: number, day: number) =>
 			`무료: 통화당 최대 ${String(call)}분, 하루 ${String(day)}분.`,
 		seePlans: '요금제 보기',
@@ -230,6 +233,7 @@ export const ko: Messages = {
 		close: '닫기'
 	},
 	limits: {
+		quota: '이번 달 요금제의 통화 시간을 모두 사용했어요. 매월 1일(UTC)에 초기화돼요.',
 		daily: '오늘의 무료 통화 시간을 모두 사용했습니다. 자정(UTC)에 다시 충전됩니다.',
 		monthly: '이번 달 무료 사용량이 모두 소진되었습니다. 유료 요금제가 곧 출시됩니다.',
 		busy: '지금은 Diceri 사용량이 많습니다. 몇 분 후에 다시 시도해 주세요.',

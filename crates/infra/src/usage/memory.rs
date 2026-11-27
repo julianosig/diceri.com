@@ -24,9 +24,18 @@ impl UsageRepository for MemoryUsageRepository {
         Ok(*total)
     }
 
-    async fn minutes_on(&self, account: &AccountId, day: u32) -> Result<u32, UsageRepositoryError> {
+    async fn account_minutes_between(
+        &self,
+        account: &AccountId,
+        first_day: u32,
+        last_day: u32,
+    ) -> Result<u32, UsageRepositoryError> {
         let minutes = self.minutes.lock().map_err(poisoned)?;
-        Ok(minutes.get(&(*account, day)).copied().unwrap_or(0))
+        Ok(minutes
+            .iter()
+            .filter(|((owner, day), _)| owner == account && (first_day..=last_day).contains(day))
+            .map(|(_, total)| *total)
+            .sum())
     }
 
     async fn total_between(

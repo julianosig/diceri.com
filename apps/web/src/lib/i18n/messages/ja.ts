@@ -215,6 +215,10 @@ export const ja: Messages = {
 		copied: '文字起こしをコピーしました'
 	},
 	plans: {
+		perMonth: (minutes: number) => `月${String(minutes)}分まで通話`,
+		price: (amount: string) => `${amount} / 月`,
+		usedThisMonth: (used: number, total: number) =>
+			`今月${String(total)}分中${String(used)}分を使用`,
 		free: '無料',
 		pro: 'Pro',
 		team: 'Team',
@@ -222,7 +226,6 @@ export const ja: Messages = {
 		soon: '近日公開',
 		callUpTo: (minutes: number) => `1回の通話は最大${String(minutes)}分`,
 		perDay: (minutes: number) => `1日あたり${String(minutes)}分の通話`,
-		usedToday: (used: number, total: number) => `本日${String(total)}分中${String(used)}分を使用`,
 		freeLine: (call: number, day: number) =>
 			`無料プラン：1回の通話は最大${String(call)}分、1日${String(day)}分まで。`,
 		seePlans: 'プランを見る',
@@ -231,6 +234,7 @@ export const ja: Messages = {
 		close: '閉じる'
 	},
 	limits: {
+		quota: '今月のプランの通話時間を使い切りました。毎月1日(UTC)にリセットされます。',
 		daily: '本日の無料通話時間を使い切りました。毎日午前0時（UTC）にリセットされます。',
 		monthly: '今月の無料枠の上限に達しました。有料プランは近日公開予定です。',
 		busy: '現在Diceriは混み合っています。数分後にもう一度お試しください。',

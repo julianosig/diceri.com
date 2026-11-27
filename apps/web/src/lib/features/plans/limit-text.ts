@@ -1,7 +1,7 @@
 import { ApiError } from '#lib/api/http-client.ts';
 import type { Messages } from '#lib/i18n/index.ts';
 
-const LIMITS = ['daily', 'monthly', 'busy'] as const;
+const LIMITS = ['daily', 'quota', 'monthly', 'busy'] as const;
 type Limit = (typeof LIMITS)[number];
 
 function isLimit(value: string | undefined): value is Limit {

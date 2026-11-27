@@ -7,6 +7,8 @@ describe('limitText', () => {
 	it('explains each limit the API can refuse with', () => {
 		const daily = new ApiError(429, 'Too Many Requests', 'detail', 'daily');
 		expect(limitText(daily, en)).toBe(en.limits.daily);
+		const quota = new ApiError(429, 'Too Many Requests', 'detail', 'quota');
+		expect(limitText(quota, en)).toBe(en.limits.quota);
 		const busy = new ApiError(429, 'Too Many Requests', 'detail', 'busy');
 		expect(limitText(busy, en)).toBe(en.limits.busy);
 	});

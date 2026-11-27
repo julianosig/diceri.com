@@ -30,7 +30,7 @@
 <!-- The limits that apply, stated plainly under the main button, and the plans behind them. -->
 <p class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1 text-sm text-ink-muted">
 	{#if usage}
-		<span>{t.usedToday(usage.usedToday, usage.dailyMinutes)}</span>
+		<span>{t.usedThisMonth(usage.usedThisMonth, usage.monthlyMinutes)}</span>
 		<span aria-hidden="true">·</span>
 		<span>{t.callUpTo(usage.callMinutes)}</span>
 	{:else if free}

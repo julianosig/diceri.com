@@ -13,8 +13,13 @@ pub trait UsageRepository: Send + Sync {
     /// Adds one minute to `account` on `day`; returns that day's new total.
     async fn add_minute(&self, account: &AccountId, day: u32) -> Result<u32, UsageRepositoryError>;
 
-    /// The account's minutes on `day` (0 when it made no call).
-    async fn minutes_on(&self, account: &AccountId, day: u32) -> Result<u32, UsageRepositoryError>;
+    /// The account's minutes from `first_day` to `last_day`, both included (0 without calls).
+    async fn account_minutes_between(
+        &self,
+        account: &AccountId,
+        first_day: u32,
+        last_day: u32,
+    ) -> Result<u32, UsageRepositoryError>;
 
     /// Every account's minutes from `first_day` to `last_day`, both included.
     async fn total_between(

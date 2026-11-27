@@ -52,14 +52,18 @@ impl UsageRepository for Usage {
         Ok(*total)
     }
 
-    async fn minutes_on(&self, account: &AccountId, day: u32) -> Result<u32, UsageRepositoryError> {
-        Ok(self
-            .0
-            .lock()
-            .unwrap()
-            .get(&(*account, day))
-            .copied()
-            .unwrap_or(0))
+    async fn account_minutes_between(
+        &self,
+        account: &AccountId,
+        first: u32,
+        last: u32,
+    ) -> Result<u32, UsageRepositoryError> {
+        let minutes = self.0.lock().unwrap();
+        Ok(minutes
+            .iter()
+            .filter(|((owner, day), _)| owner == account && (first..=last).contains(day))
+            .map(|(_, total)| *total)
+            .sum())
     }
 
     async fn total_between(&self, first: u32, last: u32) -> Result<u64, UsageRepositoryError> {
@@ -81,7 +85,7 @@ struct Fixture {
     closer: Arc<Closer>,
 }
 
-/// Free: 3-minute calls, 5 minutes a day. At most 1 live call, 100 minutes a month.
+/// Free: 3-minute calls, 5 minutes a day, 8 a month. At most 1 live call, 100 minutes a month.
 fn fixture() -> Fixture {
     let rooms = Arc::new(InMemoryRooms::default());
     let accounts = Arc::new(InMemoryAccounts::default());
@@ -91,6 +95,8 @@ fn fixture() -> Fixture {
     let free = PlanLimits {
         call_minutes: 3,
         daily_minutes: 5,
+        monthly_minutes: 8,
+        monthly_price_cents: 0,
         participants: 2,
     };
     let plans = PlanCatalogue {
@@ -194,6 +200,28 @@ async fn ends_the_call_and_refuses_new_ones_at_the_daily_limit() {
     assert!(matches!(
         f.metering.admit(&ana).await,
         Err(LimitError::DailyMinutes)
+    ));
+}
+
+#[tokio::test]
+async fn ends_the_call_and_refuses_new_ones_at_the_plans_monthly_minutes() {
+    let f = fixture();
+    let ana = f.account(1, "ana").await;
+    let today = utc_day(NOW_MS);
+    // 7 minutes on earlier days this month; the month started at least a day before.
+    for _ in 0..7 {
+        f.usage
+            .add_minute(&ana.id, month_start(today))
+            .await
+            .unwrap();
+    }
+    let room = f.call(&ana, 2).await;
+    assert_eq!(f.metering.minutes_left(&room).await.unwrap(), Some(1));
+    f.metering.tick().await;
+    assert!(f.room(&room).await.is_ended());
+    assert!(matches!(
+        f.metering.admit(&ana).await,
+        Err(LimitError::PlanMonthly)
     ));
 }
 

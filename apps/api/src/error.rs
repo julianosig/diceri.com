@@ -113,6 +113,10 @@ impl From<LimitError> for ApiError {
                 limit: "daily",
                 detail: "today's call minutes are used up; they renew at midnight UTC",
             },
+            LimitError::PlanMonthly => Self::Limit {
+                limit: "quota",
+                detail: "this month's call minutes on your plan are used up",
+            },
             LimitError::MonthlyCapacity => Self::Limit {
                 limit: "monthly",
                 detail: "this month's free capacity is used up",

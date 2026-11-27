@@ -53,6 +53,10 @@ pub struct PlanLimits {
     pub call_minutes: u32,
     /// Call minutes per UTC day, across all of the owner's calls.
     pub daily_minutes: u32,
+    /// Call minutes per calendar month (UTC): what the price includes.
+    pub monthly_minutes: u32,
+    /// Monthly price in US cents (0: free).
+    pub monthly_price_cents: u32,
     /// People in a room at once, the host included.
     pub participants: u8,
 }

@@ -218,6 +218,10 @@ export const it: Messages = {
 		copied: 'Trascrizione copiata'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} min di chiamate al mese`,
+		price: (amount: string) => `${amount} / mese`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} su ${String(total)} min usati questo mese`,
 		free: 'Gratis',
 		pro: 'Pro',
 		team: 'Team',
@@ -225,8 +229,6 @@ export const it: Messages = {
 		soon: 'In arrivo',
 		callUpTo: (minutes: number) => `Chiamate fino a ${String(minutes)} min`,
 		perDay: (minutes: number) => `${String(minutes)} min di chiamate al giorno`,
-		usedToday: (used: number, total: number) =>
-			`${String(used)} di ${String(total)} min usati oggi`,
 		freeLine: (call: number, day: number) =>
 			`Gratis: chiamate fino a ${String(call)} min, ${String(day)} min al giorno.`,
 		seePlans: 'Vedi i piani',
@@ -236,6 +238,8 @@ export const it: Messages = {
 		close: 'Chiudi'
 	},
 	limits: {
+		quota:
+			'Hai usato i minuti di chiamata del tuo piano per questo mese. Si rinnovano il giorno 1 (UTC).',
 		daily: 'Hai usato i minuti di chiamata gratuiti di oggi. Si rinnovano a mezzanotte (UTC).',
 		monthly:
 			'La capacità gratuita di questo mese è esaurita. I piani a pagamento arriveranno presto.',

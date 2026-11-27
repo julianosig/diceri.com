@@ -219,6 +219,10 @@ export const es: Messages = {
 		copied: 'Transcripción copiada'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} min de llamadas al mes`,
+		price: (amount: string) => `${amount} / mes`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} de ${String(total)} min usados este mes`,
 		free: 'Gratis',
 		pro: 'Pro',
 		team: 'Team',
@@ -226,8 +230,6 @@ export const es: Messages = {
 		soon: 'Próximamente',
 		callUpTo: (minutes: number) => `Llamadas de hasta ${String(minutes)} min`,
 		perDay: (minutes: number) => `${String(minutes)} min de llamadas al día`,
-		usedToday: (used: number, total: number) =>
-			`${String(used)} de ${String(total)} min usados hoy`,
 		freeLine: (call: number, day: number) =>
 			`Gratis: llamadas de hasta ${String(call)} min, ${String(day)} min al día.`,
 		seePlans: 'Ver planes',
@@ -237,6 +239,7 @@ export const es: Messages = {
 		close: 'Cerrar'
 	},
 	limits: {
+		quota: 'Has usado los minutos de llamada de tu plan este mes. Se renuevan el día 1 (UTC).',
 		daily: 'Ya usaste los minutos de llamada gratis de hoy. Se renuevan a medianoche (UTC).',
 		monthly: 'Se agotó la capacidad gratuita de este mes. Pronto llegarán los planes de pago.',
 		busy: 'Diceri está al máximo de su capacidad ahora mismo. Vuelve a intentarlo en unos minutos.',

@@ -220,6 +220,10 @@ export const de: Messages = {
 		copied: 'Transkript kopiert'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} Min. Anrufe pro Monat`,
+		price: (amount: string) => `${amount} / Monat`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} von ${String(total)} Min. diesen Monat genutzt`,
 		free: 'Kostenlos',
 		pro: 'Pro',
 		team: 'Team',
@@ -227,8 +231,6 @@ export const de: Messages = {
 		soon: 'Demnächst',
 		callUpTo: (minutes: number) => `Anrufe bis ${String(minutes)} Min.`,
 		perDay: (minutes: number) => `${String(minutes)} Min. Anrufe pro Tag`,
-		usedToday: (used: number, total: number) =>
-			`${String(used)} von ${String(total)} Min. heute genutzt`,
 		freeLine: (call: number, day: number) =>
 			`Kostenlos: Anrufe bis ${String(call)} Min., ${String(day)} Min. pro Tag.`,
 		seePlans: 'Tarife ansehen',
@@ -237,6 +239,8 @@ export const de: Messages = {
 		close: 'Schließen'
 	},
 	limits: {
+		quota:
+			'Du hast die Anrufminuten deines Tarifs für diesen Monat aufgebraucht. Sie erneuern sich am 1. (UTC).',
 		daily:
 			'Du hast deine kostenlosen Anrufminuten für heute verbraucht. Sie werden um Mitternacht (UTC) erneuert.',
 		monthly:

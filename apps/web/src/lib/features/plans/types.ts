@@ -5,11 +5,16 @@ export interface PlanInfo {
 	callMinutes: number;
 	/** Call minutes per UTC day, across all of the owner's calls. */
 	dailyMinutes: number;
+	/** Call minutes per calendar month (UTC): what the price includes. */
+	monthlyMinutes: number;
+	/** US cents a month; 0 for free. */
+	monthlyPriceCents: number;
 }
 
 /** The signed-in account's use today (`GET /api/v1/accounts/me`). */
 export interface Usage {
-	usedToday: number;
 	dailyMinutes: number;
+	usedThisMonth: number;
+	monthlyMinutes: number;
 	callMinutes: number;
 }

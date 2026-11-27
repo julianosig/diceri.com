@@ -217,6 +217,10 @@ export const ru: Messages = {
 		copied: 'Расшифровка скопирована'
 	},
 	plans: {
+		perMonth: (minutes: number) => `${String(minutes)} мин звонков в месяц`,
+		price: (amount: string) => `${amount} / мес.`,
+		usedThisMonth: (used: number, total: number) =>
+			`${String(used)} из ${String(total)} мин использовано в этом месяце`,
 		free: 'Бесплатно',
 		pro: 'Pro',
 		team: 'Team',
@@ -224,8 +228,6 @@ export const ru: Messages = {
 		soon: 'Скоро',
 		callUpTo: (minutes: number) => `Звонки до ${String(minutes)} мин`,
 		perDay: (minutes: number) => `${String(minutes)} мин звонков в день`,
-		usedToday: (used: number, total: number) =>
-			`Сегодня использовано ${String(used)} из ${String(total)} мин`,
 		freeLine: (call: number, day: number) =>
 			`Бесплатно: звонки до ${String(call)} мин, ${String(day)} мин в день.`,
 		seePlans: 'Посмотреть тарифы',
@@ -235,6 +237,8 @@ export const ru: Messages = {
 		close: 'Закрыть'
 	},
 	limits: {
+		quota:
+			'Вы израсходовали минуты звонков по тарифу за этот месяц. Они обновятся 1-го числа (UTC).',
 		daily: 'Вы израсходовали бесплатные минуты звонков на сегодня. Они обновятся в полночь (UTC).',
 		monthly: 'Бесплатный лимит на этот месяц исчерпан. Платные тарифы скоро появятся.',
 		busy: 'Сейчас Diceri работает на пределе возможностей. Попробуйте ещё раз через несколько минут.',
