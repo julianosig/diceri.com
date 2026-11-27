@@ -269,7 +269,7 @@ export const zh: Messages = {
 			},
 			{
 				heading: '服务提供商',
-				body: '通话通过 LiveKit 进行；语音由 ElevenLabs、Soniox 和 Google Gemini 进行转写、翻译和朗读。它们只会收到提供通话所必需的内容。'
+				body: '通话通过 LiveKit 进行；语音由 ElevenLabs、Inworld、Soniox 和 Google Gemini 进行转写、翻译和朗读。它们只会收到提供通话所必需的内容。'
 			},
 			{
 				heading: '合理使用',

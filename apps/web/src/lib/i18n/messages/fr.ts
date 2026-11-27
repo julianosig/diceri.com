@@ -283,7 +283,7 @@ export const fr: Messages = {
 			},
 			{
 				heading: 'Prestataires',
-				body: 'Les appels passent par LiveKit ; la parole est transcrite, traduite et prononcée par ElevenLabs, Soniox et Google Gemini. Ils ne reçoivent que ce qui est nécessaire pour assurer l’appel.'
+				body: 'Les appels passent par LiveKit ; la parole est transcrite, traduite et prononcée par ElevenLabs, Inworld, Soniox et Google Gemini. Ils ne reçoivent que ce qui est nécessaire pour assurer l’appel.'
 			},
 			{
 				heading: 'Usage loyal',

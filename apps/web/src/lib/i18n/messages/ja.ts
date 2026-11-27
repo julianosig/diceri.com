@@ -272,7 +272,7 @@ export const ja: Messages = {
 			},
 			{
 				heading: 'サービス提供者',
-				body: '通話は LiveKit を経由します。音声の文字起こし、翻訳、読み上げは ElevenLabs、Soniox、Google Gemini が行います。これらの事業者は、通話の提供に必要な情報のみを受け取ります。'
+				body: '通話は LiveKit を経由します。音声の文字起こし、翻訳、読み上げは ElevenLabs、Inworld、Soniox、Google Gemini が行います。これらの事業者は、通話の提供に必要な情報のみを受け取ります。'
 			},
 			{
 				heading: '適正な利用',

@@ -275,7 +275,7 @@ export const ar: Messages = {
 			},
 			{
 				heading: 'مزوّدو الخدمة',
-				body: 'تمرّ المكالمات عبر LiveKit؛ ويُفرَّغ الكلام نصيًا ويُترجم ويُنطق بواسطة ElevenLabs وSoniox وGoogle Gemini. ولا يتلقّون إلا ما يلزم لتقديم المكالمة.'
+				body: 'تمرّ المكالمات عبر LiveKit؛ ويُفرَّغ الكلام نصيًا ويُترجم ويُنطق بواسطة ElevenLabs وInworld وSoniox وGoogle Gemini. ولا يتلقّون إلا ما يلزم لتقديم المكالمة.'
 			},
 			{
 				heading: 'الاستخدام العادل',

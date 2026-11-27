@@ -284,7 +284,7 @@ export const de: Messages = {
 			},
 			{
 				heading: 'Dienstleister',
-				body: 'Anrufe laufen über LiveKit; Sprache wird von ElevenLabs, Soniox und Google Gemini transkribiert, übersetzt und gesprochen. Sie erhalten nur, was für den Anruf nötig ist.'
+				body: 'Anrufe laufen über LiveKit; Sprache wird von ElevenLabs, Inworld, Soniox und Google Gemini transkribiert, übersetzt und gesprochen. Sie erhalten nur, was für den Anruf nötig ist.'
 			},
 			{
 				heading: 'Faire Nutzung',

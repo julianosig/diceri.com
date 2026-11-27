@@ -272,7 +272,7 @@ export const ko: Messages = {
 			},
 			{
 				heading: '서비스 제공업체',
-				body: '통화는 LiveKit을 통해 이루어지며, 음성의 받아쓰기, 번역, 음성 합성은 ElevenLabs, Soniox, Google Gemini가 처리합니다. 이들은 통화 제공에 필요한 정보만 받습니다.'
+				body: '통화는 LiveKit을 통해 이루어지며, 음성의 받아쓰기, 번역, 음성 합성은 ElevenLabs, Inworld, Soniox, Google Gemini가 처리합니다. 이들은 통화 제공에 필요한 정보만 받습니다.'
 			},
 			{
 				heading: '공정한 이용',

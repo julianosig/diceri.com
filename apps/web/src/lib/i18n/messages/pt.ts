@@ -275,7 +275,7 @@ export const pt: Messages = {
 			},
 			{
 				heading: 'Provedores de serviço',
-				body: 'As chamadas passam pelo LiveKit; a fala é transcrita, traduzida e falada pela ElevenLabs, Soniox e Google Gemini. Eles recebem apenas o necessário para realizar a chamada.'
+				body: 'As chamadas passam pelo LiveKit; a fala é transcrita, traduzida e falada pela ElevenLabs, Inworld, Soniox e Google Gemini. Eles recebem apenas o necessário para realizar a chamada.'
 			},
 			{
 				heading: 'Uso justo',

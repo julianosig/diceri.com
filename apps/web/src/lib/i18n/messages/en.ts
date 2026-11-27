@@ -278,7 +278,7 @@ export const en = {
 			},
 			{
 				heading: 'Service providers',
-				body: 'Calls run through LiveKit; speech is transcribed, translated and spoken by ElevenLabs, Soniox and Google Gemini. They receive only what is needed to provide the call.'
+				body: 'Calls run through LiveKit; speech is transcribed, translated and spoken by ElevenLabs, Inworld, Soniox and Google Gemini. They receive only what is needed to provide the call.'
 			},
 			{
 				heading: 'Fair use',
