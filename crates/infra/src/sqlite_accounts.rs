@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use diceri_application::ports::{
     AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, Username};
+use diceri_domain::{AccessKey, Account, AccountId, Plan, Username};
 use sha2::{Digest as _, Sha256};
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{
@@ -112,6 +112,7 @@ struct AccountRow {
     id: uuid::Uuid,
     username: String,
     mascot: String,
+    plan: String,
     password_hash: String,
 }
 
@@ -124,6 +125,7 @@ impl TryFrom<AccountRow> for StoredAccount {
                 id: AccountId::from_uuid(row.id).map_err(|e| storage(&e))?,
                 username: row.username.parse().map_err(|e| storage(&e))?,
                 mascot: row.mascot.parse().map_err(|e| storage(&e))?,
+                plan: row.plan.parse().map_err(|e| storage(&e))?,
             },
             password_hash: PasswordHash(row.password_hash),
         })
@@ -135,13 +137,14 @@ impl AccountRepository for SqliteAccountRepository {
     async fn create(&self, stored: &StoredAccount) -> Result<(), AccountRepositoryError> {
         let account = &stored.account;
         let result = sqlx::query(
-            "INSERT INTO accounts (id, username, password_hash, mascot, created_at) \
-             VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO accounts (id, username, password_hash, mascot, plan, created_at) \
+             VALUES (?, ?, ?, ?, ?, ?)",
         )
         .bind(account.id.as_uuid())
         .bind(account.username.as_str())
         .bind(stored.password_hash.0.as_str())
         .bind(account.mascot.as_str())
+        .bind(account.plan.as_str())
         .bind(created_at_ms(&account.id))
         .execute(&self.pool)
         .await;
@@ -160,7 +163,7 @@ impl AccountRepository for SqliteAccountRepository {
     ) -> Result<Option<StoredAccount>, AccountRepositoryError> {
         // Served by `uq_accounts_username`.
         let row: Option<AccountRow> = sqlx::query_as(
-            "SELECT id, username, mascot, password_hash FROM accounts WHERE username = ?",
+            "SELECT id, username, mascot, plan, password_hash FROM accounts WHERE username = ?",
         )
         .bind(username.as_str())
         .fetch_optional(&self.pool)
@@ -198,7 +201,7 @@ impl AccountRepository for SqliteAccountRepository {
     ) -> Result<Option<Account>, AccountRepositoryError> {
         // Served by `uq_sessions_token_hash` and the accounts primary key.
         let row: Option<AccountRow> = sqlx::query_as(
-            "SELECT a.id, a.username, a.mascot, a.password_hash \
+            "SELECT a.id, a.username, a.mascot, a.plan, a.password_hash \
              FROM sessions s JOIN accounts a ON a.id = s.account_id \
              WHERE s.token_hash = ? AND s.expires_at > ?",
         )
@@ -220,6 +223,21 @@ impl AccountRepository for SqliteAccountRepository {
             .await
             .map_err(|e| storage(&e))?;
         Ok(())
+    }
+
+    async fn set_plan(
+        &self,
+        username: &Username,
+        plan: Plan,
+    ) -> Result<bool, AccountRepositoryError> {
+        // Served by `uq_accounts_username`.
+        let result = sqlx::query("UPDATE accounts SET plan = ? WHERE username = ?")
+            .bind(plan.as_str())
+            .bind(username.as_str())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| storage(&e))?;
+        Ok(result.rows_affected() == 1)
     }
 }
 

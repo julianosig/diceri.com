@@ -4,7 +4,7 @@
 use diceri_application::ports::{
     AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, Mascot, SessionId, Username};
+use diceri_domain::{AccessKey, Account, AccountId, Mascot, Plan, SessionId, Username};
 
 /// A syntactically valid Argon2id PHC string (adapters never verify it).
 pub(crate) const HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$c2FsdHNhbHQ$aGFzaGhhc2hoYXNo";
@@ -15,6 +15,7 @@ pub(crate) fn stored(seed: u8, username: &str) -> StoredAccount {
             id: AccountId::from_parts(u64::from(seed) + 1, [seed; 10]),
             username: username.parse().unwrap(),
             mascot: Mascot::Pirate,
+            plan: Plan::Free,
         },
         password_hash: PasswordHash(HASH.to_owned()),
     }
@@ -43,6 +44,24 @@ pub(crate) async fn check(accounts: &dyn AccountRepository) {
     accounts.create(&ana).await.unwrap();
     check_accounts(accounts, &ana).await;
     check_sessions(accounts, &ana).await;
+    check_plans(accounts).await;
+}
+
+async fn check_plans(accounts: &dyn AccountRepository) {
+    // New accounts are free; a plan change sticks; unknown usernames report false.
+    assert_eq!(found(accounts, "ana").await.plan, Plan::Free);
+    assert!(accounts.set_plan(&name("ana"), Plan::Pro).await.unwrap());
+    assert_eq!(found(accounts, "ana").await.plan, Plan::Pro);
+    assert!(!accounts.set_plan(&name("nobody"), Plan::Pro).await.unwrap());
+}
+
+async fn found(accounts: &dyn AccountRepository, username: &str) -> Account {
+    accounts
+        .find_by_username(&name(username))
+        .await
+        .unwrap()
+        .unwrap()
+        .account
 }
 
 async fn check_accounts(accounts: &dyn AccountRepository, ana: &StoredAccount) {

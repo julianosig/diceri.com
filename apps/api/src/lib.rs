@@ -8,6 +8,7 @@ mod config;
 mod error;
 mod features;
 mod log_path;
+pub mod plan_command;
 mod rate_limit;
 mod router;
 mod shutdown;

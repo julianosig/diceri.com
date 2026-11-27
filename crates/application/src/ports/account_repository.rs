@@ -1,4 +1,4 @@
-use diceri_domain::{AccessKey, Account, AccountId, SessionId, Username};
+use diceri_domain::{AccessKey, Account, AccountId, Plan, SessionId, Username};
 
 use super::PasswordHash;
 
@@ -50,4 +50,11 @@ pub trait AccountRepository: Send + Sync {
 
     /// Ends one session; unknown tokens are fine.
     async fn delete_session(&self, token: &AccessKey) -> Result<(), AccountRepositoryError>;
+
+    /// Moves an account to `plan`; `false` when no account has that username.
+    async fn set_plan(
+        &self,
+        username: &Username,
+        plan: Plan,
+    ) -> Result<bool, AccountRepositoryError>;
 }

@@ -1,8 +1,11 @@
 //! Binary entry point. Keep this file thin: load config, init telemetry, serve.
-//! `diceri-api backup <file>` writes a database snapshot instead of serving.
+//! `diceri-api backup <file>` writes a database snapshot instead of serving;
+//! `diceri-api plan <username> <plan>` assigns an account's plan.
 
 use anyhow::Context as _;
-use diceri_api::{AppState, Config, backup, build_router, shutdown_signal, telemetry};
+use diceri_api::{
+    AppState, Config, backup, build_router, plan_command, shutdown_signal, telemetry,
+};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -18,6 +21,11 @@ async fn main() -> anyhow::Result<()> {
         && command == "backup"
     {
         return backup::run(&config, std::path::Path::new(target)).await;
+    }
+    if let [command, username, plan] = args.as_slice()
+        && command == "plan"
+    {
+        return plan_command::run(&config, username, plan).await;
     }
 
     let listener = TcpListener::bind(config.bind_address)

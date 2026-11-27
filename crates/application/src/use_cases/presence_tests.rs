@@ -60,6 +60,7 @@ impl Fixture {
             id: AccountId::from_parts(1, [owner.len().to_le_bytes()[0]; 10]),
             username: owner.parse().unwrap(),
             mascot: Mascot::Ghost,
+            plan: diceri_domain::Plan::Free,
         };
         let room = self.rooms.open(&account, settings).await.unwrap();
         self.media.rooms.lock().unwrap().push(LiveRoom {

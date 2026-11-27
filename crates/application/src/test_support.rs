@@ -28,6 +28,7 @@ pub(crate) fn owner() -> Account {
         id: AccountId::from_parts(1, [7; 10]),
         username: "owner".parse().unwrap(),
         mascot: Mascot::Robot,
+        plan: diceri_domain::Plan::Free,
     }
 }
 
@@ -91,6 +92,18 @@ pub(crate) struct InMemoryAccounts {
 
 #[async_trait]
 impl AccountRepository for InMemoryAccounts {
+    async fn set_plan(
+        &self,
+        username: &Username,
+        plan: diceri_domain::Plan,
+    ) -> Result<bool, AccountRepositoryError> {
+        let mut accounts = self.accounts.lock().unwrap();
+        let found = accounts
+            .iter_mut()
+            .find(|stored| &stored.account.username == username);
+        Ok(found.map(|stored| stored.account.plan = plan).is_some())
+    }
+
     async fn create(&self, account: &StoredAccount) -> Result<(), AccountRepositoryError> {
         let mut accounts = self.accounts.lock().unwrap();
         if accounts

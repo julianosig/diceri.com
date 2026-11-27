@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use diceri_application::ports::{
     AccountRepository, AccountRepositoryError, NewSession, StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, Username};
+use diceri_domain::{AccessKey, Account, AccountId, Plan, Username};
 use sha2::{Digest as _, Sha256};
 
 /// In-memory accounts and sessions for tests and quick local runs; hashes session
@@ -89,6 +89,18 @@ impl AccountRepository for MemoryAccountRepository {
             .map_err(poisoned)?
             .retain(|(stored, _, _)| *stored != hash);
         Ok(())
+    }
+
+    async fn set_plan(
+        &self,
+        username: &Username,
+        plan: Plan,
+    ) -> Result<bool, AccountRepositoryError> {
+        let mut accounts = self.accounts.lock().map_err(poisoned)?;
+        let found = accounts
+            .iter_mut()
+            .find(|stored| &stored.account.username == username);
+        Ok(found.map(|stored| stored.account.plan = plan).is_some())
     }
 }
 

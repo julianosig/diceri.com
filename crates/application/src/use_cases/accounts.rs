@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, Account, Mascot, Password, Username};
+use diceri_domain::{AccessKey, Account, Mascot, Password, Plan, Username};
 
 use crate::ports::{
     AccountRepository, AccountRepositoryError, Clock, IdGenerator, NewSession, PasswordHasher,
@@ -91,6 +91,8 @@ impl AccountService {
             id: self.ids.account_id(),
             username: registration.username,
             mascot: registration.mascot,
+            // Everyone starts on the free plan.
+            plan: Plan::Free,
         };
         let password_hash = self.hasher.hash(&registration.password).await?;
         self.accounts

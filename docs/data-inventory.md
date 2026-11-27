@@ -12,6 +12,7 @@ table or store with personal data must be listed here in the same commit that ad
 | `accounts.username` | public handle, also the room's address (`/@name`) | identify the person and their room | contract | while the account exists | account erasure |
 | `accounts.password_hash` | Argon2id hash of the password | sign the owner in | contract | while the account exists | account erasure |
 | `accounts.mascot` | chosen symbol (not personal on its own) | show the room | contract | while the account exists | account erasure |
+| `accounts.plan` | which plan the account is on (free, pro, team) | apply its call limits | contract | while the account exists | account erasure |
 | `accounts.created_at` | sign-up time | operations, abuse handling | legitimate interest | while the account exists | account erasure |
 | `sessions.*` | which account is signed in, SHA-256 of the session token, times | keep a browser signed in | contract | 30 days, or until sign-out | sign-out, expiry purge, cascade on account erasure |
 
