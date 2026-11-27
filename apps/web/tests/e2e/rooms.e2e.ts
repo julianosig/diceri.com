@@ -7,6 +7,7 @@ test('one onboarding step creates the account, its room name and mascot', async 
 	await expect(page.getByPlaceholder('yourname')).toBeHidden();
 	await page.getByRole('button', { name: 'Open my room' }).click();
 	await expect(page.getByLabel('Password', { exact: true })).toBeHidden();
+	await expect(page.getByPlaceholder('yourname')).toBeFocused();
 	await page.getByPlaceholder('yourname').fill(username);
 	await expect(page.getByLabel(`@${username} is available — claim it`)).toBeVisible();
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);

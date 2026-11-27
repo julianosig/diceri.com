@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { untrack } from 'svelte';
+	import { onMount, untrack } from 'svelte';
 	import {
 		AtSign,
 		CircleCheck,
@@ -47,6 +47,12 @@
 	let step = $state<'details' | 'mascot'>('details');
 	let pending = $state(false);
 	let error = $state<string | null>(null);
+	let usernameInput = $state<HTMLInputElement>();
+
+	// The form opens from the home button: typing the @ is the only thing to do next.
+	onMount(() => {
+		usernameInput?.focus();
+	});
 
 	/**
 	 * One field decides the path: a free @ is claimed (password twice + mascot), an
@@ -134,6 +140,7 @@
 				<AtSign class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 				<input
 					class={inputClass}
+					bind:this={usernameInput}
 					bind:value={username}
 					oninput={() => {
 						usernames.update(username);
