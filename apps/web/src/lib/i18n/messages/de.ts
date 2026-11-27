@@ -17,7 +17,11 @@ export const de: Messages = {
 			'Illustration: Eine Person spricht, Diceri übersetzt in der Mitte, und die andere Person hört es in ihrer eigenen Sprache.'
 	},
 	onboarding: {
-		label: 'Melde dich an oder sichere dir deinen Raumnamen',
+		label: 'Raum-Benutzername',
+		mascotTitle: 'Wähle das Maskottchen deines Raums',
+		mascotHint: 'Es begrüßt alle, die vorbeischauen',
+		continue: 'Weiter',
+		back: 'Zurück',
 		usernamePlaceholder: 'deinname',
 		checking: (handle: string) => `@${handle} wird geprüft…`,
 		available: (handle: string) => `@${handle} ist frei – sichere ihn dir`,

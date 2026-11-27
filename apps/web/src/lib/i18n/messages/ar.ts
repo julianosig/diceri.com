@@ -22,7 +22,11 @@ export const ar: Messages = {
 		illustration: 'رسم توضيحي: شخص يتحدث، وDiceri يترجم في المنتصف، والشخص الآخر يسمعه بلغته.'
 	},
 	onboarding: {
-		label: 'سجّل الدخول أو احجز اسم غرفتك',
+		label: 'اسم مستخدم الغرفة',
+		mascotTitle: 'اختر تميمة غرفتك',
+		mascotHint: 'ترحّب بكل من يزور غرفتك',
+		continue: 'متابعة',
+		back: 'رجوع',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `جارٍ التحقق من ${ltr(`@${handle}`)}…`,
 		available: (handle: string) => `${ltr(`@${handle}`)} متاح — احجزه الآن`,

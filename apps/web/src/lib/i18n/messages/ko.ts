@@ -17,7 +17,11 @@ export const ko: Messages = {
 			'일러스트: 한 사람이 말하면 가운데에서 Diceri가 번역하고, 다른 사람은 자신의 언어로 듣습니다.'
 	},
 	onboarding: {
-		label: '로그인하거나 내 방 사용자 이름 만들기',
+		label: '방 사용자 이름',
+		mascotTitle: '방 마스코트를 골라 주세요',
+		mascotHint: '방문하는 모든 사람을 맞이해요',
+		continue: '계속',
+		back: '뒤로',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `@${handle} 확인 중…`,
 		available: (handle: string) => `@${handle} 사용 가능 — 지금 가져가세요`,

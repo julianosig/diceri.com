@@ -17,7 +17,11 @@ export const zh: Messages = {
 		illustration: '插图：一个人说话，Diceri 在中间翻译，另一个人用自己的语言听到。'
 	},
 	onboarding: {
-		label: '登录或领取你的房间用户名',
+		label: '房间用户名',
+		mascotTitle: '选择你的房间吉祥物',
+		mascotHint: '它会迎接每一位访客',
+		continue: '继续',
+		back: '返回',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `正在检查 @${handle}…`,
 		available: (handle: string) => `@${handle} 可用 — 立即领取`,

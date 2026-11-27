@@ -20,7 +20,11 @@ export const en = {
 			'Illustration: one person speaks, Diceri translates in the middle, and the other person hears it in their own language.'
 	},
 	onboarding: {
-		label: 'Login or claim your room username',
+		label: 'Room username',
+		mascotTitle: 'Pick your room mascot',
+		mascotHint: 'It greets everyone who visits',
+		continue: 'Continue',
+		back: 'Back',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `Checking @${handle}…`,
 		available: (handle: string) => `@${handle} is available — claim it`,

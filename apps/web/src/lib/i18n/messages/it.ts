@@ -17,7 +17,11 @@ export const it: Messages = {
 			'Illustrazione: una persona parla, Diceri traduce nel mezzo e l’altra persona la sente nella propria lingua.'
 	},
 	onboarding: {
-		label: 'Accedi o prenota il nome della tua stanza',
+		label: 'Nome utente della stanza',
+		mascotTitle: 'Scegli la mascotte della tua stanza',
+		mascotHint: 'Accoglie chiunque passi a trovarti',
+		continue: 'Continua',
+		back: 'Indietro',
 		usernamePlaceholder: 'tuonome',
 		checking: (handle: string) => `Verifica di @${handle}…`,
 		available: (handle: string) => `@${handle} è libero — prendilo`,

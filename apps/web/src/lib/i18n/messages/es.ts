@@ -17,7 +17,11 @@ export const es: Messages = {
 			'Ilustración: una persona habla, Diceri traduce en el medio y la otra persona lo oye en su propio idioma.'
 	},
 	onboarding: {
-		label: 'Inicia sesión o reserva el nombre de tu sala',
+		label: 'Usuario de la sala',
+		mascotTitle: 'Elige la mascota de tu sala',
+		mascotHint: 'Recibe a todos los que visitan',
+		continue: 'Continuar',
+		back: 'Atrás',
 		usernamePlaceholder: 'tunombre',
 		checking: (handle: string) => `Comprobando @${handle}…`,
 		available: (handle: string) => `@${handle} está libre — resérvalo`,

@@ -17,7 +17,11 @@ export const ru: Messages = {
 			'Иллюстрация: один человек говорит, Diceri переводит посередине, а другой слышит это на своём языке.'
 	},
 	onboarding: {
-		label: 'Войдите или займите имя своей комнаты',
+		label: 'Имя пользователя комнаты',
+		mascotTitle: 'Выберите талисман комнаты',
+		mascotHint: 'Он встречает всех, кто заходит',
+		continue: 'Продолжить',
+		back: 'Назад',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `Проверяем @${handle}…`,
 		available: (handle: string) => `@${handle} свободно — займите его`,

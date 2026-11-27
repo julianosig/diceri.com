@@ -16,7 +16,11 @@ export const ja: Messages = {
 		illustration: 'イラスト：一人が話し、真ん中で Diceri が翻訳し、もう一人が自分の言語で聞きます。'
 	},
 	onboarding: {
-		label: 'ログイン、またはルームのユーザー名を取得',
+		label: 'ルームのユーザー名',
+		mascotTitle: 'ルームのマスコットを選んでください',
+		mascotHint: '訪れる人を出迎えます',
+		continue: '続ける',
+		back: '戻る',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `@${handle} を確認中…`,
 		available: (handle: string) => `@${handle} は使えます — 取得しましょう`,

@@ -17,7 +17,11 @@ export const hi: Messages = {
 			'चित्र: एक व्यक्ति बोलता है, बीच में Diceri अनुवाद करता है, और दूसरा व्यक्ति उसे अपनी भाषा में सुनता है।'
 	},
 	onboarding: {
-		label: 'लॉग इन करें या अपने रूम का यूज़रनेम लें',
+		label: 'रूम यूज़रनेम',
+		mascotTitle: 'अपने रूम का मैस्कट चुनें',
+		mascotHint: 'यह हर आने वाले का स्वागत करता है',
+		continue: 'जारी रखें',
+		back: 'वापस',
 		usernamePlaceholder: 'yourname',
 		checking: (handle: string) => `@${handle} की जाँच हो रही है…`,
 		available: (handle: string) => `@${handle} उपलब्ध है — इसे ले लें`,
