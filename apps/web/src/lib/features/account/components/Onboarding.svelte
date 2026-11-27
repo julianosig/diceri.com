@@ -28,11 +28,9 @@
 		session: AccountSession;
 		/** Pre-fills and checks a name (`/?claim=ana` from a free `/@ana`). */
 		initialUsername?: string;
-		/** Set once the name is resolved and the full form shows (the page hides its headline). */
-		open?: boolean;
 	}
 
-	let { session, initialUsername, open = $bindable(false) }: Props = $props();
+	let { session, initialUsername }: Props = $props();
 
 	const usernames = new UsernameCheck();
 	$effect(() => () => {
@@ -105,19 +103,9 @@
 		}
 	}
 
-	/**
-	 * Before a name is resolved only the big @ field shows, centred; once resolved it becomes a
-	 * regular titled form, styled like the pre-join screen.
-	 */
-	$effect(() => {
-		open = mode !== null;
-	});
-
-	const fieldClass = $derived(
-		open
-			? 'flex items-center gap-2 rounded-lg border border-ink-muted/30 bg-surface px-3 focus-within:border-brand-500'
-			: 'flex items-center gap-3 rounded-xl border-2 border-ink-muted/25 bg-surface px-4 focus-within:border-brand-500'
-	);
+	/** Styled like the pre-join screen; only the @ field shows until the name resolves. */
+	const fieldClass =
+		'flex items-center gap-2 rounded-lg border border-ink-muted/30 bg-surface px-3 focus-within:border-brand-500';
 	const inputClass = 'w-full bg-transparent py-2 text-base outline-none';
 	const labelClass = 'text-sm text-ink-muted';
 </script>
@@ -138,24 +126,14 @@
 		oncreate={() => void send()}
 	/>
 {:else}
-	<form
-		class={['flex w-full max-w-md flex-col gap-5', open ? 'text-start' : 'text-center']}
-		onsubmit={submit}
-	>
-		{#if open}
-			<h1 class="text-center text-3xl font-semibold tracking-tight">{i18n.t.openRoom.submit}</h1>
-		{/if}
-		<label class={['flex flex-col', open ? 'gap-1' : 'gap-2']}>
-			<span class={open ? labelClass : 'text-xl font-bold'}>{t.label}</span>
-			<span class={[fieldClass, !open && 'justify-center']} dir="ltr">
+	<form class="flex w-full max-w-md flex-col gap-5 text-start" onsubmit={submit}>
+		<h1 class="text-center text-3xl font-semibold tracking-tight">{i18n.t.openRoom.submit}</h1>
+		<label class="flex flex-col gap-1">
+			<span class={labelClass}>{t.label}</span>
+			<span class={fieldClass} dir="ltr">
 				<AtSign class="size-5 shrink-0 text-ink-muted" aria-hidden="true" />
 				<input
-					class={[
-						'bg-transparent outline-none',
-						open
-							? 'w-full py-2 text-base'
-							: 'field-sizing-content min-w-[9ch] py-3.5 text-xl font-semibold'
-					]}
+					class={inputClass}
 					bind:value={username}
 					oninput={() => {
 						usernames.update(username);
@@ -174,10 +152,7 @@
 		</label>
 
 		{#if usernames.status !== 'empty' && usernames.status !== 'available'}
-			<p
-				class={['-mt-2 flex items-center gap-1.5 text-sm font-medium', !open && 'justify-center']}
-				aria-live="polite"
-			>
+			<p class="-mt-2 flex items-center gap-1.5 text-sm font-medium" aria-live="polite">
 				{#if usernames.status === 'checking'}
 					<LoaderCircle class="size-3.5 animate-spin text-ink-muted" aria-hidden="true" />
 					<span class="text-ink-muted">{t.checking(handle)}</span>
