@@ -11,6 +11,7 @@ mod speech_to_text;
 mod text_to_speech;
 mod translation_dispatcher;
 mod translator;
+mod usage_repository;
 mod voice_cloner;
 
 pub use account_repository::{
@@ -32,4 +33,5 @@ pub use text_to_speech::{
 };
 pub use translation_dispatcher::{DispatchError, TranslationDispatcher};
 pub use translator::{ContextTurn, TranslationRequest, Translator, TranslatorError};
+pub use usage_repository::{UsageRepository, UsageRepositoryError};
 pub use voice_cloner::{VoiceCloneError, VoiceCloner, VoiceSample};

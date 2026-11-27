@@ -3,12 +3,13 @@
 //! Routes are grouped by feature under `features/`. This crate wires adapters
 //! from `diceri-infra` into use cases from `diceri-application`.
 
-pub mod backup;
+pub mod commands;
 mod config;
 mod error;
 mod features;
+mod limits_config;
 mod log_path;
-pub mod plan_command;
+mod meter_task;
 mod rate_limit;
 mod router;
 mod shutdown;
@@ -18,6 +19,7 @@ mod web_cache;
 
 pub use config::{AgentConfig, Config, LiveKitConfig, LogFormat};
 pub use error::ApiError;
+pub use meter_task::run_meter;
 pub use router::build_router;
 pub use shutdown::shutdown_signal;
 pub use state::AppState;

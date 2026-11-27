@@ -51,6 +51,15 @@ impl RoomRepository for MemoryRoomRepository {
             .cloned())
     }
 
+    async fn live_rooms(&self) -> Result<Vec<Room>, RoomRepositoryError> {
+        let rooms = self.rooms.read().map_err(poisoned)?;
+        Ok(rooms
+            .values()
+            .filter(|room| !room.is_ended())
+            .cloned()
+            .collect())
+    }
+
     async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {
         let mut rooms = self.rooms.write().map_err(poisoned)?;
         let slot = rooms

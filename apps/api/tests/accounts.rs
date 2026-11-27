@@ -23,7 +23,10 @@ async fn signing_up_returns_the_account_and_a_session_cookie() {
     let (status, cookie, account) =
         exchange(&app, "POST", "/api/v1/accounts", &[], Some(body)).await;
     assert_eq!(status, StatusCode::CREATED);
-    assert_eq!(account, json!({ "username": "ana_92", "mascot": "ninja" }));
+    assert_eq!(
+        account,
+        json!({ "username": "ana_92", "mascot": "ninja", "plan": "free" })
+    );
     let cookie = cookie.unwrap();
     assert!(cookie.contains("HttpOnly") && cookie.contains("SameSite=Lax"));
     assert!(!cookie.contains(PASSWORD));

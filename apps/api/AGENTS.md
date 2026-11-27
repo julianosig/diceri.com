@@ -51,6 +51,12 @@ in responses.
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
 | `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |
 | `DICERI_LIVEKIT_API_SECRET` | unset | LiveKit API secret (secret) |
+| `DICERI_FREE_CALL_MINUTES` | `20` | longest call on the free plan (everyone's default) |
+| `DICERI_FREE_DAILY_MINUTES` | `40` | call minutes per account per UTC day on the free plan |
+| `DICERI_PRO_CALL_MINUTES` / `DICERI_PRO_DAILY_MINUTES` | `60` / `300` | same for the pro plan (assigned with `diceri-api plan <user> pro`) |
+| `DICERI_TEAM_CALL_MINUTES` / `DICERI_TEAM_DAILY_MINUTES` | `120` / `600` | same for the team plan |
+| `DICERI_MAX_LIVE_CALLS` | `15` | calls with someone in them at once, across the service |
+| `DICERI_MONTHLY_CALL_MINUTES` | `1500` | call minutes per UTC month across every account (keeps within the media free tier) |
 | `DICERI_VOICE_CLONING` | `false` | `true` offers recording your own voice (paid feature, off until it ships) |
 | `DICERI_ELEVENLABS_API_KEY` | unset | voice cloning (secret); recording a voice also needs the Soniox key |
 | `DICERI_SONIOX_API_KEY` | unset | checks a voice recording holds words before it is cloned (secret) |

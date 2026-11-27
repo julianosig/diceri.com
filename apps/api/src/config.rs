@@ -3,7 +3,10 @@ use std::net::SocketAddr;
 use std::path::PathBuf;
 
 use anyhow::Context as _;
+use diceri_application::use_cases::{Capacity, PlanCatalogue};
 use secrecy::SecretString;
+
+use crate::limits_config::{capacity_from_env, plans_from_env};
 
 /// Default POSTs per client per minute: generous for people, tight for scripts.
 const DEFAULT_WRITE_LIMIT: u32 = 60;
@@ -59,6 +62,10 @@ pub struct Config {
     pub secure_cookies: bool,
     /// Recording your own voice for translations (a paid feature, off until it ships).
     pub voice_cloning: bool,
+    /// What each plan allows (`DICERI_<PLAN>_CALL_MINUTES`, `..._DAILY_MINUTES`).
+    pub plans: PlanCatalogue,
+    /// Limits across every account (`DICERI_MAX_LIVE_CALLS`, `DICERI_MONTHLY_CALL_MINUTES`).
+    pub capacity: Capacity,
 }
 
 impl Config {
@@ -102,6 +109,8 @@ impl Config {
                 .unwrap_or_else(|_| "sqlite://diceri.db".to_owned()),
             secure_cookies: env::var("DICERI_SECURE_COOKIES").is_ok_and(|value| value == "true"),
             voice_cloning: env::var("DICERI_VOICE_CLONING").is_ok_and(|value| value == "true"),
+            plans: plans_from_env()?,
+            capacity: capacity_from_env()?,
         })
     }
 
@@ -123,6 +132,8 @@ impl Config {
             database_url: "sqlite::memory:".to_owned(),
             secure_cookies: false,
             voice_cloning: false,
+            plans: PlanCatalogue::default(),
+            capacity: Capacity::default(),
         }
     }
 }

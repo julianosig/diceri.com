@@ -20,9 +20,15 @@ pub(crate) async fn host_session(
     CallerKey(key): CallerKey,
     Json(body): Json<ProfileRequest>,
 ) -> Result<Json<JoinResponse>, ApiError> {
+    let code = parse_room_code(&code)?;
+    // The host starting (or rejoining) the call spends the owner's plan minutes.
+    state
+        .metering
+        .admit_owner_of(&state.rooms.get(&code).await?)
+        .await?;
     let ticket = state
         .admission
-        .join_as_host(&parse_room_code(&code)?, &key, &body.profile()?)
+        .join_as_host(&code, &key, &body.profile()?)
         .await?;
     tracing::info!(identity = %ticket.identity, "host joined");
     Ok(Json(ticket.into()))

@@ -24,4 +24,6 @@ pub trait RoomRepository: Send + Sync {
         owner: &Username,
     ) -> Result<Option<Room>, RoomRepositoryError>;
     async fn update(&self, room: Room) -> Result<(), RoomRepositoryError>;
+    /// Every room that has not ended, for the per-minute usage meter.
+    async fn live_rooms(&self) -> Result<Vec<Room>, RoomRepositoryError>;
 }

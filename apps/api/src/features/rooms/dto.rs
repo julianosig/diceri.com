@@ -71,6 +71,9 @@ pub(crate) struct RoomResponse {
     /// media server is configured. Lets visitors see a room nobody is in as not live.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub people: Option<usize>,
+    /// Minutes before the owner's plan ends this call, on `/users/{username}/room` only.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub minutes_left: Option<u32>,
 }
 
 impl From<&Room> for RoomResponse {
@@ -83,6 +86,7 @@ impl From<&Room> for RoomResponse {
             entry: room.settings.entry.into(),
             mascot: room.settings.mascot.as_str(),
             people: None,
+            minutes_left: None,
         }
     }
 }

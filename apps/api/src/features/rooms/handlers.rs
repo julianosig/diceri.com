@@ -13,6 +13,7 @@ pub(crate) async fn open_room(
     CurrentAccount(owner): CurrentAccount,
     Json(body): Json<OpenRoomRequest>,
 ) -> Result<(StatusCode, Json<CreatedRoomResponse>), ApiError> {
+    state.metering.admit(&owner).await?;
     let room = state.rooms.open(&owner, body.settings()).await?;
     tracing::info!(room_id = %room.id, "room opened");
     let body = CreatedRoomResponse {
@@ -31,8 +32,10 @@ pub(crate) async fn user_room(
     let owner: Username = username.parse().map_err(|_| ApiError::NotFound)?;
     let room = state.rooms.live(&owner).await?;
     let people = state.presence.people_in(&room.id).await;
+    let minutes_left = state.metering.minutes_left(&room).await?;
     Ok(Json(RoomResponse {
         people,
+        minutes_left,
         ..RoomResponse::from(&room)
     }))
 }

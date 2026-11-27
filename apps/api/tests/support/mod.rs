@@ -115,6 +115,16 @@ pub(crate) fn wav(ms: usize, loud: bool) -> Vec<u8> {
     out
 }
 
+/// App with media and the given plan limits and shared capacity.
+pub(crate) fn app_with_limits(
+    plans: diceri_application::use_cases::PlanCatalogue,
+    capacity: diceri_application::use_cases::Capacity,
+) -> Router {
+    let mut state = AppState::in_memory(Some(Arc::new(FakeIssuer)));
+    state.metering = state.metering.with_limits(plans, capacity);
+    build_router(state, &Config::for_tests())
+}
+
 pub(crate) fn app(media: bool) -> Router {
     let issuer = media.then(|| -> Arc<dyn MediaAccessIssuer> { Arc::new(FakeIssuer) });
     build_router(AppState::in_memory(issuer), &Config::for_tests())

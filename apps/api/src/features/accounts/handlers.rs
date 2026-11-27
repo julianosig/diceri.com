@@ -28,6 +28,7 @@ pub(crate) struct SignInRequest {
 pub(crate) struct AccountResponse {
     username: String,
     mascot: &'static str,
+    plan: &'static str,
 }
 
 impl From<&Account> for AccountResponse {
@@ -35,8 +36,28 @@ impl From<&Account> for AccountResponse {
         Self {
             username: account.username.to_string(),
             mascot: account.mascot.as_str(),
+            plan: account.plan.as_str(),
         }
     }
+}
+
+/// The signed-in account with its plan's limits and today's use, shown on the home page.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct MeResponse {
+    #[serde(flatten)]
+    account: AccountResponse,
+    usage: UsageResponse,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct UsageResponse {
+    /// Call minutes used today (UTC), charged while someone is in the owner's call.
+    used_today: u32,
+    daily_minutes: u32,
+    /// Longest single call.
+    call_minutes: u32,
 }
 
 fn invalid(error: impl std::fmt::Display) -> ApiError {
@@ -115,8 +136,19 @@ pub(crate) async fn profile(
     Ok(Json(AccountResponse::from(&account)))
 }
 
-pub(crate) async fn me(CurrentAccount(account): CurrentAccount) -> Json<AccountResponse> {
-    Json(AccountResponse::from(&account))
+pub(crate) async fn me(
+    State(state): State<AppState>,
+    CurrentAccount(account): CurrentAccount,
+) -> Result<Json<MeResponse>, ApiError> {
+    let allowance = state.metering.allowance(&account).await?;
+    Ok(Json(MeResponse {
+        account: AccountResponse::from(&account),
+        usage: UsageResponse {
+            used_today: allowance.used_today,
+            daily_minutes: allowance.limits.daily_minutes,
+            call_minutes: allowance.limits.call_minutes,
+        },
+    }))
 }
 
 /// Ends this browser's session server-side and expires the cookie.

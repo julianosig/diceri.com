@@ -55,6 +55,9 @@ export default defineConfig({
 				DICERI_WRITE_LIMIT_PER_MINUTE: '0',
 				// The paid voice feature stays covered end to end while it is off in production.
 				DICERI_VOICE_CLONING: 'true',
+				// Tests open many rooms within a minute; production keeps the default caps.
+				DICERI_MAX_LIVE_CALLS: '1000',
+				DICERI_MONTHLY_CALL_MINUTES: '1000000',
 				DICERI_DEPLOYMENT: 'e2e',
 				// A fresh database per run, never the dev file.
 				DICERI_DATABASE_URL: 'sqlite::memory:'

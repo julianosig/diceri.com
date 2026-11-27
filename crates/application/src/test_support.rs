@@ -206,6 +206,15 @@ impl RoomRepository for InMemoryRooms {
             .cloned())
     }
 
+    async fn live_rooms(&self) -> Result<Vec<Room>, RoomRepositoryError> {
+        let rooms = self.0.lock().unwrap();
+        Ok(rooms
+            .values()
+            .filter(|room| !room.is_ended())
+            .cloned()
+            .collect())
+    }
+
     async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {
         self.0.lock().unwrap().insert(room.id, room);
         Ok(())

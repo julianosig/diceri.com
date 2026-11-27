@@ -2,7 +2,9 @@ use axum::Json;
 use axum::http::{HeaderValue, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use diceri_application::ports::VoiceCloneError;
-use diceri_application::use_cases::{AccountError, AdmissionError, RoomError, VoiceError};
+use diceri_application::use_cases::{
+    AccountError, AdmissionError, LimitError, RoomError, VoiceError,
+};
 use diceri_domain::RoomRuleError;
 use serde::Serialize;
 
@@ -25,6 +27,12 @@ pub enum ApiError {
     TooManyRequests(String),
     #[error("service unavailable: {0}")]
     Unavailable(&'static str),
+    /// A plan or capacity limit: 429 with a machine-readable `limit` (daily, monthly, busy).
+    #[error("limit reached: {detail}")]
+    Limit {
+        limit: &'static str,
+        detail: &'static str,
+    },
     #[error(transparent)]
     Internal(#[from] anyhow::Error),
 }
@@ -35,6 +43,9 @@ struct ProblemDetails {
     status: u16,
     #[serde(skip_serializing_if = "Option::is_none")]
     detail: Option<String>,
+    /// Which limit was reached, so the web app can explain it in the visitor's language.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    limit: Option<&'static str>,
 }
 
 impl ApiError {
@@ -56,6 +67,11 @@ impl ApiError {
                 "Service Unavailable",
                 Some(detail.to_owned()),
             ),
+            Self::Limit { detail, .. } => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "Too Many Requests",
+                Some(detail.to_owned()),
+            ),
             Self::Internal(error) => {
                 tracing::error!(error = ?error, "internal error");
                 (
@@ -70,11 +86,16 @@ impl ApiError {
 
 impl IntoResponse for ApiError {
     fn into_response(self) -> Response {
+        let limit = match &self {
+            Self::Limit { limit, .. } => Some(*limit),
+            _ => None,
+        };
         let (status, title, detail) = self.parts();
         let body = ProblemDetails {
             title,
             status: status.as_u16(),
             detail,
+            limit,
         };
         let mut response = (status, Json(body)).into_response();
         response.headers_mut().insert(
@@ -82,6 +103,28 @@ impl IntoResponse for ApiError {
             HeaderValue::from_static("application/problem+json"),
         );
         response
+    }
+}
+
+impl From<LimitError> for ApiError {
+    fn from(error: LimitError) -> Self {
+        match error {
+            LimitError::DailyMinutes => Self::Limit {
+                limit: "daily",
+                detail: "today's call minutes are used up; they renew at midnight UTC",
+            },
+            LimitError::MonthlyCapacity => Self::Limit {
+                limit: "monthly",
+                detail: "this month's free capacity is used up",
+            },
+            LimitError::Busy => Self::Limit {
+                limit: "busy",
+                detail: "too many calls are live right now; try again in a few minutes",
+            },
+            LimitError::Usage(source) => Self::Internal(source.into()),
+            LimitError::Accounts(source) => Self::Internal(source.into()),
+            LimitError::Rooms(source) => Self::Internal(source.into()),
+        }
     }
 }
 

@@ -3,9 +3,7 @@
 //! `diceri-api plan <username> <plan>` assigns an account's plan.
 
 use anyhow::Context as _;
-use diceri_api::{
-    AppState, Config, backup, build_router, plan_command, shutdown_signal, telemetry,
-};
+use diceri_api::{AppState, Config, build_router, commands, run_meter, shutdown_signal, telemetry};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -20,12 +18,12 @@ async fn main() -> anyhow::Result<()> {
     if let [command, target] = args.as_slice()
         && command == "backup"
     {
-        return backup::run(&config, std::path::Path::new(target)).await;
+        return commands::backup::run(&config, std::path::Path::new(target)).await;
     }
     if let [command, username, plan] = args.as_slice()
         && command == "plan"
     {
-        return plan_command::run(&config, username, plan).await;
+        return commands::plan::run(&config, username, plan).await;
     }
 
     let listener = TcpListener::bind(config.bind_address)
@@ -37,6 +35,9 @@ async fn main() -> anyhow::Result<()> {
     }
 
     let state = AppState::from_config(&config).await?;
+    // The call meter runs beside the server and stops with it (tracked, not detached).
+    let (stop_meter, meter_stops) = tokio::sync::watch::channel(false);
+    let meter = tokio::spawn(run_meter(state.metering.clone(), meter_stops));
     let router = build_router(state, &config);
     // Peer addresses feed the per-client write limit.
     let service = router.into_make_service_with_connect_info::<std::net::SocketAddr>();
@@ -44,6 +45,8 @@ async fn main() -> anyhow::Result<()> {
         .with_graceful_shutdown(shutdown_signal())
         .await
         .context("server error")?;
+    let _ = stop_meter.send(true);
+    let _ = meter.await;
 
     tracing::info!("diceri-api stopped");
     Ok(())

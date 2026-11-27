@@ -35,6 +35,8 @@ pub struct Room {
     voices: Vec<String>,
     /// Set when the host ends the call for everyone; nobody can join afterwards.
     ended: bool,
+    /// Minutes someone has been in this call; counted against the owner's plan.
+    pub call_minutes: u32,
 }
 
 impl Room {
@@ -63,6 +65,7 @@ impl Room {
             requests: Vec::new(),
             voices: Vec::new(),
             ended: false,
+            call_minutes: 0,
         }
     }
 

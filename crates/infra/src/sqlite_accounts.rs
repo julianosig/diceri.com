@@ -57,6 +57,11 @@ impl SqliteAccountRepository {
         Ok(Self { pool })
     }
 
+    /// The connection pool, for other stores in the same database (`call_minutes`).
+    pub(crate) fn pool(&self) -> &SqlitePool {
+        &self.pool
+    }
+
     /// Writes a consistent snapshot of the live database to `target` (which must not
     /// exist) with `VACUUM INTO`, then checks the copy with `PRAGMA integrity_check`.
     pub async fn snapshot(&self, target: &std::path::Path) -> Result<(), AccountRepositoryError> {
