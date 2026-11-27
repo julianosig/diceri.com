@@ -22,7 +22,7 @@ export const zh: Messages = {
 		mascotHint: '它会迎接每一位访客',
 		continue: '继续',
 		back: '返回',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `正在检查 @${handle}…`,
 		available: (handle: string) => `@${handle} 可用 — 立即领取`,
 		welcomeBack: (handle: string) => `欢迎回来，@${handle}`,

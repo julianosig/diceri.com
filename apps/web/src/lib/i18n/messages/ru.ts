@@ -22,7 +22,7 @@ export const ru: Messages = {
 		mascotHint: 'Он встречает всех, кто заходит',
 		continue: 'Продолжить',
 		back: 'Назад',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `Проверяем @${handle}…`,
 		available: (handle: string) => `@${handle} свободно — займите его`,
 		welcomeBack: (handle: string) => `С возвращением, @${handle}`,

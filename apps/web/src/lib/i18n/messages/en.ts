@@ -25,7 +25,7 @@ export const en = {
 		mascotHint: 'It greets everyone who visits',
 		continue: 'Continue',
 		back: 'Back',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `Checking @${handle}…`,
 		available: (handle: string) => `@${handle} is available — claim it`,
 		welcomeBack: (handle: string) => `Welcome back, @${handle}`,

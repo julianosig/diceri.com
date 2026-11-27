@@ -22,7 +22,7 @@ export const it: Messages = {
 		mascotHint: 'Accoglie chiunque passi a trovarti',
 		continue: 'Continua',
 		back: 'Indietro',
-		usernamePlaceholder: 'tuonome',
+		usernamePlaceholder: 'nome_stanza',
 		checking: (handle: string) => `Verifica di @${handle}…`,
 		available: (handle: string) => `@${handle} è libero — prendilo`,
 		welcomeBack: (handle: string) => `Ciao di nuovo, @${handle}`,

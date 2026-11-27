@@ -22,7 +22,7 @@ export const hi: Messages = {
 		mascotHint: 'यह हर आने वाले का स्वागत करता है',
 		continue: 'जारी रखें',
 		back: 'वापस',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `@${handle} की जाँच हो रही है…`,
 		available: (handle: string) => `@${handle} उपलब्ध है — इसे ले लें`,
 		welcomeBack: (handle: string) => `फिर से स्वागत है, @${handle}`,

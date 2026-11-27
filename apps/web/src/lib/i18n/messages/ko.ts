@@ -22,7 +22,7 @@ export const ko: Messages = {
 		mascotHint: '방문하는 모든 사람을 맞이해요',
 		continue: '계속',
 		back: '뒤로',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `@${handle} 확인 중…`,
 		available: (handle: string) => `@${handle} 사용 가능 — 지금 가져가세요`,
 		welcomeBack: (handle: string) => `다시 오신 걸 환영해요, @${handle}`,

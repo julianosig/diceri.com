@@ -21,7 +21,7 @@ export const ja: Messages = {
 		mascotHint: '訪れる人を出迎えます',
 		continue: '続ける',
 		back: '戻る',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `@${handle} を確認中…`,
 		available: (handle: string) => `@${handle} は使えます — 取得しましょう`,
 		welcomeBack: (handle: string) => `おかえりなさい、@${handle}`,

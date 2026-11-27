@@ -4,11 +4,11 @@ import { openMyRoom, PASSWORD, signUp, uniqueUsername } from './support/accounts
 test('one onboarding step creates the account, its room name and mascot', async ({ page }) => {
 	const username = uniqueUsername();
 	await page.goto('/');
-	await expect(page.getByPlaceholder('yourname')).toBeHidden();
+	await expect(page.getByPlaceholder('room_username')).toBeHidden();
 	await page.getByRole('button', { name: 'Open my room' }).click();
 	await expect(page.getByLabel('Password', { exact: true })).toBeHidden();
-	await expect(page.getByPlaceholder('yourname')).toBeFocused();
-	await page.getByPlaceholder('yourname').fill(username);
+	await expect(page.getByPlaceholder('room_username')).toBeFocused();
+	await page.getByPlaceholder('room_username').fill(username);
 	await expect(page.getByLabel(`@${username} is available — claim it`)).toBeVisible();
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByLabel('Repeat password').fill('not the same');
@@ -31,7 +31,7 @@ test('one onboarding step creates the account, its room name and mascot', async 
 	await page.getByRole('menuitem', { name: 'Sign out' }).click();
 	await page.goto('/');
 	await page.getByRole('button', { name: 'Open my room' }).click();
-	await page.getByPlaceholder('yourname').fill(username);
+	await page.getByPlaceholder('room_username').fill(username);
 	await expect(page.getByText(`Welcome back, @${username}`)).toBeVisible();
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByRole('button', { name: 'Sign in' }).click();
@@ -44,7 +44,7 @@ test('an existing username asks only for the password', async ({ page, browser }
 	await visitor.goto('/');
 	await visitor.getByRole('button', { name: 'Open my room' }).click();
 	await expect(visitor.getByText('Room username')).toBeVisible();
-	await visitor.getByPlaceholder('yourname').fill(taken);
+	await visitor.getByPlaceholder('room_username').fill(taken);
 	await expect(visitor.getByText(`Welcome back, @${taken}`)).toBeVisible();
 	await expect(visitor.getByLabel('Repeat password')).toBeHidden();
 	await expect(visitor.getByRole('button', { name: 'Create my room' })).toBeHidden();

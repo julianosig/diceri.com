@@ -27,7 +27,7 @@ export const ar: Messages = {
 		mascotHint: 'ترحّب بكل من يزور غرفتك',
 		continue: 'متابعة',
 		back: 'رجوع',
-		usernamePlaceholder: 'yourname',
+		usernamePlaceholder: 'room_username',
 		checking: (handle: string) => `جارٍ التحقق من ${ltr(`@${handle}`)}…`,
 		available: (handle: string) => `${ltr(`@${handle}`)} متاح — احجزه الآن`,
 		welcomeBack: (handle: string) => `مرحبًا بعودتك، ${ltr(`@${handle}`)}`,
