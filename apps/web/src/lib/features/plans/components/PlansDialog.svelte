@@ -66,7 +66,7 @@
 					</span>
 				</div>
 				<p class="text-2xl font-semibold">
-					{free ? t.free : t.price(price(info.monthlyPriceCents))}
+					{t.price(price(info.monthlyPriceCents))}
 				</p>
 				<ul class="flex flex-col gap-1.5 text-sm">
 					<li class="flex items-center gap-2">
