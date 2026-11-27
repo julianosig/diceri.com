@@ -165,8 +165,12 @@ fn log_targets(speaker: &str, targets: &[LanguageCode]) {
     tracing::info!(speaker, ?languages, "translation targets changed");
 }
 
-/// Deletes a voice clone in the background (ADR 0006: clones never outlive the call).
+/// Deletes a call's voice clone in the background (ADR 0006). Account clones (ADR 0017)
+/// outlive the call: they are deleted only with "Delete my voice".
 fn delete_clone(providers: &Arc<Providers>, voice: VoiceId) {
+    if providers.keeps_account_voices {
+        return;
+    }
     let cloner = providers.cloner.clone();
     tokio::spawn(async move {
         match cloner.delete(&voice).await {

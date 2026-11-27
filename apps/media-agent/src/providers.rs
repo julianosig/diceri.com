@@ -21,6 +21,8 @@ pub(crate) struct Providers {
     pub tts: Arc<dyn TextToSpeech>,
     /// Deletes participants' voice clones when they leave (ADR 0006).
     pub cloner: Arc<dyn VoiceCloner>,
+    /// Clones belong to accounts and are not deleted when their speaker leaves (ADR 0017).
+    pub keeps_account_voices: bool,
 }
 
 impl Providers {
@@ -41,6 +43,7 @@ impl Providers {
             )),
             tts,
             cloner,
+            keeps_account_voices: config.keeps_account_voices,
         })
     }
 }

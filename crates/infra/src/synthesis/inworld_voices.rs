@@ -68,6 +68,10 @@ fn clone_failure(status: StatusCode, body: String) -> VoiceCloneError {
 
 #[async_trait]
 impl VoiceCloner for InworldVoiceCloner {
+    fn provider(&self) -> &'static str {
+        "inworld"
+    }
+
     async fn create(&self, name: &str, sample: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
         let failed = |error: &dyn std::fmt::Display| VoiceCloneError::Request(error.to_string());
         let body = json!({

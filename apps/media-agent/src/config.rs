@@ -31,6 +31,9 @@ pub(crate) struct AgentConfig {
     pub(crate) tts_provider: TtsProvider,
     /// Required only when `tts_provider` is Inworld.
     pub(crate) inworld_api_key: Option<SecretString>,
+    /// The API keeps recordings (`DICERI_VOICE_KEY` set, same settings file): clones then
+    /// belong to accounts and outlive calls (ADR 0017), so leaving deletes nothing.
+    pub(crate) keeps_account_voices: bool,
     /// `DICERI_DEPLOYMENT` (default `dev`): whose orphaned voice clones to sweep.
     pub(crate) deployment: String,
 }
@@ -67,6 +70,7 @@ impl AgentConfig {
             inworld_api_key: env::var("DICERI_INWORLD_API_KEY")
                 .ok()
                 .map(SecretString::from),
+            keeps_account_voices: env::var("DICERI_VOICE_KEY").is_ok_and(|key| !key.is_empty()),
             deployment: env::var("DICERI_DEPLOYMENT").unwrap_or_else(|_| "dev".to_owned()),
         })
     }

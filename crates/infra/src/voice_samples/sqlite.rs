@@ -1,5 +1,7 @@
 use async_trait::async_trait;
-use diceri_application::ports::{VoiceSample, VoiceSampleStore, VoiceSampleStoreError};
+use diceri_application::ports::{
+    KeptClone, VoiceId, VoiceSample, VoiceSampleStore, VoiceSampleStoreError,
+};
 use diceri_domain::AccountId;
 use sqlx::SqlitePool;
 
@@ -101,6 +103,12 @@ impl VoiceSampleStore for SqliteVoiceSamples {
     }
 
     async fn delete(&self, account: &AccountId) -> Result<bool, VoiceSampleStoreError> {
+        // Served by `pk_account_voices`; the clone goes with the recording.
+        sqlx::query("DELETE FROM account_voices WHERE account_id = ?")
+            .bind(account.as_uuid())
+            .execute(&self.pool)
+            .await
+            .map_err(|e| storage(&e))?;
         // Served by `pk_voice_samples`.
         let result = sqlx::query("DELETE FROM voice_samples WHERE account_id = ?")
             .bind(account.as_uuid())
@@ -108,6 +116,46 @@ impl VoiceSampleStore for SqliteVoiceSamples {
             .await
             .map_err(|e| storage(&e))?;
         Ok(result.rows_affected() > 0)
+    }
+
+    async fn kept_clone(
+        &self,
+        account: &AccountId,
+    ) -> Result<Option<KeptClone>, VoiceSampleStoreError> {
+        // Served by `pk_account_voices`.
+        let row: Option<(String, String)> =
+            sqlx::query_as("SELECT provider, voice_id FROM account_voices WHERE account_id = ?")
+                .bind(account.as_uuid())
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| storage(&e))?;
+        Ok(row.map(|(provider, voice)| KeptClone {
+            provider,
+            voice: VoiceId(voice),
+        }))
+    }
+
+    async fn keep_clone(
+        &self,
+        account: &AccountId,
+        clone: &KeptClone,
+        created_at_ms: u64,
+    ) -> Result<(), VoiceSampleStoreError> {
+        // Served by `pk_account_voices`.
+        sqlx::query(
+            "INSERT INTO account_voices (account_id, provider, voice_id, created_at) \
+             VALUES (?, ?, ?, ?) \
+             ON CONFLICT (account_id) DO UPDATE SET provider = excluded.provider, \
+             voice_id = excluded.voice_id, created_at = excluded.created_at",
+        )
+        .bind(account.as_uuid())
+        .bind(clone.provider.as_str())
+        .bind(clone.voice.0.as_str())
+        .bind(i64::try_from(created_at_ms).unwrap_or(i64::MAX))
+        .execute(&self.pool)
+        .await
+        .map_err(|e| storage(&e))?;
+        Ok(())
     }
 }
 

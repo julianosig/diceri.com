@@ -36,4 +36,4 @@ pub use translation_dispatcher::{DispatchError, TranslationDispatcher};
 pub use translator::{ContextTurn, TranslationRequest, Translator, TranslatorError};
 pub use usage_repository::{UsageRepository, UsageRepositoryError};
 pub use voice_cloner::{VoiceCloneError, VoiceCloner, VoiceSample};
-pub use voice_sample_store::{VoiceSampleStore, VoiceSampleStoreError};
+pub use voice_sample_store::{KeptClone, VoiceSampleStore, VoiceSampleStoreError};

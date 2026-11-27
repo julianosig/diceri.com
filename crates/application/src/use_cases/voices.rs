@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccountId, RoomCode, RoomRuleError};
+use diceri_domain::{AccountId, Room, RoomCode, RoomRuleError};
 
 use super::speech_check::{MIN_LETTERS, letters_heard};
 use super::voice_sample::{MIN_VOICED_MS, speech_window, voiced_ms, wav_samples};
 use crate::ports::{
-    Clock, RoomRepository, RoomRepositoryError, SpeechToText, SpeechToTextError, VoiceCloneError,
-    VoiceCloner, VoiceId, VoiceSample, VoiceSampleStore, VoiceSampleStoreError,
+    Clock, KeptClone, RoomRepository, RoomRepositoryError, SpeechToText, SpeechToTextError,
+    VoiceCloneError, VoiceCloner, VoiceId, VoiceSample, VoiceSampleStore, VoiceSampleStoreError,
 };
 
 /// Every clone is named `diceri-<deployment>-…` so each deployment (prod, dev, e2e)
@@ -14,6 +14,13 @@ use crate::ports::{
 #[must_use]
 pub fn clone_name_prefix(deployment: &str) -> String {
     format!("diceri-{deployment}-")
+}
+
+/// Account clones are named `diceri-account-<deployment>-…`: outside the per-call prefix, so
+/// the startup sweep of orphaned call clones never deletes them.
+#[must_use]
+pub fn account_clone_prefix(deployment: &str) -> String {
+    format!("diceri-account-{deployment}-")
 }
 
 /// Bounds on an uploaded sample: 5–15 s of 16 kHz mono 16-bit WAV is 160–480 KiB.
@@ -53,6 +60,8 @@ pub struct VoiceService {
     cloner: Arc<dyn VoiceCloner>,
     recognizer: Arc<dyn SpeechToText>,
     name_prefix: String,
+    /// Account clones (ADR 0017) are named apart, so the per-call orphan sweep leaves them.
+    account_prefix: String,
     /// Where each account's recording is kept (ADR 0015); `None`: not kept.
     samples: Option<(Arc<dyn VoiceSampleStore>, Arc<dyn Clock>)>,
 }
@@ -78,6 +87,7 @@ impl VoiceService {
             cloner,
             recognizer,
             name_prefix: clone_name_prefix(deployment),
+            account_prefix: account_clone_prefix(deployment),
             samples: None,
         }
     }
@@ -100,49 +110,70 @@ impl VoiceService {
         self
     }
 
-    /// Clones `sample` for the room like `clone_voice`, then keeps it as `account`'s
-    /// recording (replacing an older one). The call goes on even if keeping it fails.
+    /// Records `account`'s voice in this room: checks it is speech and clones it. With kept
+    /// recordings (ADR 0015) the recording is kept and the clone becomes the account's, reused
+    /// in later calls and replacing an older one (ADR 0017); otherwise it lasts the call.
     pub async fn record_for(
         &self,
         code: &RoomCode,
         account: &AccountId,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
-        let voice = self.clone_voice(code, sample.clone()).await?;
-        if let Some((samples, clock)) = &self.samples
-            && let Err(error) = samples.save(account, &sample, clock.now_ms()).await
-        {
-            tracing::warn!(%error, account_id = %account, "voice recording not kept");
+        let room = self.checked_room(code, &sample).await?;
+        let Some((samples, clock)) = &self.samples else {
+            let name = self.call_name(&room);
+            return self.create_in(room, &name, sample).await;
+        };
+        let previous = samples.kept_clone(account).await?;
+        let voice = self
+            .create_in(room, &self.account_name(account), sample.clone())
+            .await?;
+        if let Err(error) = samples.save(account, &sample, clock.now_ms()).await {
+            warn_not_kept(&error, account);
+        }
+        self.keep(account, &voice).await;
+        if let Some(old) = previous.filter(|old| self.is_ours(old) && old.voice != voice) {
+            self.delete_at_provider(&old.voice).await;
         }
         Ok(voice)
     }
 
-    /// Clones `account`'s kept recording for the room (it passed the speech checks when
-    /// it was recorded).
+    /// The account's voice for this room: its kept clone when the provider holds one
+    /// (instant), otherwise a clone made once from the kept recording and kept from then on.
     pub async fn clone_saved(
         &self,
         code: &RoomCode,
         account: &AccountId,
     ) -> Result<VoiceId, VoiceError> {
         let (samples, _) = self.samples.as_ref().ok_or(VoiceError::NoSavedVoice)?;
-        let sample = samples
-            .find(account)
-            .await?
-            .ok_or(VoiceError::NoSavedVoice)?;
         let mut room = self
             .rooms
             .find_by_code(code)
             .await?
             .ok_or(VoiceError::NotFound)?;
+        if let Some(kept) = samples
+            .kept_clone(account)
+            .await?
+            .filter(|kept| self.is_ours(kept))
+        {
+            // Rejoining (a reload) uses the same clone: register it once per room.
+            if !room.owns_voice(&kept.voice.0) {
+                room.register_voice(kept.voice.0.clone())?;
+                self.rooms.update(room).await?;
+            }
+            return Ok(kept.voice);
+        }
         if !room.has_voice_capacity() {
             return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
         }
+        let sample = samples
+            .find(account)
+            .await?
+            .ok_or(VoiceError::NoSavedVoice)?;
         let voice = self
-            .cloner
-            .create(&format!("{}{}", self.name_prefix, room.id), sample)
+            .create_in(room, &self.account_name(account), sample)
             .await?;
-        room.register_voice(voice.0.clone())?;
-        self.rooms.update(room).await?;
+        self.keep(account, &voice).await;
         Ok(voice)
     }
 
@@ -154,19 +185,37 @@ impl VoiceService {
         }
     }
 
-    /// Deletes `account`'s kept recording ("Delete my voice"); `false` when there was none.
+    /// "Delete my voice": the kept recording and the account's clone at the provider go;
+    /// `false` when there was no recording.
     pub async fn delete_saved(&self, account: &AccountId) -> Result<bool, VoiceError> {
-        match &self.samples {
-            Some((samples, _)) => Ok(samples.delete(account).await?),
-            None => Ok(false),
+        let Some((samples, _)) = &self.samples else {
+            return Ok(false);
+        };
+        let kept = samples.kept_clone(account).await?;
+        let deleted = samples.delete(account).await?;
+        if let Some(kept) = kept.filter(|kept| self.is_ours(kept)) {
+            self.delete_at_provider(&kept.voice).await;
         }
+        Ok(deleted)
     }
 
+    /// Clones `sample` for this call only (no account): it is deleted when the call ends.
     pub async fn clone_voice(
         &self,
         code: &RoomCode,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
+        let room = self.checked_room(code, &sample).await?;
+        let name = self.call_name(&room);
+        self.create_in(room, &name, sample).await
+    }
+
+    /// The room, once `sample` is known to be clear speech and the room has room for a voice.
+    async fn checked_room(
+        &self,
+        code: &RoomCode,
+        sample: &VoiceSample,
+    ) -> Result<Room, VoiceError> {
         if !(MIN_SAMPLE_BYTES..=MAX_SAMPLE_BYTES).contains(&sample.bytes.len()) {
             return Err(VoiceError::InvalidSample);
         }
@@ -175,7 +224,7 @@ impl VoiceService {
         if voiced_ms(&samples) < MIN_VOICED_MS {
             return Err(VoiceError::NoSpeech);
         }
-        let mut room = self
+        let room = self
             .rooms
             .find_by_code(code)
             .await?
@@ -193,15 +242,58 @@ impl VoiceService {
         if letters < MIN_LETTERS {
             return Err(VoiceError::NoSpeech);
         }
-        // Named by the room id: the provider never sees the room's link code.
-        let voice = self
-            .cloner
-            .create(&format!("{}{}", self.name_prefix, room.id), sample)
-            .await?;
+        Ok(room)
+    }
+
+    /// Clones `sample` under `name` and registers the voice in `room`.
+    async fn create_in(
+        &self,
+        mut room: Room,
+        name: &str,
+        sample: VoiceSample,
+    ) -> Result<VoiceId, VoiceError> {
+        let voice = self.cloner.create(name, sample).await?;
         room.register_voice(voice.0.clone())?;
         self.rooms.update(room).await?;
         Ok(voice)
     }
+
+    /// Named by the room id: the provider never sees the room's link code.
+    fn call_name(&self, room: &Room) -> String {
+        format!("{}{}", self.name_prefix, room.id)
+    }
+
+    fn account_name(&self, account: &AccountId) -> String {
+        format!("{}{}", self.account_prefix, account)
+    }
+
+    /// Clones held by another provider cannot be used (or deleted) through this one.
+    fn is_ours(&self, kept: &KeptClone) -> bool {
+        kept.provider == self.cloner.provider()
+    }
+
+    async fn keep(&self, account: &AccountId, voice: &VoiceId) {
+        let Some((samples, clock)) = &self.samples else {
+            return;
+        };
+        let kept = KeptClone {
+            provider: self.cloner.provider().to_owned(),
+            voice: voice.clone(),
+        };
+        if let Err(error) = samples.keep_clone(account, &kept, clock.now_ms()).await {
+            tracing::warn!(%error, account_id = %account, "account voice clone not kept");
+        }
+    }
+
+    async fn delete_at_provider(&self, voice: &VoiceId) {
+        if let Err(error) = self.cloner.delete(voice).await {
+            tracing::warn!(%error, "account voice clone not deleted at the provider");
+        }
+    }
+}
+
+fn warn_not_kept(error: &VoiceSampleStoreError, account: &AccountId) {
+    tracing::warn!(%error, account_id = %account, "voice recording not kept");
 }
 
 #[cfg(test)]

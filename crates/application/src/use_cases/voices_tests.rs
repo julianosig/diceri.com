@@ -12,6 +12,10 @@ struct FakeCloner(Mutex<u32>);
 
 #[async_trait]
 impl VoiceCloner for FakeCloner {
+    fn provider(&self) -> &'static str {
+        "inworld"
+    }
+
     /// Echoes the clone name into the id so tests can see how clones are named.
     async fn create(&self, name: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
         let mut count = self.0.lock().unwrap();
@@ -135,7 +139,10 @@ async fn only_16khz_mono_wav_is_accepted() {
 
 /// Kept recordings in memory, for the tests of keeping and reusing a voice.
 #[derive(Default)]
-struct Samples(Mutex<std::collections::HashMap<AccountId, VoiceSample>>);
+struct Samples(
+    Mutex<std::collections::HashMap<AccountId, VoiceSample>>,
+    Mutex<std::collections::HashMap<AccountId, KeptClone>>,
+);
 
 #[async_trait]
 impl VoiceSampleStore for Samples {
@@ -161,7 +168,25 @@ impl VoiceSampleStore for Samples {
     }
 
     async fn delete(&self, account: &AccountId) -> Result<bool, VoiceSampleStoreError> {
+        self.1.lock().unwrap().remove(account);
         Ok(self.0.lock().unwrap().remove(account).is_some())
+    }
+
+    async fn kept_clone(
+        &self,
+        account: &AccountId,
+    ) -> Result<Option<KeptClone>, VoiceSampleStoreError> {
+        Ok(self.1.lock().unwrap().get(account).cloned())
+    }
+
+    async fn keep_clone(
+        &self,
+        account: &AccountId,
+        clone: &KeptClone,
+        _: u64,
+    ) -> Result<(), VoiceSampleStoreError> {
+        self.1.lock().unwrap().insert(*account, clone.clone());
+        Ok(())
     }
 }
 
@@ -201,4 +226,39 @@ async fn nothing_is_kept_without_a_store() {
         .await
         .unwrap();
     assert!(!service.has_saved(&ana).await.unwrap());
+}
+
+#[tokio::test]
+async fn an_accounts_clone_is_made_once_and_reused_in_every_call() {
+    let (service, _, room_id) = setup().await;
+    let cloner = Arc::new(FakeCloner::default());
+    let service = VoiceService {
+        cloner: cloner.clone(),
+        ..service
+    }
+    .with_samples(
+        Arc::new(Samples::default()),
+        Arc::new(crate::test_support::FakeClock(
+            std::sync::atomic::AtomicU64::new(5),
+        )),
+    );
+    let ana = AccountId::from_parts(1, [1; 10]);
+
+    let recorded = service
+        .record_for(&room_id, &ana, recording(true))
+        .await
+        .unwrap();
+    assert!(recorded.0.starts_with(&account_clone_prefix("test")));
+    // A reload, then another call: the same clone, no new one at the provider.
+    assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), recorded);
+    assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), recorded);
+    assert_eq!(*cloner.0.lock().unwrap(), 1);
+
+    // Recording again makes a new clone, which is the one reused from then on.
+    let again = service
+        .record_for(&room_id, &ana, recording(true))
+        .await
+        .unwrap();
+    assert_ne!(again, recorded);
+    assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), again);
 }

@@ -2,13 +2,14 @@ use std::collections::HashMap;
 use std::sync::Mutex;
 
 use async_trait::async_trait;
-use diceri_application::ports::{VoiceSample, VoiceSampleStore, VoiceSampleStoreError};
+use diceri_application::ports::{KeptClone, VoiceSample, VoiceSampleStore, VoiceSampleStoreError};
 use diceri_domain::AccountId;
 
 /// Recordings in memory (tests, local runs without a voice key).
 #[derive(Debug, Default)]
 pub struct MemoryVoiceSamples {
     samples: Mutex<HashMap<AccountId, VoiceSample>>,
+    clones: Mutex<HashMap<AccountId, KeptClone>>,
 }
 
 fn poisoned<T>(_: T) -> VoiceSampleStoreError {
@@ -42,12 +43,33 @@ impl VoiceSampleStore for MemoryVoiceSamples {
     }
 
     async fn delete(&self, account: &AccountId) -> Result<bool, VoiceSampleStoreError> {
+        self.clones.lock().map_err(poisoned)?.remove(account);
         Ok(self
             .samples
             .lock()
             .map_err(poisoned)?
             .remove(account)
             .is_some())
+    }
+
+    async fn kept_clone(
+        &self,
+        account: &AccountId,
+    ) -> Result<Option<KeptClone>, VoiceSampleStoreError> {
+        Ok(self.clones.lock().map_err(poisoned)?.get(account).cloned())
+    }
+
+    async fn keep_clone(
+        &self,
+        account: &AccountId,
+        clone: &KeptClone,
+        _created_at_ms: u64,
+    ) -> Result<(), VoiceSampleStoreError> {
+        self.clones
+            .lock()
+            .map_err(poisoned)?
+            .insert(*account, clone.clone());
+        Ok(())
     }
 }
 

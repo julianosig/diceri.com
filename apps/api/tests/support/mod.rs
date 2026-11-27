@@ -49,6 +49,10 @@ pub(crate) struct FakeCloner(std::sync::Mutex<u32>);
 
 #[async_trait]
 impl VoiceCloner for FakeCloner {
+    fn provider(&self) -> &'static str {
+        "inworld"
+    }
+
     async fn create(&self, _: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
         let mut count = self.0.lock().unwrap();
         *count += 1;

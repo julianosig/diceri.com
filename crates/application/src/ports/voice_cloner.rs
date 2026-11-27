@@ -26,4 +26,6 @@ pub trait VoiceCloner: Send + Sync {
     /// Deletes every clone whose name starts with `prefix`; returns how many.
     /// Used at startup to remove clones orphaned by a crash or restart.
     async fn delete_all_named(&self, prefix: &str) -> Result<usize, VoiceCloneError>;
+    /// Which provider holds the clones (`elevenlabs`, `inworld`), stored with kept clones.
+    fn provider(&self) -> &'static str;
 }

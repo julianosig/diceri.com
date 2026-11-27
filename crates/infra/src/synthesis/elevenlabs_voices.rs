@@ -51,6 +51,10 @@ fn extension(content_type: &str) -> &'static str {
 
 #[async_trait]
 impl VoiceCloner for ElevenLabsVoiceCloner {
+    fn provider(&self) -> &'static str {
+        "elevenlabs"
+    }
+
     async fn create(&self, name: &str, sample: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
         let failed = |error: &dyn std::fmt::Display| VoiceCloneError::Request(error.to_string());
         let file = Part::bytes(sample.bytes)

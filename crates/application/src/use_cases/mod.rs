@@ -18,4 +18,4 @@ pub use metering::MeteringService;
 pub use plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 pub use presence::{PresenceService, PresenceSnapshot, RANKING_SIZE, RankedRoom};
 pub use rooms::{RoomError, RoomService};
-pub use voices::{VoiceError, VoiceService, clone_name_prefix};
+pub use voices::{VoiceError, VoiceService, account_clone_prefix, clone_name_prefix};
