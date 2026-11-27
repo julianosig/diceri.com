@@ -13,6 +13,7 @@ mod translation_dispatcher;
 mod translator;
 mod usage_repository;
 mod voice_cloner;
+mod voice_sample_store;
 
 pub use account_repository::{
     AccountRepository, AccountRepositoryError, NewSession, SignupNetwork, StoredAccount,
@@ -35,3 +36,4 @@ pub use translation_dispatcher::{DispatchError, TranslationDispatcher};
 pub use translator::{ContextTurn, TranslationRequest, Translator, TranslatorError};
 pub use usage_repository::{UsageRepository, UsageRepositoryError};
 pub use voice_cloner::{VoiceCloneError, VoiceCloner, VoiceSample};
+pub use voice_sample_store::{VoiceSampleStore, VoiceSampleStoreError};

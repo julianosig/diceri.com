@@ -181,7 +181,7 @@ impl From<AdmissionError> for ApiError {
 impl From<VoiceError> for ApiError {
     fn from(error: VoiceError) -> Self {
         match error {
-            VoiceError::NotFound => Self::NotFound,
+            VoiceError::NotFound | VoiceError::NoSavedVoice => Self::NotFound,
             VoiceError::InvalidSample => Self::Validation(error.to_string()),
             VoiceError::NoSpeech => Self::Validation(
                 "we could not hear you clearly; read the sentence out loud and try again"
@@ -194,6 +194,7 @@ impl From<VoiceError> for ApiError {
             VoiceError::Rule(rule) => Self::TooManyRequests(rule.to_string()),
             VoiceError::Clone(source) => clone_failed(source),
             VoiceError::Repository(source) => Self::Internal(source.into()),
+            VoiceError::Samples(source) => Self::Internal(source.into()),
         }
     }
 }

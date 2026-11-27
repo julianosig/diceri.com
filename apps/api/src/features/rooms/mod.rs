@@ -11,7 +11,8 @@
 //! | GET | `/rooms/{room}/requests/{request}` | request |
 //! | POST | `/rooms/{room}/requests/{request}/admit` and `/deny` | host |
 //! | POST | `/rooms/{room}/monitor-session` | host or admitted request |
-//! | POST | `/rooms/{room}/voices` | — (audio body; returns a voice id) |
+//! | POST | `/rooms/{room}/voices` | account session (audio body; returns a voice id) |
+//! | POST | `/rooms/{room}/voices/kept` | account session (clones the kept recording) |
 //! | POST | `/rooms/{room}/end` | host (ends the meeting for everyone) |
 
 mod access_key;
@@ -62,4 +63,5 @@ pub(crate) fn routes() -> Router<AppState> {
             "/rooms/{room_id}/voices",
             post(voices::record_voice).layer(DefaultBodyLimit::max(voices::MAX_UPLOAD_BYTES)),
         )
+        .route("/rooms/{room_id}/voices/kept", post(voices::reuse_voice))
 }

@@ -14,7 +14,8 @@ use diceri_infra::synthesis::ElevenLabsVoiceCloner;
 use diceri_infra::{
     Argon2Hasher, HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence,
     LiveKitRoomCloser, MemoryAccountRepository, MemoryRoomRepository, MemoryUsageRepository,
-    OsRandom, SqliteAccountRepository, SqliteUsageRepository,
+    MemoryVoiceSamples, OsRandom, SqliteAccountRepository, SqliteUsageRepository,
+    SqliteVoiceSamples,
 };
 
 use crate::Config;
@@ -99,6 +100,7 @@ impl AppState {
             .await
             .context("cannot open the accounts database")?;
         let usage = Arc::new(SqliteUsageRepository::sharing(&sqlite));
+        state.voices = keep_recordings(state.voices, &sqlite, config);
         let accounts: Arc<dyn AccountRepository> = Arc::new(sqlite);
         state.accounts = account_service(accounts.clone());
         state.metering = state
@@ -169,6 +171,7 @@ impl AppState {
             rooms: RoomService::new(repository.clone(), random.clone(), ids.clone()),
             voices: cloner.zip(recognizer).map(|(cloner, recognizer)| {
                 VoiceService::new(repository.clone(), cloner, recognizer, deployment)
+                    .with_samples(Arc::new(MemoryVoiceSamples::default()), Arc::new(OsRandom))
             }),
             presence: PresenceService::new(None, repository.clone()),
             accounts: account_service(accounts.clone()),
@@ -186,4 +189,21 @@ impl AppState {
             admission: AdmissionService::new(repository, random, ids, media),
         }
     }
+}
+
+/// Keeps each account's recording encrypted in the accounts database (ADR 0015) when a
+/// voice key is configured; without one, recordings are used for the call and dropped.
+fn keep_recordings(
+    voices: Option<VoiceService>,
+    sqlite: &SqliteAccountRepository,
+    config: &Config,
+) -> Option<VoiceService> {
+    use secrecy::ExposeSecret as _;
+    let voices = voices?;
+    let Some(key) = &config.voice_key else {
+        tracing::warn!("DICERI_VOICE_KEY unset: voice recordings are not kept");
+        return Some(voices.without_samples());
+    };
+    let samples = Arc::new(SqliteVoiceSamples::sharing(sqlite, *key.expose_secret()));
+    Some(voices.with_samples(samples, Arc::new(OsRandom)))
 }

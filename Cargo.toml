@@ -45,6 +45,7 @@ sqlx = { version = "0.9.1", default-features = false, features = ["runtime-tokio
 uuid = { version = "1.29.3", features = ["v7"] }
 futures-util = "0.3.34"
 base64 = "0.23.1"
+aes-gcm = "0.11.1"
 # Both ring and aws-lc-rs end up enabled through dependencies; binaries pick one.
 rustls = { version = "0.23", default-features = false, features = ["aws_lc_rs"] }
 

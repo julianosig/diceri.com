@@ -70,6 +70,9 @@ pub struct Config {
     pub voice_cloning: bool,
     /// Joining a call needs a recorded voice (ADR 0014); only with `voice_cloning`.
     pub voice_required: bool,
+    /// 32-byte key (`DICERI_VOICE_KEY`, base64) encrypting each account's kept recording
+    /// (ADR 0015); unset: recordings are not kept.
+    pub voice_key: Option<std::sync::Arc<secrecy::SecretBox<[u8; 32]>>>,
     /// What each plan allows (`DICERI_<PLAN>_CALL_MINUTES`, `..._DAILY_MINUTES`).
     pub plans: PlanCatalogue,
     /// Limits across every account (`DICERI_MAX_LIVE_CALLS`, `DICERI_MONTHLY_CALL_MINUTES`).
@@ -125,6 +128,7 @@ impl Config {
                 .context("DICERI_ACCOUNTS_PER_NETWORK must be a whole number")?,
             voice_cloning: env::var("DICERI_VOICE_CLONING").is_ok_and(|value| value == "true"),
             voice_required: env::var("DICERI_VOICE_REQUIRED").is_ok_and(|value| value == "true"),
+            voice_key: voice_key_from_env()?,
             plans: plans_from_env()?,
             capacity: capacity_from_env()?,
         })
@@ -151,6 +155,7 @@ impl Config {
             accounts_per_network: DEFAULT_ACCOUNTS_PER_NETWORK,
             voice_cloning: false,
             voice_required: false,
+            voice_key: None,
             plans: PlanCatalogue::default(),
             capacity: Capacity::default(),
         }
@@ -187,4 +192,20 @@ fn agent_from_env() -> Option<AgentConfig> {
         url,
         key: SecretString::from(key),
     })
+}
+
+/// `DICERI_VOICE_KEY`: 32 random bytes in standard base64 (`openssl rand -base64 32`).
+fn voice_key_from_env() -> anyhow::Result<Option<std::sync::Arc<secrecy::SecretBox<[u8; 32]>>>> {
+    use base64::Engine as _;
+    let Ok(raw) = env::var("DICERI_VOICE_KEY") else {
+        return Ok(None);
+    };
+    let bytes = base64::engine::general_purpose::STANDARD
+        .decode(raw.trim())
+        .ok()
+        .and_then(|bytes| <[u8; 32]>::try_from(bytes).ok())
+        .context("DICERI_VOICE_KEY must be 32 bytes in base64")?;
+    Ok(Some(std::sync::Arc::new(secrecy::SecretBox::new(
+        Box::new(bytes),
+    ))))
 }

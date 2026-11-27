@@ -16,6 +16,7 @@ mod sqlite_accounts;
 pub mod synthesis;
 pub mod translation;
 mod usage;
+mod voice_samples;
 
 pub use agent_dispatcher::{AGENT_KEY_HEADER, HttpTranslationDispatcher};
 pub use argon2_hasher::Argon2Hasher;
@@ -28,6 +29,7 @@ pub use memory_room_repository::MemoryRoomRepository;
 pub use os_random::OsRandom;
 pub use sqlite_accounts::SqliteAccountRepository;
 pub use usage::{MemoryUsageRepository, SqliteUsageRepository};
+pub use voice_samples::{MemoryVoiceSamples, SqliteVoiceSamples};
 
 /// Selects the process-wide TLS crypto provider. Dependencies enable both
 /// `ring` and `aws-lc-rs`, so rustls cannot pick one by itself; call this once

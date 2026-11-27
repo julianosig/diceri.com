@@ -105,3 +105,39 @@ async fn joining_needs_a_recorded_voice_when_required() {
     let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(with)).await;
     assert_eq!(status, StatusCode::OK);
 }
+
+/// Whether `/accounts/me` says a voice recording is kept for the signed-in account.
+async fn has_voice(app: &axum::Router, me: &[(&'static str, String)]) -> bool {
+    let (_, _, body) = support::exchange(app, "GET", "/api/v1/accounts/me", me, None).await;
+    body["hasVoice"].as_bool().unwrap()
+}
+
+#[tokio::test]
+async fn a_kept_recording_is_reused_and_can_be_deleted() {
+    let app = app_with_voices();
+    let (id, _) = create_room(&app).await;
+    let session = support::sign_up(&app, "keeper").await;
+    let me = support::headers(None, Some(&session));
+    let kept = format!("/api/v1/rooms/{id}/voices/kept");
+    assert!(!has_voice(&app, &me).await);
+    assert_eq!(
+        support::post_bytes_as(&app, &session, &kept, None, vec![])
+            .await
+            .0,
+        StatusCode::NOT_FOUND
+    );
+
+    let record = format!("/api/v1/rooms/{id}/voices");
+    let (status, _) =
+        support::post_bytes_as(&app, &session, &record, Some("audio/wav"), speech()).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert!(has_voice(&app, &me).await);
+    let (status, body) = support::post_bytes_as(&app, &session, &kept, None, vec![]).await;
+    assert_eq!(status, StatusCode::CREATED);
+    assert!(body["voiceId"].is_string());
+
+    let (status, _, _) =
+        support::exchange(&app, "DELETE", "/api/v1/accounts/me/voice", &me, None).await;
+    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert!(!has_voice(&app, &me).await);
+}

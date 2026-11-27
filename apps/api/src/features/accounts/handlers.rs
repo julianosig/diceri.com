@@ -50,6 +50,8 @@ impl From<&Account> for AccountResponse {
 pub(crate) struct MeResponse {
     #[serde(flatten)]
     account: AccountResponse,
+    /// A voice recording is kept for the account (ADR 0015), so calls can reuse it.
+    has_voice: bool,
     usage: UsageResponse,
 }
 
@@ -160,8 +162,13 @@ pub(crate) async fn me(
         return Ok(StatusCode::NO_CONTENT.into_response());
     };
     let allowance = state.metering.allowance(&account).await?;
+    let has_voice = match &state.voices {
+        Some(voices) => voices.has_saved(&account.id).await?,
+        None => false,
+    };
     Ok(Json(MeResponse {
         account: AccountResponse::from(&account),
+        has_voice,
         usage: UsageResponse {
             used_today: allowance.used_today,
             daily_minutes: allowance.limits.daily_minutes,
@@ -171,6 +178,18 @@ pub(crate) async fn me(
         },
     })
     .into_response())
+}
+
+/// "Delete my voice": removes the kept recording (ADR 0015); the next call asks for a new one.
+pub(crate) async fn delete_voice(
+    State(state): State<AppState>,
+    CurrentAccount(account): CurrentAccount,
+) -> Result<StatusCode, ApiError> {
+    if let Some(voices) = &state.voices {
+        voices.delete_saved(&account.id).await?;
+    }
+    tracing::info!(account_id = %account.id, "kept voice deleted");
+    Ok(StatusCode::NO_CONTENT)
 }
 
 /// Ends this browser's session server-side and expires the cookie.

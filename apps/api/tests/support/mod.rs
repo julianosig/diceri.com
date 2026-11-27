@@ -149,14 +149,31 @@ pub(crate) fn app_with_voices_required(required: bool) -> Router {
     build_router(state, &Config::for_tests())
 }
 
-/// Posts a raw body with a content type.
+/// Posts a raw body with a content type, as a freshly signed-up account.
 pub(crate) async fn post_bytes(
     app: &Router,
     uri: &str,
     content_type: Option<&str>,
     body: Vec<u8>,
 ) -> (StatusCode, Value) {
-    let mut builder = Request::builder().method("POST").uri(uri);
+    static UPLOADERS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    let n = UPLOADERS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let session = sign_up(app, &format!("uploader{n}")).await;
+    post_bytes_as(app, &session, uri, content_type, body).await
+}
+
+/// Posts a raw body as the account signed in with `session` (a cookie pair).
+pub(crate) async fn post_bytes_as(
+    app: &Router,
+    session: &str,
+    uri: &str,
+    content_type: Option<&str>,
+    body: Vec<u8>,
+) -> (StatusCode, Value) {
+    let mut builder = Request::builder()
+        .method("POST")
+        .uri(uri)
+        .header(header::COOKIE, session);
     if let Some(content_type) = content_type {
         builder = builder.header(header::CONTENT_TYPE, content_type);
     }
