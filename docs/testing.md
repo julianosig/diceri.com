@@ -21,6 +21,9 @@ entry point; CI runs the same commands (`.github/workflows/ci.yml`).
   (`tests/e2e/fixtures`, regenerate with `just fixtures`), join one room; each
   must see the other two captioned in its own language. The media agent logs
   `phrase latency` per phrase and target (time to translation and to speech).
+- Voice cloning is off in end-to-end runs: every clone spends the provider's monthly voice
+  quota, shared with production. `DICERI_E2E_VOICE_CLONING=1 just e2e` turns it on and runs
+  the voice recording test; do it only when voice code changes.
 - `call.e2e.ts`: two participants join the same room through LiveKit with fake
   microphones; each sees the other, and audio bitrate is received; the
   round-trip (server) monitor connects. **Skips** when the API returns 503

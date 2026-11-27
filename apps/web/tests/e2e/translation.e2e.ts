@@ -116,6 +116,10 @@ test('detects the spoken language regardless of the output language', async ({ b
 });
 
 test('recording a voice takes seconds and the call keeps translating', async ({ baseURL }) => {
+	test.skip(
+		process.env.DICERI_E2E_VOICE_CLONING !== '1',
+		'creates real voice clones, which spend the monthly provider quota: set DICERI_E2E_VOICE_CLONING=1'
+	);
 	test.setTimeout(120_000);
 	const url = baseURL ?? 'http://127.0.0.1:4180';
 	const bob = await launch('Bob', 'en', url);
