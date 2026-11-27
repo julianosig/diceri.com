@@ -25,10 +25,6 @@
 
 <svelte:head>
 	<title>{i18n.t.meta.title}</title>
-	<meta
-		name="description"
-		content="{i18n.t.hero.headline} {i18n.t.hero.promise} {i18n.t.hero.voice}"
-	/>
 </svelte:head>
 
 <SiteHeader session={account} />
