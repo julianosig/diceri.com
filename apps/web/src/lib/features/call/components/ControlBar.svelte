@@ -1,11 +1,13 @@
 <script lang="ts">
+	import type { Snippet } from 'svelte';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { Mic, MicOff, PhoneOff, Settings, Users, Video, VideoOff } from '@lucide/svelte';
 	import { cn } from '#lib/utils/cn.ts';
 	import type { CallPanel } from '../call-layout.ts';
 
 	interface Props {
-		meetingCode: string;
+		/** Left of the controls: the call's time left, when its owner's plan sets one. */
+		status?: Snippet;
 		muted: boolean;
 		cameraOn: boolean;
 		panel: CallPanel;
@@ -19,7 +21,7 @@
 	}
 
 	let {
-		meetingCode,
+		status,
 		muted,
 		cameraOn,
 		panel,
@@ -39,8 +41,8 @@
 </script>
 
 <footer class="grid grid-cols-[1fr_auto_1fr] items-center gap-4 px-4 py-4 text-white">
-	<p class="hidden truncate text-sm sm:block">{meetingCode}</p>
-	<div class="flex items-center gap-3 sm:col-start-2">
+	<div class="min-w-0">{@render status?.()}</div>
+	<div class="flex items-center gap-3">
 		<button
 			type="button"
 			class={cn(round, muted ? 'bg-danger hover:bg-danger/90' : 'bg-control hover:bg-control/80')}

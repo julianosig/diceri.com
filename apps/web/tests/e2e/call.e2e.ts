@@ -135,3 +135,16 @@ test('people see each other on camera, and turning it off shows the avatar', asy
 	await page.getByRole('button', { name: 'Turn camera off' }).click();
 	await expect(hostTile.locator('video')).toBeHidden({ timeout: 10_000 });
 });
+
+test('reloading mid-call goes straight back into the call at the room address', async ({
+	page
+}) => {
+	const username = await skipWithoutMedia(page);
+	await hostJoins(page);
+	// In the call, the address is the room's, not /open.
+	await expect(page).toHaveURL(new RegExp(`/@${username}$`));
+	await expect(page.getByRole('timer')).toBeVisible();
+
+	await page.reload();
+	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
+});

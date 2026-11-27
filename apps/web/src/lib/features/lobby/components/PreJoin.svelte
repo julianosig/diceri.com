@@ -25,9 +25,11 @@
 		busy: boolean;
 		error?: string;
 		onjoin: (profile: Profile, devices: JoinDevices) => void;
+		/** Back from a reload mid-call: join by itself as soon as it can (voice ready). */
+		autojoin?: boolean;
 	}
 
-	let { roomId, entry, isHost, busy, error, onjoin }: Props = $props();
+	let { roomId, entry, isHost, busy, error, onjoin, autojoin = false }: Props = $props();
 	const action = $derived(joinAction(isHost, entry === 'open'));
 
 	const preview = new MicPreview();
@@ -67,6 +69,9 @@
 			})
 			.catch(() => {
 				voiceCloning = false;
+			})
+			.finally(() => {
+				capabilitiesLoaded = true;
 			});
 		void preview.start();
 		void camera.start();
@@ -76,8 +81,22 @@
 		};
 	});
 
+	/** Whether joining may need a voice is known only once capabilities arrive. */
+	let capabilitiesLoaded = $state(false);
+	let autojoined = false;
+	$effect(() => {
+		if (autojoin && capabilitiesLoaded && canJoin && !autojoined) {
+			autojoined = true;
+			void join();
+		}
+	});
+
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
+		await join();
+	}
+
+	async function join() {
 		if (!canJoin) return;
 		const devices: JoinDevices = {
 			microphone: preview.deviceId,

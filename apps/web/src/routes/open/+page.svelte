@@ -52,6 +52,12 @@
 			room={opened.room}
 			hostKey={opened.hostKey}
 			meetingUrl={`${page.url.origin}${resolve('/@[username]', { username: opened.username })}`}
+			oncall={() => {
+				// In the call, the address shows the room you share; reloading comes back here.
+				if (!opened) return;
+				const room = resolve('/@[username]', { username: opened.username });
+				void goto(room, { shallow: true, replace: true, state: {} });
+			}}
 		>
 			{#snippet header()}<SiteHeader />{/snippet}
 		</MeetingFlow>

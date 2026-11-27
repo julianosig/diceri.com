@@ -14,6 +14,7 @@ import {
 import { limitText } from '#lib/features/plans/index.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import { i18n } from '#lib/i18n/index.ts';
+import { forgetInCall, markInCall, wasInCall } from './rejoin.ts';
 
 export type MeetingPhase = 'prejoin' | 'joining' | 'waiting' | 'call' | 'left' | 'ended';
 
@@ -46,6 +47,11 @@ export class MeetingFlow {
 			void this.#startCall(credentials, request.requestKey);
 		});
 		this.hostRequests = hostKey ? new HostRequests(roomId, hostKey) : undefined;
+	}
+
+	/** This tab was in this call before a reload: pre-join joins again by itself. */
+	get resuming(): boolean {
+		return this.phase === 'prejoin' && wasInCall(this.roomId);
 	}
 
 	get isHost(): boolean {
@@ -97,6 +103,7 @@ export class MeetingFlow {
 		await this.session?.disconnect();
 		this.session = undefined;
 		this.phase = phase;
+		forgetInCall();
 	}
 
 	/** The API meters once a minute, so a call ends within about a minute of the deadline. */
@@ -118,6 +125,7 @@ export class MeetingFlow {
 			}
 		});
 		this.phase = 'call';
+		markInCall(this.roomId);
 		// Minutes count only while someone is in the call, so the clock starts now.
 		if (this.minutesLeft !== undefined) {
 			this.deadline = Date.now() + this.minutesLeft * 60_000;

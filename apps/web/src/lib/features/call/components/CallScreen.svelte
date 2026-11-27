@@ -15,7 +15,8 @@
 
 	interface Props {
 		session: CallSession;
-		meetingCode: string;
+		/** Shown left of the controls (the call's time left). */
+		status?: Snippet;
 		/** Badge on the People button (e.g. people waiting to join). */
 		peopleBadge?: number;
 		/** Extra content at the top of the People panel (host: join requests). */
@@ -29,7 +30,7 @@
 
 	let {
 		session,
-		meetingCode,
+		status,
 		peopleBadge = 0,
 		peopleExtra,
 		overlay,
@@ -121,7 +122,7 @@
 		{/if}
 	</div>
 	<ControlBar
-		{meetingCode}
+		{status}
 		muted={session.muted}
 		cameraOn={session.cameraOn}
 		{panel}

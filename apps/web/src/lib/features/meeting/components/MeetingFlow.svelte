@@ -22,16 +22,21 @@
 		meetingUrl: string;
 		/** The site header, shown around the call (pre-join, waiting, end) but not in it. */
 		header?: Snippet;
+		/** Called once the call itself starts (after pre-join or waiting). */
+		oncall?: () => void;
 	}
 
-	let { room, hostKey, meetingUrl, header }: Props = $props();
-	// Every room API path and the visible meeting code use the link code.
+	let { room, hostKey, meetingUrl, header, oncall }: Props = $props();
+	// Every room API path uses the link code (never shown: it opens the room).
 	// svelte-ignore state_referenced_locally
 	const roomId = room.code;
 
 	// One flow per page visit; the route remounts this component for another room.
 	// svelte-ignore state_referenced_locally
 	const flow = new MeetingFlow(roomId, hostKey, room.minutesLeft);
+	$effect(() => {
+		if (flow.phase === 'call') oncall?.();
+	});
 	let showInfo = $state(true);
 	const requests = $derived(flow.hostRequests);
 
@@ -45,7 +50,6 @@
 {#if flow.phase === 'call' && flow.session}
 	<CallScreen
 		session={flow.session}
-		meetingCode={roomId}
 		peopleBadge={requests?.pending.length ?? 0}
 		onleave={() => flow.leave()}
 		onendforeveryone={flow.isHost ? () => flow.endForEveryone() : undefined}
@@ -58,10 +62,10 @@
 				/>
 			{/if}
 		{/snippet}
+		{#snippet status()}
+			{#if flow.deadline}<TimeLeft deadline={flow.deadline} />{/if}
+		{/snippet}
 		{#snippet overlay()}
-			{#if flow.deadline}
-				<TimeLeft deadline={flow.deadline} />
-			{/if}
 			{#if requests?.toast}
 				{@const request = requests.toast}
 				<JoinRequestToast
@@ -121,6 +125,7 @@
 				entry={room.entry}
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}
+				autojoin={flow.resuming}
 				error={flow.error}
 				onjoin={(profile: Profile, devices: JoinDevices) => flow.join(profile, devices)}
 			/>
