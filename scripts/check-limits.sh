@@ -5,7 +5,8 @@ set -euo pipefail
 
 readonly MAX_RUST_FILE_LINES=400
 readonly MAX_ENTRIES_PER_DIR=15
-readonly EXCLUDE_DIRS='(^|/)(\.git|target|node_modules|\.svelte-kit|build|generated|research|\.pnpm-store)(/|$)'
+# docs/decisions holds numbered ADRs: an append-only record that splitting would break.
+readonly EXCLUDE_DIRS='(^|/)(\.git|target|node_modules|\.svelte-kit|build|generated|research|decisions|\.pnpm-store)(/|$)'
 
 cd "$(git rev-parse --show-toplevel)"
 failures=0

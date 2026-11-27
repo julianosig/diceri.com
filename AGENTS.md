@@ -105,7 +105,8 @@ responsibility; do not compress code to fit.
 | Entries per folder | 15 | `scripts/check-limits.sh` |
 | Line width | 100 chars | rustfmt, prettier |
 
-Generated code and `docs/research/` are exempt. Tests are exempt from
+Generated code and `docs/research/` are exempt, and `docs/decisions/` from the folder limit
+(numbered ADRs are an append-only record). Tests are exempt from
 function-length limits but not from file limits.
 
 ## 7. Code organization principles
