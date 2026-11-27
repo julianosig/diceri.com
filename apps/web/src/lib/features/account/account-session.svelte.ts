@@ -1,3 +1,4 @@
+import { forgetHostKeys } from '#lib/features/room/index.ts';
 import { currentAccount, register, signIn, signOut } from './account-api.ts';
 import type { Account, Credentials, Registration } from './types.ts';
 import { normalizeUsername } from './username.ts';
@@ -30,6 +31,7 @@ export class AccountSession {
 
 	async signOut(): Promise<void> {
 		await signOut();
+		forgetHostKeys();
 		this.account = null;
 	}
 }

@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { ChevronDown, LogOut } from '@lucide/svelte';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { MascotAvatar } from '#lib/features/room/index.ts';
@@ -53,7 +55,8 @@
 					class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm text-ink hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-none"
 					onclick={() => {
 						open = false;
-						void session.signOut();
+						// Signed out, the visitor lands on the signed-out home page wherever they were.
+						void session.signOut().then(() => goto(resolve('/')));
 					}}
 				>
 					<LogOut class="size-4 text-ink-muted" aria-hidden="true" />

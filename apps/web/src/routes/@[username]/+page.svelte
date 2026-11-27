@@ -7,7 +7,8 @@
 	import type { PageProps } from './$types';
 
 	let { data }: PageProps = $props();
-	const hostKey = $derived(data.room ? loadHostKey(data.room.code) : undefined);
+	/** Host access needs both the saved key and the owner signed in (signing out ends it). */
+	const hostKey = $derived(data.room && data.isOwner ? loadHostKey(data.room.code) : undefined);
 	/**
 	 * A room counts as live for visitors only while someone is in its call: an opened room
 	 * nobody joined (or everyone left) shows as not live instead of a door nobody answers.

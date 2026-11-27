@@ -21,3 +21,14 @@ export function loadHostKey(roomId: string): string | undefined {
 		return memory.get(roomId);
 	}
 }
+
+/** Forgets every room this browser hosts: signing out must not leave host access behind. */
+export function forgetHostKeys(): void {
+	memory.clear();
+	try {
+		const stale = Object.keys(localStorage).filter((key) => key.startsWith(PREFIX));
+		for (const key of stale) localStorage.removeItem(key);
+	} catch {
+		// Storage blocked: nothing was kept there.
+	}
+}
