@@ -156,8 +156,9 @@ function-length limits but not from file limits.
   room, and short-lived (5–10 min).
 - **Voice cloning requires explicit opt-in** from the speaker for that call, and joining
   requires it: translations are spoken only in the speaker's own recorded voice, never a
-  stock voice (captions only if the clone is refused). Clones are deleted when the call
-  ends. See [ADR 0006](docs/decisions/0006-voice-cloning-consent.md) and
+  stock voice (captions only if the clone is refused). Provider clones are deleted when
+  the call ends; the recording itself is kept encrypted with the account until it is
+  deleted (ADR 0015). See [ADR 0006](docs/decisions/0006-voice-cloning-consent.md) and
   [ADR 0014](docs/decisions/0014-own-voice-required-to-join.md).
 - Never log audio, transcripts or provider API keys. Log ids and timings only.
 - CORS uses an explicit origin allow-list; never `Any`.
@@ -307,8 +308,10 @@ and [ADR 0010](docs/decisions/0010-uuidv7-ids-and-database-conventions.md). SQLi
     `PRAGMA integrity_check` (`scripts/backup-db.sh`); never copy a live `.db` without its WAL.
 24. Each repository port has one contract suite run against both its in-memory fake and
     its SQL adapter; adapter tests run the real migrations.
-25. No column may hold audio, transcripts, translations or voice embeddings. Raw IP
-    addresses are never persisted.
+25. No column may hold audio, transcripts, translations or voice embeddings, with one
+    exception: each account's voice recording in `voice_samples`, encrypted with
+    AES-256-GCM under `DICERI_VOICE_KEY` ([ADR 0015](docs/decisions/0015-keep-each-accounts-voice-sample.md)).
+    Raw IP addresses are never persisted.
 26. Every table with personal data is listed in [`docs/data-inventory.md`](docs/data-inventory.md)
     with purpose, legal basis (LGPD/GDPR), retention and deletion path.
 27. Never log bound parameters, usernames, keys, hashes or the database URL; log
