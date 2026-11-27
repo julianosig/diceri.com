@@ -102,11 +102,13 @@
 		</div>
 		<p class="text-xs text-ink-muted">{recorder.kept ? t.keptHint : t.readyHint}</p>
 	{:else}
-		<p class="text-sm font-medium">{t.title}</p>
-		<p class="text-xs text-ink-muted">
+		<p class="text-center text-sm font-medium">{t.title}</p>
+		<p class="text-center text-xs text-ink-muted">
 			{required ? t.requiredHint(RECORD_SECONDS) : t.hint(RECORD_SECONDS)}
 		</p>
-		{#if recorder.error}<p role="alert" class="text-xs text-red-600">{t[recorder.error]}</p>{/if}
+		{#if recorder.error}<p role="alert" class="text-center text-xs text-red-600">
+				{t[recorder.error]}
+			</p>{/if}
 		<!-- When joining needs it, recording is the main step, so it gets the main button size. -->
 		<Button
 			size={required ? 'lg' : 'sm'}
