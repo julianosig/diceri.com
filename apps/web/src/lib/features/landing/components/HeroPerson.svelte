@@ -4,6 +4,9 @@
 	interface Props {
 		/** The traced SVG drawing of the person. */
 		src: string;
+		/** The drawing's intrinsic size, so its box is reserved before it loads. */
+		width: number;
+		height: number;
 		/** `talk`: a moving mouth and voice waves; `listen`: voice pulsing in the headset. */
 		cue: 'talk' | 'listen';
 		/** Where the cue sits on the drawing: the mouth or the ear cup, in % of its box. */
@@ -14,7 +17,7 @@
 		class?: string;
 	}
 
-	let { src, cue, x, y, cycle, class: className }: Props = $props();
+	let { src, width, height, cue, x, y, cycle, class: className }: Props = $props();
 </script>
 
 <!--
@@ -23,7 +26,7 @@
 -->
 <!-- Smaller on phones, so the Diceri mark between them can be larger. -->
 <div class={cn('absolute bottom-0 h-[70%] sm:h-[94%]', className)}>
-	<img {src} alt="" class="h-full w-auto" />
+	<img {src} {width} {height} alt="" class="h-full w-auto" />
 	{#key cycle}
 		{#if cue === 'talk'}
 			<span class="cue mouth-spot" style:left="{x}%" style:top="{y}%" aria-hidden="true">

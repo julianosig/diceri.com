@@ -64,8 +64,24 @@
 		<path class="link link-in" d="M 285 122 Q 400 60 525 78" />
 		<path class="link link-out" d="M 675 78 Q 800 60 915 122" />
 	</svg>
-	<HeroPerson src={leftPerson} cue="talk" {...LEFT_MOUTH} cycle={index} class="left-0" />
-	<HeroPerson src={rightPerson} cue="listen" {...RIGHT_EAR} cycle={index} class="right-0" />
+	<HeroPerson
+		src={leftPerson}
+		width={1403}
+		height={960}
+		cue="talk"
+		{...LEFT_MOUTH}
+		cycle={index}
+		class="left-0"
+	/>
+	<HeroPerson
+		src={rightPerson}
+		width={1547}
+		height={960}
+		cue="listen"
+		{...RIGHT_EAR}
+		cycle={index}
+		class="right-0"
+	/>
 
 	{#key index}
 		<span class="halo" aria-hidden="true"></span>

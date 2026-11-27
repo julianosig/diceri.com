@@ -88,7 +88,7 @@
 	<div class="col-start-3 flex justify-end gap-2">
 		<button
 			type="button"
-			class={cn(round, 'relative', panel === 'people' ? 'bg-brand-500' : 'hover:bg-control')}
+			class={cn(round, 'relative', panel === 'people' ? 'bg-brand-600' : 'hover:bg-control')}
 			aria-label={i18n.t.call.people}
 			aria-pressed={panel === 'people'}
 			onclick={() => {
@@ -106,7 +106,7 @@
 		</button>
 		<button
 			type="button"
-			class={cn(round, panel === 'settings' ? 'bg-brand-500' : 'hover:bg-control')}
+			class={cn(round, panel === 'settings' ? 'bg-brand-600' : 'hover:bg-control')}
 			aria-label={i18n.t.call.audioSettings}
 			aria-pressed={panel === 'settings'}
 			onclick={() => {

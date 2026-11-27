@@ -7,6 +7,8 @@
 	--color-brand-400: oklch(0.7 0.16 255);
 	--color-brand-500: oklch(0.62 0.19 255);
 	--color-brand-600: oklch(0.54 0.2 255);
+	/* White text needs brand-600 or darker behind it (WCAG AA 4.5:1). */
+	--color-brand-700: oklch(0.47 0.19 255);
 	/* The logo's violet facets (#7c3aed). */
 	--color-brand-violet: oklch(0.54 0.25 293);
 	--color-surface: oklch(0.99 0 0);
