@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use anyhow::Context as _;
-use diceri_application::ports::{SpeechToText, TextToSpeech, Translator, VoiceCloner, VoiceId};
+use diceri_application::ports::{SpeechToText, TextToSpeech, Translator, VoiceCloner};
 use diceri_infra::LiveKitAccessIssuer;
 use diceri_infra::speech::{ScribeConfig, ScribeSpeechToText, SonioxConfig, SonioxSpeechToText};
 use diceri_infra::synthesis::{ElevenLabsConfig, ElevenLabsTextToSpeech, ElevenLabsVoiceCloner};
@@ -16,8 +16,6 @@ pub(crate) struct Providers {
     pub stt: Arc<dyn SpeechToText>,
     pub translator: Arc<dyn Translator>,
     pub tts: Arc<dyn TextToSpeech>,
-    /// Stock voices for people who did not record their own.
-    pub voices: Vec<VoiceId>,
     /// Deletes participants' voice clones when they leave (ADR 0006).
     pub cloner: Arc<dyn VoiceCloner>,
 }
@@ -45,7 +43,6 @@ impl Providers {
                 config.elevenlabs_api_key.clone(),
                 http,
             )),
-            voices: config.voices.clone(),
         })
     }
 }

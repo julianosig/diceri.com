@@ -9,7 +9,6 @@ use livekit::webrtc::audio_stream::native::NativeAudioStream;
 use tokio::sync::{mpsc, watch};
 
 use crate::providers::Providers;
-use crate::voices::voice_for;
 
 /// Who is speaking on a subscribed microphone track. Their spoken language is
 /// detected; `hints` are the languages present in the room when they joined.
@@ -40,10 +39,7 @@ pub(crate) async fn run(
     };
     pump_audio(&speaker.track, stream.audio);
     let config = SpeakerConfig {
-        voice: speaker
-            .voice
-            .unwrap_or_else(|| voice_for(&speaker.identity, &providers.voices)),
-        fallback_voice: voice_for(&speaker.identity, &providers.voices),
+        voice: speaker.voice,
         speaker: speaker.identity,
         fallback_language: speaker.fallback_language,
     };

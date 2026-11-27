@@ -114,8 +114,7 @@ impl Harness {
         let config = SpeakerConfig {
             speaker: "ana".to_owned(),
             fallback_language: lang("pt-BR"),
-            voice: VoiceId("clone".to_owned()),
-            fallback_voice: VoiceId("stock".to_owned()),
+            voice: Some(VoiceId("clone".to_owned())),
         };
         let pipeline = SpeakerPipeline::new(
             config,
@@ -235,16 +234,18 @@ async fn translates_from_the_detected_language_not_the_declared_one() {
 }
 
 #[tokio::test]
-async fn a_refused_clone_falls_back_to_the_stock_voice_for_good() {
+async fn a_refused_clone_leaves_the_speaker_captions_only() {
     let tts = FakeTts {
         refused: Some("clone"),
         ..FakeTts::default()
     };
     let events = [phrase("um"), phrase("dois")].concat();
     let harness = Harness::run_with(events, &["en"], tts).await;
-    assert_eq!(harness.output.spoken.lock().unwrap().len(), 2);
+    // Never a stock voice: the clone is tried once, then translations are captions only.
+    assert!(harness.output.spoken.lock().unwrap().is_empty());
     let used = harness.tts.voices_used.lock().unwrap().clone();
-    assert_eq!(used, vec!["clone", "stock", "stock"]);
+    assert_eq!(used, vec!["clone"]);
+    assert_eq!(harness.texts(CaptionKind::Translation).len(), 2);
 }
 
 /// Translates to exactly the same text, as happens with a misdetected "Alô.".
@@ -263,8 +264,7 @@ async fn an_unchanged_translation_is_captioned_but_not_spoken() {
     let config = SpeakerConfig {
         speaker: "ana".to_owned(),
         fallback_language: lang("pt-BR"),
-        voice: VoiceId("clone".to_owned()),
-        fallback_voice: VoiceId("stock".to_owned()),
+        voice: Some(VoiceId("clone".to_owned())),
     };
     let pipeline = SpeakerPipeline::new(
         config,
@@ -329,8 +329,7 @@ async fn speaks_the_first_sentence_before_the_translation_ends() {
     let config = SpeakerConfig {
         speaker: "ana".to_owned(),
         fallback_language: lang("pt-BR"),
-        voice: VoiceId("clone".to_owned()),
-        fallback_voice: VoiceId("stock".to_owned()),
+        voice: Some(VoiceId("clone".to_owned())),
     };
     let pipeline = SpeakerPipeline::new(
         config,

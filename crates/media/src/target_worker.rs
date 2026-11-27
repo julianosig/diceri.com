@@ -171,44 +171,29 @@ async fn speak(
     deps.output.speak(&deps.speaker, target, audio).await;
 }
 
-/// Synthesizes in the speaker's voice, switching to the stock voice for good
-/// if the provider refuses the clone (e.g. it requires verification).
+/// Synthesizes in the speaker's own trained voice. Without one nothing is spoken (the
+/// caption still shows); if the provider refuses the clone (e.g. it needs verification),
+/// the speaker stays captions-only for the rest of the call.
 async fn synthesize(deps: &WorkerDeps, target: &LanguageCode, text: &str) -> Option<SpeechAudio> {
-    match synthesize_once(deps, target, text).await {
+    let voice = deps.voice.current()?;
+    let request = SpeechRequest {
+        text,
+        language: target,
+        voice,
+    };
+    match deps.tts.synthesize(request).await {
         Ok(audio) => Some(audio),
-        Err(error) if deps.voice.give_up_preferred() => {
-            warn_clone_refused(&error, target);
-            synthesize_once(deps, target, text)
-                .await
-                .inspect_err(|e| warn_failed(e, target))
-                .ok()
-        }
         Err(error) => {
-            warn_failed(&error, target);
+            if deps.voice.refuse() {
+                warn_clone_refused(&error, target);
+            }
             None
         }
     }
 }
 
-async fn synthesize_once(
-    deps: &WorkerDeps,
-    target: &LanguageCode,
-    text: &str,
-) -> Result<SpeechAudio, TextToSpeechError> {
-    let request = SpeechRequest {
-        text,
-        language: target,
-        voice: deps.voice.current(),
-    };
-    deps.tts.synthesize(request).await
-}
-
 fn warn_clone_refused(error: &TextToSpeechError, target: &LanguageCode) {
-    tracing::warn!(%error, %target, "voice clone refused, using a stock voice");
-}
-
-fn warn_failed(error: &TextToSpeechError, target: &LanguageCode) {
-    tracing::warn!(%error, %target, "synthesis failed");
+    tracing::warn!(%error, %target, "voice clone refused, captions only for this speaker");
 }
 
 /// One line per phrase and language with every stage, measured from the end of the

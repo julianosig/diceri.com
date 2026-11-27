@@ -2,16 +2,7 @@ use std::env;
 use std::net::SocketAddr;
 
 use anyhow::Context as _;
-use diceri_application::ports::VoiceId;
 use secrecy::SecretString;
-
-/// Stock multilingual voices used until consented voice clones exist.
-const DEFAULT_VOICES: &[&str] = &[
-    "EXAVITQu4vr4xnSDxMaL", // Sarah
-    "CwhRBWXzGAHq8TQ4Fs17", // Roger
-    "FGY2WhTYpPnrIDTdsKH5", // Laura
-    "IKne3meq5aSn9XLyUdCD", // Charlie
-];
 
 /// Which speech-to-text provider transcribes speakers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -35,7 +26,6 @@ pub(crate) struct AgentConfig {
     pub(crate) soniox_api_key: Option<SecretString>,
     pub(crate) gemini_api_key: SecretString,
     pub(crate) elevenlabs_api_key: SecretString,
-    pub(crate) voices: Vec<VoiceId>,
     /// `DICERI_DEPLOYMENT` (default `dev`): whose orphaned voice clones to sweep.
     pub(crate) deployment: String,
 }
@@ -54,19 +44,6 @@ impl AgentConfig {
             .unwrap_or_else(|_| "127.0.0.1:8095".to_owned())
             .parse()
             .context("DICERI_AGENT_BIND_ADDRESS must be a socket address")?;
-        let voices = env::var("DICERI_TTS_VOICES").map_or_else(
-            |_| {
-                DEFAULT_VOICES
-                    .iter()
-                    .map(|id| VoiceId((*id).to_owned()))
-                    .collect()
-            },
-            |list| {
-                list.split(',')
-                    .map(|id| VoiceId(id.trim().to_owned()))
-                    .collect()
-            },
-        );
         Ok(Self {
             bind_address,
             control_key: secret("DICERI_AGENT_KEY")?,
@@ -79,7 +56,6 @@ impl AgentConfig {
                 .map(SecretString::from),
             gemini_api_key: secret("DICERI_GEMINI_API_KEY")?,
             elevenlabs_api_key: secret("DICERI_ELEVENLABS_API_KEY")?,
-            voices,
             deployment: env::var("DICERI_DEPLOYMENT").unwrap_or_else(|_| "dev".to_owned()),
         })
     }

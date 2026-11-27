@@ -20,10 +20,8 @@ pub struct SpeakerConfig {
     pub speaker: String,
     /// Assumed source language when the recognizer reports none for a phrase.
     pub fallback_language: LanguageCode,
-    /// The speaker's consented clone, or a stock voice.
-    pub voice: VoiceId,
-    /// Stock voice used if `voice` is refused by the provider.
-    pub fallback_voice: VoiceId,
+    /// The speaker's trained (consented) voice; without one, translations are captions only.
+    pub voice: Option<VoiceId>,
 }
 
 /// Per-stream mutable state of a running pipeline.
@@ -66,7 +64,7 @@ impl SpeakerPipeline {
         let deps = WorkerDeps {
             speaker: config.speaker,
             source: config.fallback_language,
-            voice: VoiceChoice::new(config.voice, config.fallback_voice),
+            voice: VoiceChoice::new(config.voice),
             translator,
             tts,
             output,
