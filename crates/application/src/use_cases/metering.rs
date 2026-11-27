@@ -174,6 +174,12 @@ impl MeteringService {
         self
     }
 
+    /// What each plan allows, for showing the plans.
+    #[must_use]
+    pub fn plans(&self) -> PlanCatalogue {
+        self.plans
+    }
+
     /// The account's plan, limits and minutes used today.
     pub async fn allowance(&self, account: &Account) -> Result<Allowance, LimitError> {
         Ok(Allowance {

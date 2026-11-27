@@ -2,11 +2,12 @@
 //!
 //! | Method | Path | Auth |
 //! | --- | --- | --- |
-//! | GET | `/capabilities` | — (`{ voiceCloning }`) |
+//! | GET | `/capabilities` | — (`{ voiceCloning, plans }`) |
 
 use axum::extract::State;
 use axum::routing::get;
 use axum::{Json, Router};
+use diceri_domain::Plan;
 use serde::Serialize;
 
 use crate::AppState;
@@ -16,6 +17,16 @@ use crate::AppState;
 pub(crate) struct CapabilitiesResponse {
     /// Recording your own voice for translations (a paid feature, off until it ships).
     voice_cloning: bool,
+    /// Every plan and its limits, free first (everyone's default).
+    plans: Vec<PlanResponse>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct PlanResponse {
+    plan: &'static str,
+    call_minutes: u32,
+    daily_minutes: u32,
 }
 
 pub(crate) fn routes() -> Router<AppState> {
@@ -23,7 +34,20 @@ pub(crate) fn routes() -> Router<AppState> {
 }
 
 async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesResponse> {
+    let catalogue = state.metering.plans();
+    let plans = Plan::ALL
+        .into_iter()
+        .map(|plan| {
+            let limits = catalogue.limits(plan);
+            PlanResponse {
+                plan: plan.as_str(),
+                call_minutes: limits.call_minutes,
+                daily_minutes: limits.daily_minutes,
+            }
+        })
+        .collect();
     Json(CapabilitiesResponse {
         voice_cloning: state.voices.is_some(),
+        plans,
     })
 }

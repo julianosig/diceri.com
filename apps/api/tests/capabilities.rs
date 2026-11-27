@@ -8,14 +8,13 @@
 mod support;
 
 use axum::http::StatusCode;
-use serde_json::json;
 use support::{app, app_with_voices, send};
 
 #[tokio::test]
 async fn voice_cloning_is_offered_only_when_it_is_set_up() {
     let (status, body) = send(&app(true), "GET", "/api/v1/capabilities", None, None).await;
     assert_eq!(status, StatusCode::OK);
-    assert_eq!(body, json!({ "voiceCloning": false }));
+    assert_eq!(body["voiceCloning"], false);
     let (_, body) = send(
         &app_with_voices(),
         "GET",
@@ -24,5 +23,15 @@ async fn voice_cloning_is_offered_only_when_it_is_set_up() {
         None,
     )
     .await;
-    assert_eq!(body, json!({ "voiceCloning": true }));
+    assert_eq!(body["voiceCloning"], true);
+}
+
+#[tokio::test]
+async fn lists_every_plan_free_first() {
+    let (_, body) = send(&app(false), "GET", "/api/v1/capabilities", None, None).await;
+    let free = &body["plans"][0];
+    assert_eq!(free["plan"], "free");
+    assert_eq!(free["callMinutes"], 20);
+    assert_eq!(free["dailyMinutes"], 40);
+    assert_eq!(body["plans"].as_array().unwrap().len(), 3);
 }
