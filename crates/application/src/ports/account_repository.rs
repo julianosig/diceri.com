@@ -6,7 +6,7 @@ use super::PasswordHash;
 pub enum AccountRepositoryError {
     #[error("username is taken")]
     Taken,
-    #[error("an account was already signed up from this network")]
+    #[error("this network already signed up as many accounts as allowed")]
     NetworkUsed,
     #[error("account storage failed: {0}")]
     Storage(String),
@@ -30,6 +30,13 @@ pub struct NewSession<'a> {
     pub expires_at_ms: u64,
 }
 
+/// The network a sign-up comes from, and how many accounts one network may sign up.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct SignupNetwork {
+    pub id: NetworkId,
+    pub max_accounts: u32,
+}
+
 /// Durable accounts and their sessions.
 #[async_trait::async_trait]
 pub trait AccountRepository: Send + Sync {
@@ -39,11 +46,12 @@ pub trait AccountRepository: Send + Sync {
     }
 
     /// Creates the account and, atomically, records the network it was signed up from:
-    /// `Taken` when the username exists, `NetworkUsed` when that network has an account.
+    /// `Taken` when the username exists, `NetworkUsed` when that network already has
+    /// `max_accounts` accounts.
     async fn create_from(
         &self,
         account: &StoredAccount,
-        network: Option<&NetworkId>,
+        network: Option<SignupNetwork>,
     ) -> Result<(), AccountRepositoryError>;
 
     async fn find_by_username(

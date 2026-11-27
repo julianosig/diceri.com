@@ -214,7 +214,7 @@ export const zh: Messages = {
 		freeLine: (minutes: number) => `免费：每月 ${String(minutes)} 分钟通话。`
 	},
 	limits: {
-		network: '每个网络只能领取一个房间用户名，这个网络已经领取过了。请用它登录。',
+		network: '这个网络领取的房间用户名已达上限。请用其中一个登录。',
 		quota: '你本月套餐的通话分钟数已用完，将在每月 1 日（UTC）重置。',
 		daily: '你今天的免费通话分钟数已用完，将在午夜（UTC）重置。',
 		monthly: 'Diceri 本月的免费额度已用完，将在每月 1 日（UTC）重置。',

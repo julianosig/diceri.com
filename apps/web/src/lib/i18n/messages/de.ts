@@ -222,7 +222,7 @@ export const de: Messages = {
 	},
 	limits: {
 		network:
-			'Pro Netzwerk kann nur ein Raumname gesichert werden, und dieses hat schon einen. Melde dich damit an.',
+			'Dieses Netzwerk hat schon die erlaubte Höchstzahl an Raumnamen gesichert. Melde dich mit einem davon an.',
 		quota:
 			'Du hast die Anrufminuten deines Tarifs für diesen Monat aufgebraucht. Sie erneuern sich am 1. (UTC).',
 		daily:

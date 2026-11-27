@@ -2,7 +2,8 @@
 //! in-memory and the SQLite implementation so they cannot drift apart.
 
 use diceri_application::ports::{
-    AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
+    AccountRepository, AccountRepositoryError, NewSession, PasswordHash, SignupNetwork,
+    StoredAccount,
 };
 use diceri_domain::{AccessKey, Account, AccountId, Mascot, NetworkId, Plan, SessionId, Username};
 
@@ -56,26 +57,32 @@ async fn check_plans(accounts: &dyn AccountRepository) {
     assert!(!accounts.set_plan(&name("nobody"), Plan::Pro).await.unwrap());
 }
 
-/// One account per network; a refused sign-up leaves nothing behind.
+/// Up to `max_accounts` per network; a refused sign-up leaves nothing behind.
 async fn check_networks(accounts: &dyn AccountRepository) {
-    let home = NetworkId::from_hash([1; 32]);
-    let office = NetworkId::from_hash([2; 32]);
-    accounts
-        .create_from(&stored(20, "nia"), Some(&home))
-        .await
-        .unwrap();
+    let two = |seed| {
+        Some(SignupNetwork {
+            id: NetworkId::from_hash([seed; 32]),
+            max_accounts: 2,
+        })
+    };
+    for (seed, name) in [(20, "nia"), (21, "noa")] {
+        accounts
+            .create_from(&stored(seed, name), two(1))
+            .await
+            .unwrap();
+    }
     assert!(matches!(
-        accounts.create_from(&stored(21, "noa"), Some(&home)).await,
+        accounts.create_from(&stored(22, "ned"), two(1)).await,
         Err(AccountRepositoryError::NetworkUsed)
     ));
-    let noa = "noa".parse().unwrap();
-    assert!(accounts.find_by_username(&noa).await.unwrap().is_none());
+    let ned = "ned".parse().unwrap();
+    assert!(accounts.find_by_username(&ned).await.unwrap().is_none());
     accounts
-        .create_from(&stored(21, "noa"), Some(&office))
+        .create_from(&stored(22, "ned"), two(2))
         .await
         .unwrap();
     accounts
-        .create_from(&stored(22, "ned"), None)
+        .create_from(&stored(23, "nat"), None)
         .await
         .unwrap();
 }

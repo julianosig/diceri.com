@@ -138,7 +138,7 @@ impl From<AccountError> for ApiError {
             AccountError::Taken => Self::Conflict(error.to_string()),
             AccountError::NetworkUsed => Self::Limit {
                 limit: "network",
-                detail: "only one room username can be claimed per network",
+                detail: "this network already claimed as many room usernames as allowed",
             },
             AccountError::Unauthorized => Self::Unauthorized,
             AccountError::Repository(source) => Self::Internal(source.into()),

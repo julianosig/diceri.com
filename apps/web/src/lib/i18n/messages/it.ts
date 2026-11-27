@@ -221,7 +221,7 @@ export const it: Messages = {
 	},
 	limits: {
 		network:
-			'Si può prenotare un solo nome di stanza per rete, e questa ne ha già uno. Accedi con quello.',
+			'Questa rete ha già prenotato il numero massimo di nomi di stanza. Accedi con uno di quelli.',
 		quota:
 			'Hai usato i minuti di chiamata del tuo piano per questo mese. Si rinnovano il giorno 1 (UTC).',
 		daily: 'Hai usato i minuti di chiamata gratuiti di oggi. Si rinnovano a mezzanotte (UTC).',

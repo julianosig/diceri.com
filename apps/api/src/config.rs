@@ -10,6 +10,8 @@ use crate::limits_config::{capacity_from_env, plans_from_env};
 
 /// Default POSTs per client per minute: generous for people, tight for scripts.
 const DEFAULT_WRITE_LIMIT: u32 = 60;
+/// Room usernames one network (IPv4 address or IPv6 /64) may claim.
+const DEFAULT_ACCOUNTS_PER_NETWORK: u32 = 3;
 
 /// Log output format, selected with `DICERI_LOG_FORMAT`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -62,6 +64,8 @@ pub struct Config {
     pub secure_cookies: bool,
     /// Key for hashing sign-up networks (one account per network); unset: not enforced.
     pub network_key: Option<SecretString>,
+    /// Accounts one network may sign up when `network_key` is set.
+    pub accounts_per_network: u32,
     /// Recording your own voice for translations (a paid feature, off until it ships).
     pub voice_cloning: bool,
     /// What each plan allows (`DICERI_<PLAN>_CALL_MINUTES`, `..._DAILY_MINUTES`).
@@ -114,6 +118,9 @@ impl Config {
                 .ok()
                 .filter(|key| !key.is_empty())
                 .map(SecretString::from),
+            accounts_per_network: env::var("DICERI_ACCOUNTS_PER_NETWORK")
+                .map_or(Ok(DEFAULT_ACCOUNTS_PER_NETWORK), |raw| raw.parse())
+                .context("DICERI_ACCOUNTS_PER_NETWORK must be a whole number")?,
             voice_cloning: env::var("DICERI_VOICE_CLONING").is_ok_and(|value| value == "true"),
             plans: plans_from_env()?,
             capacity: capacity_from_env()?,
@@ -138,6 +145,7 @@ impl Config {
             database_url: "sqlite::memory:".to_owned(),
             secure_cookies: false,
             network_key: None,
+            accounts_per_network: DEFAULT_ACCOUNTS_PER_NETWORK,
             voice_cloning: false,
             plans: PlanCatalogue::default(),
             capacity: Capacity::default(),

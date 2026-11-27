@@ -50,15 +50,16 @@ pub struct AppState {
 }
 
 impl AppState {
-    /// Allows one sign-up per network, hashing addresses with `key`; `ip_header` names the
-    /// proxy header with the real client address.
+    /// Allows `max_accounts` sign-ups per network, hashing addresses with `key`;
+    /// `ip_header` names the proxy header with the real client address.
     #[must_use]
-    pub fn one_account_per_network(
+    pub fn limit_accounts_per_network(
         mut self,
         key: secrecy::SecretString,
+        max_accounts: u32,
         ip_header: Option<axum::http::HeaderName>,
     ) -> Self {
-        self.signup_networks = Some(SignupNetworks::new(key, ip_header));
+        self.signup_networks = Some(SignupNetworks::new(key, max_accounts, ip_header));
         self
     }
 
@@ -108,9 +109,9 @@ impl AppState {
                 .client_ip_header
                 .as_deref()
                 .and_then(|name| name.parse().ok());
-            state = state.one_account_per_network(key, header);
+            state = state.limit_accounts_per_network(key, config.accounts_per_network, header);
         } else {
-            tracing::warn!("DICERI_NETWORK_KEY unset: one account per network is not enforced");
+            tracing::warn!("DICERI_NETWORK_KEY unset: accounts per network are not limited");
         }
         if let Some(livekit) = &config.livekit {
             let room_closer = Arc::new(LiveKitRoomCloser::new(

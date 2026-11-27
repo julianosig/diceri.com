@@ -3,9 +3,10 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use diceri_application::ports::{
-    AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
+    AccountRepository, AccountRepositoryError, NewSession, PasswordHash, SignupNetwork,
+    StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, NetworkId, Plan, Username};
+use diceri_domain::{AccessKey, Account, AccountId, Plan, Username};
 use sha2::{Digest as _, Sha256};
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{
@@ -102,6 +103,35 @@ fn millis(value: u64) -> i64 {
 }
 
 /// Creation time is the instant encoded in the UUIDv7 id (Unix milliseconds).
+/// Records `account` under its sign-up network, unless that network is full.
+async fn record_network(
+    tx: &mut sqlx::SqliteConnection,
+    account: &AccountId,
+    network: SignupNetwork,
+) -> Result<(), AccountRepositoryError> {
+    let hash = network.id.as_bytes().as_slice();
+    // Served by `index_signup_networks_on_network_hash`.
+    let (used,): (i64,) =
+        sqlx::query_as("SELECT COUNT(*) FROM signup_networks WHERE network_hash = ?")
+            .bind(hash)
+            .fetch_one(&mut *tx)
+            .await
+            .map_err(|e| storage(&e))?;
+    if used >= i64::from(network.max_accounts) {
+        return Err(AccountRepositoryError::NetworkUsed);
+    }
+    sqlx::query(
+        "INSERT INTO signup_networks (account_id, network_hash, created_at) VALUES (?, ?, ?)",
+    )
+    .bind(account.as_uuid())
+    .bind(hash)
+    .bind(created_at_ms(account))
+    .execute(&mut *tx)
+    .await
+    .map_err(|e| storage(&e))?;
+    Ok(())
+}
+
 /// A unique violation becomes `taken`; any other failure is a storage error.
 fn unique_or<T>(
     result: Result<T, sqlx::Error>,
@@ -154,7 +184,7 @@ impl AccountRepository for SqliteAccountRepository {
     async fn create_from(
         &self,
         stored: &StoredAccount,
-        network: Option<&NetworkId>,
+        network: Option<SignupNetwork>,
     ) -> Result<(), AccountRepositoryError> {
         let account = &stored.account;
         // Read-then-write across two tables: one IMMEDIATE transaction (AGENTS.md §14).
@@ -177,17 +207,7 @@ impl AccountRepository for SqliteAccountRepository {
         .await;
         unique_or(result, AccountRepositoryError::Taken)?;
         if let Some(network) = network {
-            // Served by `pk_signup_networks`.
-            let result = sqlx::query(
-                "INSERT INTO signup_networks (network_hash, account_id, created_at) \
-                 VALUES (?, ?, ?)",
-            )
-            .bind(network.as_bytes().as_slice())
-            .bind(account.id.as_uuid())
-            .bind(created_at_ms(&account.id))
-            .execute(&mut *tx)
-            .await;
-            unique_or(result, AccountRepositoryError::NetworkUsed)?;
+            record_network(&mut tx, &account.id, network).await?;
         }
         tx.commit().await.map_err(|e| storage(&e))
     }

@@ -15,7 +15,7 @@ mod usage_repository;
 mod voice_cloner;
 
 pub use account_repository::{
-    AccountRepository, AccountRepositoryError, NewSession, StoredAccount,
+    AccountRepository, AccountRepositoryError, NewSession, SignupNetwork, StoredAccount,
 };
 pub use ids::{IdGenerator, IdParts};
 pub use media_access::{

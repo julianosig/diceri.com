@@ -107,7 +107,7 @@ impl AccountRepository for InMemoryAccounts {
     async fn create_from(
         &self,
         account: &StoredAccount,
-        _network: Option<&diceri_domain::NetworkId>,
+        _network: Option<crate::ports::SignupNetwork>,
     ) -> Result<(), AccountRepositoryError> {
         let mut accounts = self.accounts.lock().unwrap();
         if accounts

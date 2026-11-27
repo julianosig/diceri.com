@@ -2,7 +2,7 @@ use std::sync::Mutex;
 
 use async_trait::async_trait;
 use diceri_application::ports::{
-    AccountRepository, AccountRepositoryError, NewSession, StoredAccount,
+    AccountRepository, AccountRepositoryError, NewSession, SignupNetwork, StoredAccount,
 };
 use diceri_domain::{AccessKey, Account, AccountId, NetworkId, Plan, Username};
 use sha2::{Digest as _, Sha256};
@@ -31,7 +31,7 @@ impl AccountRepository for MemoryAccountRepository {
     async fn create_from(
         &self,
         stored: &StoredAccount,
-        network: Option<&NetworkId>,
+        network: Option<SignupNetwork>,
     ) -> Result<(), AccountRepositoryError> {
         let mut accounts = self.accounts.lock().map_err(poisoned)?;
         let mut networks = self.networks.lock().map_err(poisoned)?;
@@ -42,10 +42,11 @@ impl AccountRepository for MemoryAccountRepository {
             return Err(AccountRepositoryError::Taken);
         }
         if let Some(network) = network {
-            if networks.contains(network) {
+            let used = networks.iter().filter(|id| **id == network.id).count();
+            if used >= usize::try_from(network.max_accounts).unwrap_or(usize::MAX) {
                 return Err(AccountRepositoryError::NetworkUsed);
             }
-            networks.push(*network);
+            networks.push(network.id);
         }
         accounts.push(stored.clone());
         Ok(())

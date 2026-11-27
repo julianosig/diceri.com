@@ -138,9 +138,10 @@ async fn signing_up_refuses_a_password_that_is_easy_to_guess() {
 }
 
 #[tokio::test]
-async fn one_room_username_per_network() {
-    let state = diceri_api::AppState::in_memory(None).one_account_per_network(
+async fn a_network_claims_a_limited_number_of_room_usernames() {
+    let state = diceri_api::AppState::in_memory(None).limit_accounts_per_network(
         secrecy::SecretString::from("network-key".to_owned()),
+        1,
         Some(axum::http::HeaderName::from_static("cf-connecting-ip")),
     );
     let app = diceri_api::build_router(state, &diceri_api::Config::for_tests());

@@ -1,4 +1,4 @@
-//! One account per network: the sign-up's client address, reduced to its network (an IPv4
+//! A few accounts per network: the sign-up's client address, reduced to its network (an IPv4
 //! address, or an IPv6 /64, which one household or phone usually gets) and hashed with a
 //! server key, so the raw address is never stored and the hash cannot be reversed by
 //! trying every address without the key.
@@ -6,6 +6,7 @@
 use std::net::IpAddr;
 
 use axum::http::{HeaderMap, HeaderName};
+use diceri_application::ports::SignupNetwork;
 use diceri_domain::NetworkId;
 use secrecy::{ExposeSecret as _, SecretString};
 use sha2::{Digest as _, Sha256};
@@ -17,6 +18,8 @@ const BLOCK: usize = 64;
 #[derive(Clone)]
 pub(crate) struct SignupNetworks {
     key: SecretString,
+    /// Accounts one network may sign up.
+    max_accounts: u32,
     /// Header holding the real client IP behind a proxy (e.g. `cf-connecting-ip`).
     ip_header: Option<HeaderName>,
 }
@@ -28,17 +31,25 @@ impl std::fmt::Debug for SignupNetworks {
 }
 
 impl SignupNetworks {
-    pub(crate) fn new(key: SecretString, ip_header: Option<HeaderName>) -> Self {
-        Self { key, ip_header }
+    pub(crate) fn new(key: SecretString, max_accounts: u32, ip_header: Option<HeaderName>) -> Self {
+        Self {
+            key,
+            max_accounts,
+            ip_header,
+        }
     }
 
     /// The sign-up's network, or `None` when the client address is unknown.
-    pub(crate) fn of(&self, headers: &HeaderMap, peer: Option<IpAddr>) -> Option<NetworkId> {
+    pub(crate) fn of(&self, headers: &HeaderMap, peer: Option<IpAddr>) -> Option<SignupNetwork> {
         let ip = crate::rate_limit::client_ip(headers, peer, self.ip_header.as_ref())?;
-        Some(NetworkId::from_hash(hmac(
+        let id = NetworkId::from_hash(hmac(
             self.key.expose_secret().as_bytes(),
             &network_bytes(ip),
-        )))
+        ));
+        Some(SignupNetwork {
+            id,
+            max_accounts: self.max_accounts,
+        })
     }
 }
 
@@ -114,6 +125,7 @@ mod tests {
     fn the_proxy_header_names_the_network() {
         let networks = SignupNetworks::new(
             SecretString::from("key".to_owned()),
+            3,
             Some(HeaderName::from_static("cf-connecting-ip")),
         );
         let mut headers = HeaderMap::new();

@@ -221,7 +221,7 @@ export const fr: Messages = {
 	},
 	limits: {
 		network:
-			'Un seul nom de salle peut être réservé par réseau, et celui-ci en a déjà un. Connectez-vous plutôt avec lui.',
+			'Ce réseau a déjà réservé le nombre maximal de noms de salle. Connectez-vous plutôt avec l’un d’eux.',
 		quota:
 			'Vous avez utilisé les minutes d’appel de votre offre ce mois-ci. Elles se renouvellent le 1er (UTC).',
 		daily:

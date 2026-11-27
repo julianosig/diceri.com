@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, Account, Mascot, NetworkId, Password, Plan, Username};
+use diceri_domain::{AccessKey, Account, Mascot, Password, Plan, Username};
 
 use crate::ports::{
     AccountRepository, AccountRepositoryError, Clock, IdGenerator, NewSession, PasswordHasher,
-    PasswordHasherError, RandomSource, StoredAccount,
+    PasswordHasherError, RandomSource, SignupNetwork, StoredAccount,
 };
 
 /// How long a browser stays signed in.
@@ -50,8 +50,8 @@ pub struct Registration {
     pub username: Username,
     pub password: Password,
     pub mascot: Mascot,
-    /// Where the sign-up comes from; `None` when one account per network is not enforced.
-    pub network: Option<NetworkId>,
+    /// Where the sign-up comes from; `None` when accounts per network are not limited.
+    pub network: Option<SignupNetwork>,
 }
 
 /// Username + password accounts (no email). The username is also the name of the
@@ -111,7 +111,7 @@ impl AccountService {
                     account: account.clone(),
                     password_hash,
                 },
-                registration.network.as_ref(),
+                registration.network,
             )
             .await?;
         self.start_session(account).await
