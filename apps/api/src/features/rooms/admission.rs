@@ -12,6 +12,7 @@ use super::dto::{
     JoinResponse, KnockResponse, OutcomeResponse, PendingRequestResponse, ProfileRequest,
 };
 use super::handlers::{parse_request_id, parse_room_code};
+use crate::features::CurrentAccount;
 use crate::{ApiError, AppState};
 
 pub(crate) async fn host_session(
@@ -34,8 +35,10 @@ pub(crate) async fn host_session(
     Ok(Json(ticket.into()))
 }
 
+/// Asks to join (or, in an open room, joins): only signed-in accounts may.
 pub(crate) async fn knock(
     State(state): State<AppState>,
+    _signed_in: CurrentAccount,
     Path(code): Path<String>,
     Json(body): Json<ProfileRequest>,
 ) -> Result<(StatusCode, Json<KnockResponse>), ApiError> {

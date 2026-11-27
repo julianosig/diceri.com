@@ -10,8 +10,9 @@ edit wins; nested files only add detail, they never contradict this one.
 
 Diceri is a Google-Meet-inspired app for **video calls with live voice translation**.
 Each account (username + password, no email) owns one room named after it
-(`diceri.com/@username`); guests join without an account. Each listener picks the language they want to hear, and the other
-person's speech is transcribed, translated and re-spoken **in a voice that
+(`diceri.com/@username`); everyone who joins a call signs in first
+([ADR 0013](docs/decisions/0013-accounts-to-join-and-per-network-limit.md)). Each listener
+picks the language they want to hear, and the other person's speech is transcribed, translated and re-spoken **in a voice that
 sounds like the original speaker** (with explicit consent, see §9).
 
 Architecture overview: [`docs/architecture.md`](docs/architecture.md).

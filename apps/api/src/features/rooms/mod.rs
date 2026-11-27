@@ -6,7 +6,7 @@
 //! | GET | `/users/{username}/room` | — (the live room at `/@username`) |
 //! | GET | `/rooms/{room}` | — |
 //! | POST | `/rooms/{room}/host-session` | host |
-//! | POST | `/rooms/{room}/requests` | — (returns a request key) |
+//! | POST | `/rooms/{room}/requests` | account session (returns a request key) |
 //! | GET | `/rooms/{room}/requests` | host |
 //! | GET | `/rooms/{room}/requests/{request}` | request |
 //! | POST | `/rooms/{room}/requests/{request}/admit` and `/deny` | host |

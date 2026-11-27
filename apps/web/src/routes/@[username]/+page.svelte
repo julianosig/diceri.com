@@ -1,7 +1,9 @@
 <script lang="ts">
 	import { refreshAll } from '$app/navigation';
 	import { page } from '$app/state';
+	import { AccountSession, Onboarding } from '#lib/features/account/index.ts';
 	import { SiteHeader } from '#lib/features/landing/index.ts';
+	import { i18n } from '#lib/i18n/index.ts';
 	import { MeetingFlow } from '#lib/features/meeting/index.ts';
 	import { loadHostKey, RoomOffline } from '#lib/features/room/index.ts';
 	import type { PageProps } from './$types';
@@ -16,6 +18,12 @@
 	 */
 	const open = $derived(data.room !== null && (hostKey !== undefined || data.room.people !== 0));
 	const mascot = $derived(data.room?.mascot ?? data.profile?.mascot ?? null);
+
+	/** Only accounts join calls: a signed-out visitor signs in or up first, then pre-join. */
+	const session = new AccountSession();
+	$effect(() => {
+		if (session.account) void refreshAll();
+	});
 
 	/** How often a visitor at a claimed, not-live room looks again. */
 	const RECHECK_MS = 4000;
@@ -38,7 +46,12 @@
 	<title>@{data.username} · Diceri</title>
 </svelte:head>
 
-{#if data.room && open}
+{#if data.room && open && !hostKey && !data.signedIn}
+	<SiteHeader />
+	<main class="flex justify-center px-4 pt-6 pb-16">
+		<Onboarding {session} title={i18n.t.lobby.joinTitle} />
+	</main>
+{:else if data.room && open}
 	{#key data.room.code}
 		<MeetingFlow room={data.room} {hostKey} meetingUrl={page.url.href}>
 			{#snippet header()}<SiteHeader />{/snippet}

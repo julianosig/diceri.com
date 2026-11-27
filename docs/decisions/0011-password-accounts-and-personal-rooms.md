@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: accepted (guest model superseded by 0013)
 date: 2026-11-26
 ---
 

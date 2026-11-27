@@ -1,4 +1,4 @@
-import { openMyRoom, signUp } from './support/accounts.ts';
+import { openMyRoom, PASSWORD, signUp, uniqueUsername } from './support/accounts.ts';
 import { expect, test, type Browser, type Page } from '@playwright/test';
 
 /**
@@ -30,6 +30,7 @@ async function hostJoins(page: Page): Promise<string> {
 async function guestAsks(browser: Browser, url: string): Promise<Page> {
 	const context = await browser.newContext({ permissions: ['microphone'] });
 	const guest = await context.newPage();
+	await signUp(guest);
 	await guest.goto(url);
 	await guest.getByLabel('Your name').fill('Guest');
 	await guest.getByRole('button', { name: 'Ask to join' }).click();
@@ -95,6 +96,13 @@ test('anyone can walk into an open room at /@username', async ({ page, browser }
 
 	const visitor = await (await browser.newContext({ permissions: ['microphone'] })).newPage();
 	await visitor.goto(`/@${owner}`);
+	// Only accounts join: the visitor claims an @ (same flow as the home page) first.
+	await expect(visitor.getByRole('heading', { name: 'Join the meeting' })).toBeVisible();
+	await visitor.getByPlaceholder('room_username').fill(uniqueUsername());
+	await visitor.getByLabel('Password', { exact: true }).fill(PASSWORD);
+	await visitor.getByLabel('Repeat password').fill(PASSWORD);
+	await visitor.getByRole('button', { name: 'Create my room' }).click();
+	await visitor.getByRole('button', { name: 'Continue' }).click();
 	await expect(visitor.getByRole('button', { name: 'Join now' })).toBeVisible();
 	await visitor.getByLabel('Your name').fill('Walk-in');
 	await visitor.getByRole('button', { name: 'Join now' }).click();

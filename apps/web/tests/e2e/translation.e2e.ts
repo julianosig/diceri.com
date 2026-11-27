@@ -41,6 +41,7 @@ async function fillProfile(person: Person): Promise<void> {
 }
 
 async function admit(host: Page, guest: Person): Promise<void> {
+	await signUp(guest.page);
 	await guest.page.goto(host.url());
 	await fillProfile(guest);
 	await guest.page.getByRole('button', { name: 'Ask to join' }).click();
