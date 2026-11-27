@@ -1,6 +1,7 @@
 export { default as AudioMeter } from './components/AudioMeter.svelte';
 export { default as CallScreen } from './components/CallScreen.svelte';
 export { default as MeetingInfoCard } from './components/MeetingInfoCard.svelte';
+export { default as TimeLeft } from './components/TimeLeft.svelte';
 export {
 	CallSession,
 	type CallSessionOptions,

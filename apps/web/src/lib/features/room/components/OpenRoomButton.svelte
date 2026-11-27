@@ -6,6 +6,7 @@
 	import { ApiError } from '#lib/api/http-client.ts';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
+	import { limitText } from '#lib/features/plans/index.ts';
 	import { saveHostKey } from '../host-keys.ts';
 	import { getUserRoom, openRoom } from '../room-api.ts';
 	import type { RoomEntry } from '../types.ts';
@@ -20,7 +21,8 @@
 	let { username, autostart = false }: Props = $props();
 	const t = $derived(i18n.t.openRoom);
 	let pending = $state(false);
-	let failed = $state(false);
+	/** Why opening failed, in the visitor's language (a plan limit, or a plain failure). */
+	let problem = $state<string | undefined>();
 
 	/** The live room's entry rule, so reopening keeps it; new rooms ask for approval. */
 	async function currentEntry(): Promise<RoomEntry> {
@@ -34,15 +36,15 @@
 
 	async function open() {
 		pending = true;
-		failed = false;
+		problem = undefined;
 		try {
 			// Opening (or reopening) returns the host key, so this browser can host it.
 			// Rooms stay off the live board while it is hidden; the API keeps the option.
 			const room = await openRoom({ listed: false, entry: await currentEntry() });
 			saveHostKey(room.code, room.hostKey);
 			await goto(resolve('/@[username]', { username: room.owner }));
-		} catch {
-			failed = true;
+		} catch (cause) {
+			problem = limitText(cause, i18n.t) ?? t.failed;
 		} finally {
 			pending = false;
 		}
@@ -63,7 +65,7 @@
 			{t.submit}
 		{/if}
 	</Button>
-	{#if failed}
-		<p role="alert" class="text-sm text-red-600">{t.failed}</p>
+	{#if problem}
+		<p role="alert" class="text-sm text-red-600">{problem}</p>
 	{/if}
 </div>

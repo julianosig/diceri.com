@@ -214,6 +214,31 @@ export const en = {
 		empty: 'Nothing was said while you were in the call.',
 		copied: 'Transcript copied'
 	},
+	plans: {
+		free: 'Free',
+		pro: 'Pro',
+		team: 'Team',
+		yourPlan: 'Your plan',
+		soon: 'Coming soon',
+		callUpTo: (minutes: number) => `Calls up to ${String(minutes)} min`,
+		perDay: (minutes: number) => `${String(minutes)} min of calls a day`,
+		usedToday: (used: number, total: number) =>
+			`${String(used)} of ${String(total)} min used today`,
+		freeLine: (call: number, day: number) =>
+			`Free: calls up to ${String(call)} min, ${String(day)} min a day.`,
+		seePlans: 'See plans',
+		title: 'Plans',
+		intro: 'Everyone starts on Free. Paid plans with longer calls are coming soon.',
+		close: 'Close'
+	},
+	limits: {
+		daily: "You've used today's free call minutes. They renew at midnight (UTC).",
+		monthly: "This month's free capacity is used up. Paid plans are coming soon.",
+		busy: 'Diceri is at capacity right now. Try again in a few minutes.',
+		timeLeft: (time: string) => `${time} left`,
+		timeUp: 'Your free call time is up',
+		timeUpHint: 'Free calls have a time limit. Start a new one if you have minutes left today.'
+	},
 	footer: { freeSoftware: 'Free software', sourceCode: 'Source code' }
 };
 

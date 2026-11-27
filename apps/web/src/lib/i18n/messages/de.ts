@@ -215,5 +215,33 @@ export const de: Messages = {
 		empty: 'Während du im Anruf warst, wurde nichts gesagt.',
 		copied: 'Transkript kopiert'
 	},
+	plans: {
+		free: 'Kostenlos',
+		pro: 'Pro',
+		team: 'Team',
+		yourPlan: 'Dein Tarif',
+		soon: 'Demnächst',
+		callUpTo: (minutes: number) => `Anrufe bis ${String(minutes)} Min.`,
+		perDay: (minutes: number) => `${String(minutes)} Min. Anrufe pro Tag`,
+		usedToday: (used: number, total: number) =>
+			`${String(used)} von ${String(total)} Min. heute genutzt`,
+		freeLine: (call: number, day: number) =>
+			`Kostenlos: Anrufe bis ${String(call)} Min., ${String(day)} Min. pro Tag.`,
+		seePlans: 'Tarife ansehen',
+		title: 'Tarife',
+		intro: 'Alle starten mit Kostenlos. Bezahlte Tarife mit längeren Anrufen kommen bald.',
+		close: 'Schließen'
+	},
+	limits: {
+		daily:
+			'Du hast deine kostenlosen Anrufminuten für heute verbraucht. Sie werden um Mitternacht (UTC) erneuert.',
+		monthly:
+			'Das kostenlose Kontingent für diesen Monat ist aufgebraucht. Bezahlte Tarife kommen bald.',
+		busy: 'Diceri ist gerade ausgelastet. Versuche es in ein paar Minuten erneut.',
+		timeLeft: (time: string) => `Noch ${time}`,
+		timeUp: 'Deine kostenlose Anrufzeit ist abgelaufen',
+		timeUpHint:
+			'Kostenlose Anrufe sind zeitlich begrenzt. Starte einen neuen, wenn du heute noch Minuten übrig hast.'
+	},
 	footer: { freeSoftware: 'Freie Software', sourceCode: 'Quellcode' }
 };

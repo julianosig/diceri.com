@@ -15,6 +15,8 @@ export interface Room {
 	mascot: string;
 	/** People in the call now (`/users/{username}/room` only; absent without a media server). */
 	people?: number;
+	/** Minutes before the owner's plan ends this call (`/users/{username}/room` only). */
+	minutesLeft?: number;
 }
 
 /** Mirrors `OpenRoomRequest`: how the owner runs their room this time. */

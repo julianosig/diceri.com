@@ -10,7 +10,9 @@ import {
 	saveLanguage,
 	type Profile
 } from '#lib/features/lobby/index.ts';
+import { limitText } from '#lib/features/plans/index.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
+import { i18n } from '#lib/i18n/index.ts';
 
 export type MeetingPhase = 'prejoin' | 'joining' | 'waiting' | 'call' | 'left' | 'ended';
 
@@ -24,8 +26,10 @@ export class MeetingFlow {
 	session = $state<CallSession | undefined>();
 	/** Transcript of the last call, kept after leaving so it can be read and downloaded. */
 	transcript = $state<TranscriptLog | undefined>();
-	/** Who ended the call, for the end screen. */
-	endedBy = $state<'host' | 'me' | undefined>();
+	/** Who ended the call, for the end screen; `limit` when the plan's time ran out. */
+	endedBy = $state<'host' | 'me' | 'limit' | undefined>();
+	/** When the owner's plan ends this call (ms since epoch), once it has started. */
+	deadline = $state<number | undefined>();
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
 	#deviceId: string | undefined;
@@ -33,7 +37,9 @@ export class MeetingFlow {
 
 	constructor(
 		private readonly roomId: string,
-		private readonly hostKey: string | undefined
+		private readonly hostKey: string | undefined,
+		/** Minutes the owner's plan leaves for this call, if the API said. */
+		private readonly minutesLeft?: number
 	) {
 		this.knock = new GuestKnock(roomId, (credentials, request) => {
 			void this.#startCall(credentials, request.requestKey);
@@ -62,7 +68,8 @@ export class MeetingFlow {
 			await this.#startCall(credentials, this.hostKey);
 		} catch (cause) {
 			this.phase = 'prejoin';
-			this.error = cause instanceof Error ? cause.message : String(cause);
+			this.error =
+				limitText(cause, i18n.t) ?? (cause instanceof Error ? cause.message : String(cause));
 		}
 	}
 
@@ -91,6 +98,11 @@ export class MeetingFlow {
 		this.phase = phase;
 	}
 
+	/** The API meters once a minute, so a call ends within about a minute of the deadline. */
+	#reachedDeadline(): boolean {
+		return this.deadline !== undefined && Date.now() >= this.deadline - 90_000;
+	}
+
 	async #startCall(credentials: MediaCredentials, accessKey: string): Promise<void> {
 		const roomId = this.roomId;
 		this.session = new CallSession({
@@ -99,11 +111,15 @@ export class MeetingFlow {
 			deviceId: this.#deviceId,
 			monitorCredentials: () => monitorSession(roomId, accessKey),
 			onEndedByHost: () => {
-				this.endedBy ??= 'host';
+				this.endedBy ??= this.#reachedDeadline() ? 'limit' : 'host';
 				void this.#close('ended');
 			}
 		});
 		this.phase = 'call';
+		// Minutes count only while someone is in the call, so the clock starts now.
+		if (this.minutesLeft !== undefined) {
+			this.deadline = Date.now() + this.minutesLeft * 60_000;
+		}
 		this.hostRequests?.start();
 		await this.session.connect();
 	}

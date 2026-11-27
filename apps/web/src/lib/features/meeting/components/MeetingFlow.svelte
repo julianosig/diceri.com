@@ -3,7 +3,7 @@
 	import { onMount, type Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
 	import { Button } from '#lib/components/ui/index.ts';
-	import { CallScreen, MeetingInfoCard } from '#lib/features/call/index.ts';
+	import { CallScreen, MeetingInfoCard, TimeLeft } from '#lib/features/call/index.ts';
 	import { TranscriptView } from '#lib/features/translation/index.ts';
 	import {
 		JoinRequestList,
@@ -30,7 +30,7 @@
 
 	// One flow per page visit; the route remounts this component for another room.
 	// svelte-ignore state_referenced_locally
-	const flow = new MeetingFlow(roomId, hostKey);
+	const flow = new MeetingFlow(roomId, hostKey, room.minutesLeft);
 	let showInfo = $state(true);
 	const requests = $derived(flow.hostRequests);
 
@@ -58,6 +58,9 @@
 			{/if}
 		{/snippet}
 		{#snippet overlay()}
+			{#if flow.deadline}
+				<TimeLeft deadline={flow.deadline} />
+			{/if}
 			{#if requests?.toast}
 				{@const request = requests.toast}
 				<JoinRequestToast
@@ -87,9 +90,13 @@
 		{:else if flow.phase === 'left' || flow.phase === 'ended'}
 			<section class="flex w-full flex-col items-center gap-6 px-4 text-center">
 				<h1 class="text-3xl">
-					{#if flow.phase === 'left'}{i18n.t.meeting.left}{:else if flow.endedBy === 'me'}{i18n.t
-							.meeting.endedByMe}{:else}{i18n.t.meeting.endedByHost}{/if}
+					{#if flow.phase === 'left'}{i18n.t.meeting.left}{:else if flow.endedBy === 'limit'}{i18n.t
+							.limits.timeUp}{:else if flow.endedBy === 'me'}{i18n.t.meeting.endedByMe}{:else}{i18n
+							.t.meeting.endedByHost}{/if}
 				</h1>
+				{#if flow.endedBy === 'limit'}
+					<p class="max-w-md text-ink-muted">{i18n.t.limits.timeUpHint}</p>
+				{/if}
 				<div class="flex gap-3">
 					{#if flow.phase === 'left'}
 						<Button variant="secondary" onclick={() => (flow.phase = 'prejoin')}>

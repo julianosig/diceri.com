@@ -210,5 +210,30 @@ export const hi: Messages = {
 		empty: 'कॉल में आपके रहते कुछ नहीं कहा गया।',
 		copied: 'ट्रांसक्रिप्ट कॉपी हो गया'
 	},
+	plans: {
+		free: 'मुफ़्त',
+		pro: 'Pro',
+		team: 'Team',
+		yourPlan: 'आपका प्लान',
+		soon: 'जल्द आ रहा है',
+		callUpTo: (minutes: number) => `${String(minutes)} मिनट तक की कॉल`,
+		perDay: (minutes: number) => `रोज़ ${String(minutes)} मिनट की कॉल`,
+		usedToday: (used: number, total: number) =>
+			`आज ${String(total)} में से ${String(used)} मिनट इस्तेमाल हुए`,
+		freeLine: (call: number, day: number) =>
+			`मुफ़्त: ${String(call)} मिनट तक की कॉल, रोज़ ${String(day)} मिनट।`,
+		seePlans: 'प्लान देखें',
+		title: 'प्लान',
+		intro: 'सभी मुफ़्त प्लान से शुरू करते हैं। लंबी कॉल वाले पेड प्लान जल्द आ रहे हैं।',
+		close: 'बंद करें'
+	},
+	limits: {
+		daily: 'आपने आज के मुफ़्त कॉल मिनट इस्तेमाल कर लिए हैं। ये आधी रात (UTC) को फिर से मिलेंगे।',
+		monthly: 'इस महीने की मुफ़्त क्षमता ख़त्म हो गई है। पेड प्लान जल्द आ रहे हैं।',
+		busy: 'Diceri अभी पूरी क्षमता पर है। कुछ मिनट बाद फिर कोशिश करें।',
+		timeLeft: (time: string) => `${time} बाकी`,
+		timeUp: 'आपका मुफ़्त कॉल समय ख़त्म हो गया',
+		timeUpHint: 'मुफ़्त कॉल की समय सीमा होती है। अगर आज आपके मिनट बचे हैं, तो नई कॉल शुरू करें।'
+	},
 	footer: { freeSoftware: 'फ्री सॉफ़्टवेयर', sourceCode: 'सोर्स कोड' }
 };

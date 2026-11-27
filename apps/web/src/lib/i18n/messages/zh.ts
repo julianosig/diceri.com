@@ -208,5 +208,29 @@ export const zh: Messages = {
 		empty: '你在通话期间没有人发言。',
 		copied: '文字记录已复制'
 	},
+	plans: {
+		free: '免费',
+		pro: 'Pro',
+		team: 'Team',
+		yourPlan: '你的套餐',
+		soon: '即将推出',
+		callUpTo: (minutes: number) => `每次通话最长 ${String(minutes)} 分钟`,
+		perDay: (minutes: number) => `每天 ${String(minutes)} 分钟通话`,
+		usedToday: (used: number, total: number) => `今天已用 ${String(used)}/${String(total)} 分钟`,
+		freeLine: (call: number, day: number) =>
+			`免费：每次通话最长 ${String(call)} 分钟，每天 ${String(day)} 分钟。`,
+		seePlans: '查看套餐',
+		title: '套餐',
+		intro: '所有人都从免费套餐开始。支持更长通话的付费套餐即将推出。',
+		close: '关闭'
+	},
+	limits: {
+		daily: '你今天的免费通话分钟数已用完，将在午夜（UTC）重置。',
+		monthly: '本月的免费额度已用完。付费套餐即将推出。',
+		busy: 'Diceri 当前已满负荷，请几分钟后再试。',
+		timeLeft: (time: string) => `剩余 ${time}`,
+		timeUp: '你的免费通话时间已用完',
+		timeUpHint: '免费通话有时长限制。如果你今天还有剩余分钟数，可以发起新的通话。'
+	},
 	footer: { freeSoftware: '自由软件', sourceCode: '源代码' }
 };

@@ -5,6 +5,7 @@
 	import { i18n } from '#lib/i18n/index.ts';
 	import { Video } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
+	import { PlanSummary } from '#lib/features/plans/index.ts';
 	import { OpenRoomButton } from '#lib/features/room/index.ts';
 
 	// The live board (`LiveRooms` from the presence feature) is hidden for now; the
@@ -44,6 +45,9 @@
 					{i18n.t.openRoom.submit}
 				</Button>
 			{/if}
+		{/if}
+		{#if account.account !== undefined}
+			<div class="-mt-4"><PlanSummary usage={account.account?.usage} /></div>
 		{/if}
 	</div>
 	<div class="mt-auto"><SiteFooter /></div>

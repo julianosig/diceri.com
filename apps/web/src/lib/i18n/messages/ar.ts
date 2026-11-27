@@ -214,5 +214,30 @@ export const ar: Messages = {
 		empty: 'لم يُقل شيء أثناء وجودك في المكالمة.',
 		copied: 'تم نسخ النص'
 	},
+	plans: {
+		free: 'مجاني',
+		pro: 'Pro',
+		team: 'Team',
+		yourPlan: 'خطتك',
+		soon: 'قريبًا',
+		callUpTo: (minutes: number) => `مكالمات حتى ${String(minutes)} د`,
+		perDay: (minutes: number) => `${String(minutes)} د من المكالمات يوميًا`,
+		usedToday: (used: number, total: number) =>
+			`استُخدمت ${String(used)} من ${String(total)} د اليوم`,
+		freeLine: (call: number, day: number) =>
+			`مجاني: مكالمات حتى ${String(call)} د، و${String(day)} د يوميًا.`,
+		seePlans: 'عرض الخطط',
+		title: 'الخطط',
+		intro: 'يبدأ الجميع بالخطة المجانية. الخطط المدفوعة بمكالمات أطول قادمة قريبًا.',
+		close: 'إغلاق'
+	},
+	limits: {
+		daily: 'استخدمت دقائق المكالمات المجانية لهذا اليوم. تتجدد عند منتصف الليل (UTC).',
+		monthly: 'نفدت السعة المجانية لهذا الشهر. الخطط المدفوعة قادمة قريبًا.',
+		busy: 'وصل Diceri إلى أقصى سعته الآن. حاول مرة أخرى بعد بضع دقائق.',
+		timeLeft: (time: string) => `متبقٍ ${time}`,
+		timeUp: 'انتهى وقت مكالمتك المجانية',
+		timeUpHint: 'المكالمات المجانية محدودة المدة. ابدأ مكالمة جديدة إن بقيت لديك دقائق اليوم.'
+	},
 	footer: { freeSoftware: 'برمجيات حرة', sourceCode: 'الشيفرة المصدرية' }
 };

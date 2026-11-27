@@ -3,7 +3,9 @@ export class ApiError extends Error {
 	constructor(
 		readonly status: number,
 		readonly title: string,
-		readonly detail?: string
+		readonly detail?: string,
+		/** Which plan or capacity limit was reached (`daily`, `monthly`, `busy`), on a 429. */
+		readonly limit?: string
 	) {
 		super(detail ?? `${String(status)} ${title}`);
 		this.name = 'ApiError';
@@ -40,8 +42,14 @@ async function send(path: string, options: RequestOptions): Promise<Response> {
 		const problem = (await response.json().catch(() => ({}))) as {
 			title?: string;
 			detail?: string;
+			limit?: string;
 		};
-		throw new ApiError(response.status, problem.title ?? response.statusText, problem.detail);
+		throw new ApiError(
+			response.status,
+			problem.title ?? response.statusText,
+			problem.detail,
+			problem.limit
+		);
 	}
 	return response;
 }

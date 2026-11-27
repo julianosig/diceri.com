@@ -211,5 +211,32 @@ export const pt: Messages = {
 		empty: 'Nada foi dito enquanto você estava na chamada.',
 		copied: 'Transcrição copiada'
 	},
+	plans: {
+		free: 'Grátis',
+		pro: 'Pro',
+		team: 'Team',
+		yourPlan: 'Seu plano',
+		soon: 'Em breve',
+		callUpTo: (minutes: number) => `Chamadas de até ${String(minutes)} min`,
+		perDay: (minutes: number) => `${String(minutes)} min de chamadas por dia`,
+		usedToday: (used: number, total: number) =>
+			`${String(used)} de ${String(total)} min usados hoje`,
+		freeLine: (call: number, day: number) =>
+			`Grátis: chamadas de até ${String(call)} min, ${String(day)} min por dia.`,
+		seePlans: 'Ver planos',
+		title: 'Planos',
+		intro:
+			'Todo mundo começa no plano Grátis. Planos pagos com chamadas mais longas chegam em breve.',
+		close: 'Fechar'
+	},
+	limits: {
+		daily: 'Você já usou os minutos grátis de chamada de hoje. Eles renovam à meia-noite (UTC).',
+		monthly: 'A capacidade gratuita deste mês acabou. Planos pagos chegam em breve.',
+		busy: 'O Diceri está no limite da capacidade agora. Tente de novo em alguns minutos.',
+		timeLeft: (time: string) => `Faltam ${time}`,
+		timeUp: 'Seu tempo de chamada grátis acabou',
+		timeUpHint:
+			'Chamadas grátis têm limite de tempo. Comece uma nova se você ainda tiver minutos hoje.'
+	},
 	footer: { freeSoftware: 'Software livre', sourceCode: 'Código-fonte' }
 };
