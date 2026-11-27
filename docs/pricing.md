@@ -1,5 +1,8 @@
 # Pricing and margins
 
+Only the free plan is offered today (60 call minutes a month, renewed on the 1st UTC); Pro and
+Team below are the prices worked out for later and can be assigned by hand.
+
 How the plan prices and allowances (defaults in `crates/application/src/use_cases/plan_limits.rs`,
 overridable with `DICERI_<PLAN>_*`, see `apps/api/AGENTS.md`) were derived. Prices are list
 prices checked on 2026-11-27; recheck them when a provider or model changes.
@@ -42,7 +45,7 @@ for subscriptions.
 
 | Plan | Price / month | Included | Per call | Per day | Cost at full use | Margin at full use | Margin at half use |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| Free | $0 | 200 min | 20 min | 40 min | up to $10.40 per account | n/a (marketing cost, capped globally) | n/a |
+| Free | $0 | 60 min | 60 min | no daily limit | up to $3.12 per account | n/a (marketing cost, capped globally) | n/a |
 | Pro | $29 | 300 min (5 h) | 60 min | 300 min | $15.60 + $1.61 fees = $17.21 | **$11.79 (41%)** | $19.59 (68%) |
 | Team | $79 | 800 min (13 h 20) | 120 min | 600 min | $41.60 + $3.86 fees = $45.46 | **$33.54 (42%)** | $54.34 (69%) |
 

@@ -215,33 +215,21 @@ export const hi: Messages = {
 		copied: 'ट्रांसक्रिप्ट कॉपी हो गया'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} मिनट कॉल प्रति माह`,
-		price: (amount: string) => `${amount} / माह`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} में से ${String(total)} मिनट इस महीने इस्तेमाल हुए`,
-		free: 'मुफ़्त',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'आपका प्लान',
-		soon: 'जल्द आ रहा है',
-		callUpTo: (minutes: number) => `${String(minutes)} मिनट तक की कॉल`,
-		perDay: (minutes: number) => `रोज़ ${String(minutes)} मिनट की कॉल`,
-		freeLine: (call: number, day: number) =>
-			`मुफ़्त: ${String(call)} मिनट तक की कॉल, रोज़ ${String(day)} मिनट।`,
-		seePlans: 'प्लान देखें',
-		title: 'प्लान',
-		intro: 'सभी मुफ़्त प्लान से शुरू करते हैं। लंबी कॉल वाले पेड प्लान जल्द आ रहे हैं।',
-		close: 'बंद करें'
+		freeLine: (minutes: number) => `मुफ़्त: हर महीने ${String(minutes)} मिनट कॉल।`
 	},
 	limits: {
 		quota:
 			'आपने इस महीने अपने प्लान के कॉल मिनट इस्तेमाल कर लिए हैं। ये हर महीने की 1 तारीख (UTC) को फिर से मिलते हैं।',
 		daily: 'आपने आज के मुफ़्त कॉल मिनट इस्तेमाल कर लिए हैं। ये आधी रात (UTC) को फिर से मिलेंगे।',
-		monthly: 'इस महीने की मुफ़्त क्षमता ख़त्म हो गई है। पेड प्लान जल्द आ रहे हैं।',
+		monthly:
+			'इस महीने Diceri की मुफ़्त क्षमता खत्म हो गई है। यह हर महीने की 1 तारीख (UTC) को फिर से मिलती है।',
 		busy: 'Diceri अभी पूरी क्षमता पर है। कुछ मिनट बाद फिर कोशिश करें।',
 		timeLeft: (time: string) => `${time} बाकी`,
 		timeUp: 'आपका मुफ़्त कॉल समय ख़त्म हो गया',
-		timeUpHint: 'मुफ़्त कॉल की समय सीमा होती है। अगर आज आपके मिनट बचे हैं, तो नई कॉल शुरू करें।'
+		timeUpHint:
+			'आपने इस महीने के मुफ़्त मिनट इस्तेमाल कर लिए हैं। ये हर महीने की 1 तारीख (UTC) को फिर से मिलते हैं।'
 	},
 	footer: { freeSoftware: 'फ्री सॉफ़्टवेयर', sourceCode: 'सोर्स कोड' }
 };

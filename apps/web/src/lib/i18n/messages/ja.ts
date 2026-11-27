@@ -215,33 +215,18 @@ export const ja: Messages = {
 		copied: '文字起こしをコピーしました'
 	},
 	plans: {
-		perMonth: (minutes: number) => `月${String(minutes)}分まで通話`,
-		price: (amount: string) => `${amount} / 月`,
 		usedThisMonth: (used: number, total: number) =>
 			`今月${String(total)}分中${String(used)}分を使用`,
-		free: '無料',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'ご利用中のプラン',
-		soon: '近日公開',
-		callUpTo: (minutes: number) => `1回の通話は最大${String(minutes)}分`,
-		perDay: (minutes: number) => `1日あたり${String(minutes)}分の通話`,
-		freeLine: (call: number, day: number) =>
-			`無料プラン：1回の通話は最大${String(call)}分、1日${String(day)}分まで。`,
-		seePlans: 'プランを見る',
-		title: 'プラン',
-		intro: 'どなたも無料プランから始められます。より長く通話できる有料プランを近日公開予定です。',
-		close: '閉じる'
+		freeLine: (minutes: number) => `無料：毎月${String(minutes)}分まで通話できます。`
 	},
 	limits: {
 		quota: '今月のプランの通話時間を使い切りました。毎月1日(UTC)にリセットされます。',
 		daily: '本日の無料通話時間を使い切りました。毎日午前0時（UTC）にリセットされます。',
-		monthly: '今月の無料枠の上限に達しました。有料プランは近日公開予定です。',
+		monthly: '今月のDiceriの無料枠は上限に達しました。毎月1日(UTC)にリセットされます。',
 		busy: '現在Diceriは混み合っています。数分後にもう一度お試しください。',
 		timeLeft: (time: string) => `残り${time}`,
 		timeUp: '無料通話の時間が終了しました',
-		timeUpHint:
-			'無料通話には時間制限があります。本日の残り時間がある場合は、新しい通話を開始してください。'
+		timeUpHint: '今月の無料通話時間を使い切りました。毎月1日(UTC)にリセットされます。'
 	},
 	footer: { freeSoftware: 'フリーソフトウェア', sourceCode: 'ソースコード' }
 };

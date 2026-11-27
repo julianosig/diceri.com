@@ -219,32 +219,18 @@ export const ar: Messages = {
 		copied: 'تم نسخ النص'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} د من المكالمات شهريًا`,
-		price: (amount: string) => `${amount} / شهر`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} من ${String(total)} د مستخدمة هذا الشهر`,
-		free: 'مجاني',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'خطتك',
-		soon: 'قريبًا',
-		callUpTo: (minutes: number) => `مكالمات حتى ${String(minutes)} د`,
-		perDay: (minutes: number) => `${String(minutes)} د من المكالمات يوميًا`,
-		freeLine: (call: number, day: number) =>
-			`مجاني: مكالمات حتى ${String(call)} د، و${String(day)} د يوميًا.`,
-		seePlans: 'عرض الخطط',
-		title: 'الخطط',
-		intro: 'يبدأ الجميع بالخطة المجانية. الخطط المدفوعة بمكالمات أطول قادمة قريبًا.',
-		close: 'إغلاق'
+		freeLine: (minutes: number) => `مجاني: ${String(minutes)} د من المكالمات كل شهر.`
 	},
 	limits: {
 		quota: 'استخدمت دقائق المكالمات في خطتك لهذا الشهر. تتجدد في اليوم الأول من كل شهر (UTC).',
 		daily: 'استخدمت دقائق المكالمات المجانية لهذا اليوم. تتجدد عند منتصف الليل (UTC).',
-		monthly: 'نفدت السعة المجانية لهذا الشهر. الخطط المدفوعة قادمة قريبًا.',
+		monthly: 'نفدت السعة المجانية لـ Diceri هذا الشهر. تتجدد في اليوم الأول من كل شهر (UTC).',
 		busy: 'وصل Diceri إلى أقصى سعته الآن. حاول مرة أخرى بعد بضع دقائق.',
 		timeLeft: (time: string) => `متبقٍ ${time}`,
 		timeUp: 'انتهى وقت مكالمتك المجانية',
-		timeUpHint: 'المكالمات المجانية محدودة المدة. ابدأ مكالمة جديدة إن بقيت لديك دقائق اليوم.'
+		timeUpHint: 'استخدمت الدقائق المجانية لهذا الشهر. تتجدد في اليوم الأول من كل شهر (UTC).'
 	},
 	footer: { freeSoftware: 'برمجيات حرة', sourceCode: 'الشيفرة المصدرية' }
 };

@@ -214,32 +214,18 @@ export const ko: Messages = {
 		copied: '스크립트가 복사되었습니다'
 	},
 	plans: {
-		perMonth: (minutes: number) => `월 ${String(minutes)}분 통화`,
-		price: (amount: string) => `${amount} / 월`,
 		usedThisMonth: (used: number, total: number) =>
 			`이번 달 ${String(total)}분 중 ${String(used)}분 사용`,
-		free: '무료',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: '내 요금제',
-		soon: '출시 예정',
-		callUpTo: (minutes: number) => `통화당 최대 ${String(minutes)}분`,
-		perDay: (minutes: number) => `하루 ${String(minutes)}분 통화`,
-		freeLine: (call: number, day: number) =>
-			`무료: 통화당 최대 ${String(call)}분, 하루 ${String(day)}분.`,
-		seePlans: '요금제 보기',
-		title: '요금제',
-		intro: '누구나 무료 요금제로 시작합니다. 더 길게 통화할 수 있는 유료 요금제가 곧 출시됩니다.',
-		close: '닫기'
+		freeLine: (minutes: number) => `무료: 매월 ${String(minutes)}분 통화.`
 	},
 	limits: {
 		quota: '이번 달 요금제의 통화 시간을 모두 사용했어요. 매월 1일(UTC)에 초기화돼요.',
 		daily: '오늘의 무료 통화 시간을 모두 사용했습니다. 자정(UTC)에 다시 충전됩니다.',
-		monthly: '이번 달 무료 사용량이 모두 소진되었습니다. 유료 요금제가 곧 출시됩니다.',
+		monthly: '이번 달 Diceri 무료 용량이 모두 소진됐어요. 매월 1일(UTC)에 초기화돼요.',
 		busy: '지금은 Diceri 사용량이 많습니다. 몇 분 후에 다시 시도해 주세요.',
 		timeLeft: (time: string) => `${time} 남음`,
 		timeUp: '무료 통화 시간이 끝났습니다',
-		timeUpHint: '무료 통화에는 시간 제한이 있습니다. 오늘 남은 시간이 있다면 새 통화를 시작하세요.'
+		timeUpHint: '이번 달 무료 통화 시간을 모두 사용했어요. 매월 1일(UTC)에 초기화돼요.'
 	},
 	footer: { freeSoftware: '자유 소프트웨어', sourceCode: '소스 코드' }
 };

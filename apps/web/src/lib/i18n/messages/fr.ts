@@ -219,36 +219,22 @@ export const fr: Messages = {
 		copied: 'Transcription copiée'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} min d’appels par mois`,
-		price: (amount: string) => `${amount} / mois`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} sur ${String(total)} min utilisées ce mois-ci`,
-		free: 'Gratuit',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'Votre offre',
-		soon: 'Bientôt disponible',
-		callUpTo: (minutes: number) => `Appels jusqu’à ${String(minutes)} min`,
-		perDay: (minutes: number) => `${String(minutes)} min d’appels par jour`,
-		freeLine: (call: number, day: number) =>
-			`Gratuit : appels jusqu’à ${String(call)} min, ${String(day)} min par jour.`,
-		seePlans: 'Voir les offres',
-		title: 'Offres',
-		intro:
-			'Tout le monde commence avec l’offre Gratuit. Des offres payantes avec des appels plus longs arrivent bientôt.',
-		close: 'Fermer'
+		freeLine: (minutes: number) => `Gratuit : ${String(minutes)} min d’appels chaque mois.`
 	},
 	limits: {
 		quota:
 			'Vous avez utilisé les minutes d’appel de votre offre ce mois-ci. Elles se renouvellent le 1er (UTC).',
 		daily:
 			'Vous avez utilisé vos minutes d’appel gratuites du jour. Elles se renouvellent à minuit (UTC).',
-		monthly: 'La capacité gratuite de ce mois est épuisée. Les offres payantes arrivent bientôt.',
+		monthly:
+			'La capacité gratuite de Diceri pour ce mois est épuisée. Elle se renouvelle le 1er (UTC).',
 		busy: 'Diceri est à pleine capacité pour le moment. Réessayez dans quelques minutes.',
 		timeLeft: (time: string) => `${time} restantes`,
 		timeUp: 'Votre temps d’appel gratuit est écoulé',
 		timeUpHint:
-			'Les appels gratuits ont une durée limitée. Lancez-en un nouveau s’il vous reste des minutes aujourd’hui.'
+			'Vous avez utilisé les minutes gratuites de ce mois. Elles se renouvellent le 1er (UTC).'
 	},
 	footer: { freeSoftware: 'Logiciel libre', sourceCode: 'Code source' }
 };

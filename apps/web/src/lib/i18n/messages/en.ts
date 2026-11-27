@@ -219,32 +219,18 @@ export const en = {
 		copied: 'Transcript copied'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} min of calls a month`,
-		price: (amount: string) => `${amount} / month`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} of ${String(total)} min used this month`,
-		free: 'Free',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'Your plan',
-		soon: 'Coming soon',
-		callUpTo: (minutes: number) => `Calls up to ${String(minutes)} min`,
-		perDay: (minutes: number) => `${String(minutes)} min of calls a day`,
-		freeLine: (call: number, day: number) =>
-			`Free: calls up to ${String(call)} min, ${String(day)} min a day.`,
-		seePlans: 'See plans',
-		title: 'Plans',
-		intro: 'Everyone starts on Free. Paid plans with longer calls are coming soon.',
-		close: 'Close'
+		freeLine: (minutes: number) => `Free: ${String(minutes)} min of calls every month.`
 	},
 	limits: {
 		quota: "You've used this month's call minutes on your plan. They renew on the 1st (UTC).",
 		daily: "You've used today's free call minutes. They renew at midnight (UTC).",
-		monthly: "This month's free capacity is used up. Paid plans are coming soon.",
+		monthly: "Diceri's free capacity for this month is used up. It renews on the 1st (UTC).",
 		busy: 'Diceri is at capacity right now. Try again in a few minutes.',
 		timeLeft: (time: string) => `${time} left`,
 		timeUp: 'Your free call time is up',
-		timeUpHint: 'Free calls have a time limit. Start a new one if you have minutes left today.'
+		timeUpHint: "You've used this month's free minutes. They renew on the 1st (UTC)."
 	},
 	footer: { freeSoftware: 'Free software', sourceCode: 'Source code' }
 };

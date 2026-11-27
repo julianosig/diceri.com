@@ -220,23 +220,9 @@ export const de: Messages = {
 		copied: 'Transkript kopiert'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} Min. Anrufe pro Monat`,
-		price: (amount: string) => `${amount} / Monat`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} von ${String(total)} Min. diesen Monat genutzt`,
-		free: 'Kostenlos',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'Dein Tarif',
-		soon: 'Demnächst',
-		callUpTo: (minutes: number) => `Anrufe bis ${String(minutes)} Min.`,
-		perDay: (minutes: number) => `${String(minutes)} Min. Anrufe pro Tag`,
-		freeLine: (call: number, day: number) =>
-			`Kostenlos: Anrufe bis ${String(call)} Min., ${String(day)} Min. pro Tag.`,
-		seePlans: 'Tarife ansehen',
-		title: 'Tarife',
-		intro: 'Alle starten mit Kostenlos. Bezahlte Tarife mit längeren Anrufen kommen bald.',
-		close: 'Schließen'
+		freeLine: (minutes: number) => `Kostenlos: ${String(minutes)} Min. Anrufe jeden Monat.`
 	},
 	limits: {
 		quota:
@@ -244,12 +230,12 @@ export const de: Messages = {
 		daily:
 			'Du hast deine kostenlosen Anrufminuten für heute verbraucht. Sie werden um Mitternacht (UTC) erneuert.',
 		monthly:
-			'Das kostenlose Kontingent für diesen Monat ist aufgebraucht. Bezahlte Tarife kommen bald.',
+			'Die kostenlose Kapazität von Diceri ist für diesen Monat aufgebraucht. Sie erneuert sich am 1. (UTC).',
 		busy: 'Diceri ist gerade ausgelastet. Versuche es in ein paar Minuten erneut.',
 		timeLeft: (time: string) => `Noch ${time}`,
 		timeUp: 'Deine kostenlose Anrufzeit ist abgelaufen',
 		timeUpHint:
-			'Kostenlose Anrufe sind zeitlich begrenzt. Starte einen neuen, wenn du heute noch Minuten übrig hast.'
+			'Du hast die kostenlosen Minuten dieses Monats verbraucht. Sie erneuern sich am 1. (UTC).'
 	},
 	footer: { freeSoftware: 'Freie Software', sourceCode: 'Quellcode' }
 };

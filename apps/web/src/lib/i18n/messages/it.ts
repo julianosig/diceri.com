@@ -218,36 +218,20 @@ export const it: Messages = {
 		copied: 'Trascrizione copiata'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} min di chiamate al mese`,
-		price: (amount: string) => `${amount} / mese`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} su ${String(total)} min usati questo mese`,
-		free: 'Gratis',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'Il tuo piano',
-		soon: 'In arrivo',
-		callUpTo: (minutes: number) => `Chiamate fino a ${String(minutes)} min`,
-		perDay: (minutes: number) => `${String(minutes)} min di chiamate al giorno`,
-		freeLine: (call: number, day: number) =>
-			`Gratis: chiamate fino a ${String(call)} min, ${String(day)} min al giorno.`,
-		seePlans: 'Vedi i piani',
-		title: 'Piani',
-		intro:
-			'Tutti iniziano con il piano Gratis. I piani a pagamento con chiamate più lunghe arriveranno presto.',
-		close: 'Chiudi'
+		freeLine: (minutes: number) => `Gratis: ${String(minutes)} min di chiamate ogni mese.`
 	},
 	limits: {
 		quota:
 			'Hai usato i minuti di chiamata del tuo piano per questo mese. Si rinnovano il giorno 1 (UTC).',
 		daily: 'Hai usato i minuti di chiamata gratuiti di oggi. Si rinnovano a mezzanotte (UTC).',
 		monthly:
-			'La capacità gratuita di questo mese è esaurita. I piani a pagamento arriveranno presto.',
+			'La capacità gratuita di Diceri per questo mese è esaurita. Si rinnova il giorno 1 (UTC).',
 		busy: 'Diceri ha raggiunto la capacità massima in questo momento. Riprova tra qualche minuto.',
 		timeLeft: (time: string) => `Restano ${time}`,
 		timeUp: 'Il tuo tempo di chiamata gratuito è finito',
-		timeUpHint:
-			'Le chiamate gratuite hanno un limite di tempo. Avviane una nuova se oggi ti restano minuti.'
+		timeUpHint: 'Hai usato i minuti gratuiti di questo mese. Si rinnovano il giorno 1 (UTC).'
 	},
 	footer: { freeSoftware: 'Software libero', sourceCode: 'Codice sorgente' }
 };

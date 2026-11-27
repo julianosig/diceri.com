@@ -31,8 +31,8 @@ async fn lists_every_plan_free_first() {
     let (_, body) = send(&app(false), "GET", "/api/v1/capabilities", None, None).await;
     let free = &body["plans"][0];
     assert_eq!(free["plan"], "free");
-    assert_eq!(free["callMinutes"], 20);
-    assert_eq!(free["dailyMinutes"], 40);
+    assert_eq!(free["callMinutes"], 60);
+    assert_eq!(free["monthlyMinutes"], 60);
     assert_eq!(free["monthlyPriceCents"], 0);
     assert_eq!(body["plans"][1]["monthlyPriceCents"], 2_900);
     assert_eq!(body["plans"].as_array().unwrap().len(), 3);

@@ -35,7 +35,8 @@ impl Default for PlanCatalogue {
                 participants: Room::DEFAULT_MAX_PARTICIPANTS,
             };
         Self {
-            free: limits(20, 40, 200, 0),
+            // 60 minutes a month, usable in one call or spread over days.
+            free: limits(60, 60, 60, 0),
             pro: limits(60, 300, 300, 2_900),
             team: limits(120, 600, 800, 7_900),
         }

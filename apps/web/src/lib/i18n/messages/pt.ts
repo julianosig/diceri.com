@@ -216,34 +216,18 @@ export const pt: Messages = {
 		copied: 'Transcrição copiada'
 	},
 	plans: {
-		perMonth: (minutes: number) => `${String(minutes)} min de chamadas por mês`,
-		price: (amount: string) => `${amount} / mês`,
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} de ${String(total)} min usados este mês`,
-		free: 'Grátis',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: 'Seu plano',
-		soon: 'Em breve',
-		callUpTo: (minutes: number) => `Chamadas de até ${String(minutes)} min`,
-		perDay: (minutes: number) => `${String(minutes)} min de chamadas por dia`,
-		freeLine: (call: number, day: number) =>
-			`Grátis: chamadas de até ${String(call)} min, ${String(day)} min por dia.`,
-		seePlans: 'Ver planos',
-		title: 'Planos',
-		intro:
-			'Todo mundo começa no plano Grátis. Planos pagos com chamadas mais longas chegam em breve.',
-		close: 'Fechar'
+		freeLine: (minutes: number) => `Grátis: ${String(minutes)} min de chamadas todo mês.`
 	},
 	limits: {
 		quota: 'Você usou os minutos de chamada do seu plano neste mês. Eles renovam no dia 1º (UTC).',
 		daily: 'Você já usou os minutos grátis de chamada de hoje. Eles renovam à meia-noite (UTC).',
-		monthly: 'A capacidade gratuita deste mês acabou. Planos pagos chegam em breve.',
+		monthly: 'A capacidade gratuita do Diceri neste mês acabou. Ela renova no dia 1º (UTC).',
 		busy: 'O Diceri está no limite da capacidade agora. Tente de novo em alguns minutos.',
 		timeLeft: (time: string) => `Faltam ${time}`,
 		timeUp: 'Seu tempo de chamada grátis acabou',
-		timeUpHint:
-			'Chamadas grátis têm limite de tempo. Comece uma nova se você ainda tiver minutos hoje.'
+		timeUpHint: 'Você usou os minutos grátis deste mês. Eles renovam no dia 1º (UTC).'
 	},
 	footer: { freeSoftware: 'Software livre', sourceCode: 'Código-fonte' }
 };

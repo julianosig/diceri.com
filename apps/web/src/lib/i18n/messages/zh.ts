@@ -213,32 +213,18 @@ export const zh: Messages = {
 		copied: '文字记录已复制'
 	},
 	plans: {
-		perMonth: (minutes: number) => `每月 ${String(minutes)} 分钟通话`,
-		price: (amount: string) => `${amount} / 月`,
 		usedThisMonth: (used: number, total: number) =>
 			`本月已用 ${String(used)}/${String(total)} 分钟`,
-		free: '免费',
-		pro: 'Pro',
-		team: 'Team',
-		yourPlan: '你的套餐',
-		soon: '即将推出',
-		callUpTo: (minutes: number) => `每次通话最长 ${String(minutes)} 分钟`,
-		perDay: (minutes: number) => `每天 ${String(minutes)} 分钟通话`,
-		freeLine: (call: number, day: number) =>
-			`免费：每次通话最长 ${String(call)} 分钟，每天 ${String(day)} 分钟。`,
-		seePlans: '查看套餐',
-		title: '套餐',
-		intro: '所有人都从免费套餐开始。支持更长通话的付费套餐即将推出。',
-		close: '关闭'
+		freeLine: (minutes: number) => `免费：每月 ${String(minutes)} 分钟通话。`
 	},
 	limits: {
 		quota: '你本月套餐的通话分钟数已用完，将在每月 1 日（UTC）重置。',
 		daily: '你今天的免费通话分钟数已用完，将在午夜（UTC）重置。',
-		monthly: '本月的免费额度已用完。付费套餐即将推出。',
+		monthly: 'Diceri 本月的免费额度已用完，将在每月 1 日（UTC）重置。',
 		busy: 'Diceri 当前已满负荷，请几分钟后再试。',
 		timeLeft: (time: string) => `剩余 ${time}`,
 		timeUp: '你的免费通话时间已用完',
-		timeUpHint: '免费通话有时长限制。如果你今天还有剩余分钟数，可以发起新的通话。'
+		timeUpHint: '你本月的免费分钟数已用完，将在每月 1 日（UTC）重置。'
 	},
 	footer: { freeSoftware: '自由软件', sourceCode: '源代码' }
 };
