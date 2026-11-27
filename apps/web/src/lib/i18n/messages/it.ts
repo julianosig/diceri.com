@@ -240,6 +240,7 @@ export const it: Messages = {
 		freeLine: (minutes: number) => `Gratis: ${String(minutes)} min di chiamate ogni mese.`
 	},
 	limits: {
+		beta: 'Diceri è in beta privata e per ora tutti i posti sono occupati. Riprova più tardi.',
 		network:
 			'Questa rete ha già prenotato il numero massimo di nomi di stanza. Accedi con uno di quelli.',
 		quota:

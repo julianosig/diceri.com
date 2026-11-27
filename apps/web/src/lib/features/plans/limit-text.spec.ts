@@ -9,6 +9,8 @@ describe('limitText', () => {
 		expect(limitText(daily, en)).toBe(en.limits.daily);
 		const quota = new ApiError(429, 'Too Many Requests', 'detail', 'quota');
 		expect(limitText(quota, en)).toBe(en.limits.quota);
+		const beta = new ApiError(429, 'Too Many Requests', 'detail', 'beta');
+		expect(limitText(beta, en)).toBe(en.limits.beta);
 		const busy = new ApiError(429, 'Too Many Requests', 'detail', 'busy');
 		expect(limitText(busy, en)).toBe(en.limits.busy);
 	});

@@ -233,6 +233,7 @@ export const ja: Messages = {
 		freeLine: (minutes: number) => `無料：毎月${String(minutes)}分まで通話できます。`
 	},
 	limits: {
+		beta: 'Diceri はクローズドベータ中で、現在すべての枠が埋まっています。時間をおいてもう一度お試しください。',
 		network:
 			'このネットワークで取得できるルーム名の上限に達しています。取得済みのルーム名でログインしてください。',
 		quota: '今月のプランの通話時間を使い切りました。毎月1日(UTC)にリセットされます。',

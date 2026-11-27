@@ -239,6 +239,7 @@ export const en = {
 		freeLine: (minutes: number) => `Free: ${String(minutes)} min of calls every month.`
 	},
 	limits: {
+		beta: 'Diceri is in a private beta and all spots are taken for now. Please try again later.',
 		network:
 			'This network has already claimed the most room usernames allowed. Sign in to one of them instead.',
 		quota: "You've used this month's call minutes on your plan. They renew on the 1st (UTC).",
