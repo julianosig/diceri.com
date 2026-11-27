@@ -59,3 +59,26 @@ async fn web_files_say_how_long_they_may_be_cached() {
     let response = app.clone().oneshot(request).await.unwrap();
     assert_eq!(response.headers()["cache-control"], "no-cache");
 }
+
+#[tokio::test]
+async fn pages_point_agents_to_the_site_description_and_api_catalog() {
+    let dir = web_dir("agents");
+    std::fs::create_dir_all(dir.join(".well-known")).unwrap();
+    std::fs::write(dir.join(".well-known/api-catalog"), "{\"linkset\":[]}").unwrap();
+    let app = app(dir);
+    let request = Request::builder().uri("/").body(Body::empty()).unwrap();
+    let response = app.clone().oneshot(request).await.unwrap();
+    let links = response.headers()["link"].to_str().unwrap();
+    assert!(links.contains("</llms.txt>; rel=\"describedby\""));
+    assert!(links.contains("rel=\"api-catalog\""));
+    let request = Request::builder()
+        .uri("/.well-known/api-catalog")
+        .body(Body::empty())
+        .unwrap();
+    let response = app.oneshot(request).await.unwrap();
+    assert_eq!(
+        response.headers()["content-type"],
+        "application/linkset+json"
+    );
+    assert!(!response.headers().contains_key("link"));
+}

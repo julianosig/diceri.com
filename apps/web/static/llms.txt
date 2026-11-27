@@ -1,0 +1,26 @@
+# Diceri
+
+> Diceri is a video-call app with live voice translation, an open-source alternative to
+> Google Meet where you talk and listen in your own language. Everyone in the meeting hears
+> your voice in their language, a moment later, with live captions alongside.
+
+Each account (username and password, no email) owns one room at `https://diceri.com/@username`.
+Guests join from that link without an account; the host decides whether they walk in or ask
+first. Each listener picks the language they want to hear. The free plan includes 60 call
+minutes a month. Rooms are private: they are not listed and an agent cannot join a call.
+
+## Docs
+
+- [What Diceri is](https://diceri.com/index.md): the home page as Markdown
+- [Architecture](https://github.com/julianosig/diceri.com/blob/main/docs/architecture.md): how calls, translation and accounts fit together
+- [Decisions](https://github.com/julianosig/diceri.com/blob/main/docs/decisions/): why each provider and protocol was chosen
+- [Data inventory](https://github.com/julianosig/diceri.com/blob/main/docs/data-inventory.md): what personal data is kept, why and for how long
+
+## API
+
+- [API catalog](https://diceri.com/.well-known/api-catalog): RFC 9727 linkset for the HTTP API
+- [Capabilities](https://diceri.com/api/v1/capabilities): what this deployment offers, as JSON
+
+## Optional
+
+- [Source code](https://github.com/julianosig/diceri.com): AGPL-3.0

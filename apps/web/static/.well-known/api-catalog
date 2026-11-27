@@ -1,0 +1,18 @@
+{
+  "linkset": [
+    {
+      "anchor": "https://diceri.com/api/v1/",
+      "service-doc": [
+        {
+          "href": "https://github.com/julianosig/diceri.com/blob/main/docs/architecture.md",
+          "type": "text/html",
+          "title": "Diceri architecture, including the HTTP API"
+        }
+      ],
+      "status": [{ "href": "https://diceri.com/healthz" }],
+      "describedby": [
+        { "href": "https://diceri.com/api/v1/capabilities", "type": "application/json" }
+      ]
+    }
+  ]
+}

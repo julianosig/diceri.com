@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Only public pages: rooms (/@username) are private and never listed. -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://diceri.com/</loc></url>
+  <url><loc>https://diceri.com/llms.txt</loc></url>
+  <url><loc>https://diceri.com/index.md</loc></url>
+</urlset>
