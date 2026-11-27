@@ -45,7 +45,8 @@ fn grants_for(room: &RoomId, role: MediaRole) -> VideoGrants {
         MediaRole::Speaker => VideoGrants {
             can_publish: Some(true),
             can_publish_data: Some(true),
-            can_publish_sources: vec!["microphone".to_owned()],
+            // Voice and camera; never screen share, which nothing in the app offers.
+            can_publish_sources: vec!["microphone".to_owned(), "camera".to_owned()],
             // Lets the browser set its translation preview language attribute.
             can_update_own_metadata: Some(true),
             ..base
@@ -109,10 +110,13 @@ mod tests {
     }
 
     #[test]
-    fn speaker_can_publish_microphone_only() {
+    fn speaker_can_publish_microphone_and_camera_only() {
         let grants = grants_for(&room(), MediaRole::Speaker);
         assert_eq!(grants.can_publish, Some(true));
-        assert_eq!(grants.can_publish_sources, vec!["microphone".to_owned()]);
+        assert_eq!(
+            grants.can_publish_sources,
+            vec!["microphone".to_owned(), "camera".to_owned()]
+        );
         assert_eq!(grants.can_update_own_metadata, Some(true));
         assert!(!grants.hidden);
     }
