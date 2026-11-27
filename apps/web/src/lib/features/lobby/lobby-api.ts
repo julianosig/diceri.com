@@ -20,6 +20,13 @@ export interface PendingRequest {
 	outputLanguage: string;
 }
 
+/** Which devices the call starts with, chosen at pre-join. */
+export interface JoinDevices {
+	microphone?: string;
+	/** Set when the call starts with the camera on. */
+	camera?: { deviceId?: string };
+}
+
 /** How a participant presents themselves to the room. */
 export interface Profile {
 	name: string;
@@ -79,6 +86,11 @@ export function recordVoice(roomId: string, sample: Blob) {
 		method: 'POST',
 		blob: sample
 	});
+}
+
+/** Clones the signed-in account's kept recording for this room (404 when there is none). */
+export function reuseKeptVoice(roomId: string) {
+	return requestJson<{ voiceId: string }>(`${room(roomId)}/voices/kept`, { method: 'POST' });
 }
 
 /** What this deployment offers: recording your own voice, and whether joining needs it. */

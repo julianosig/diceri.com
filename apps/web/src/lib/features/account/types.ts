@@ -9,6 +9,8 @@ export interface Account {
 	plan: 'free' | 'pro' | 'team';
 	/** Today's call minutes and the plan's limits; only on `/accounts/me`. */
 	usage?: Usage;
+	/** A voice recording is kept with the account (ADR 0015); only on `/accounts/me`. */
+	hasVoice?: boolean;
 }
 
 /** The single onboarding step (the password is typed twice in the form). */

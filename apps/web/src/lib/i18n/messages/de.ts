@@ -4,6 +4,10 @@ export const de: Messages = {
 	meta: { title: 'Diceri — Google-Meet-Alternative mit Sprachübersetzung in beide Richtungen' },
 	header: {
 		signOut: 'Abmelden',
+		deleteVoice: 'Meine Stimme löschen',
+		deleteVoiceConfirm:
+			'Deine gespeicherte Sprachaufnahme löschen? Beim nächsten Anruf nimmst du eine neue auf.',
+		voiceDeleted: 'Deine Sprachaufnahme wurde gelöscht.',
 		language: 'Sprache',
 		toDark: 'Zum dunklen Design wechseln',
 		toLight: 'Zum hellen Design wechseln'
@@ -85,6 +89,11 @@ export const de: Messages = {
 		home: 'Zur Startseite'
 	},
 	lobby: {
+		camera: 'Kamera',
+		cameraOn: 'Kamera einschalten',
+		cameraOff: 'Kamera ausschalten',
+		cameraBlocked: 'Erlaube die Kamera im Browser, um dein Video zu zeigen.',
+		cameraUnavailable: 'Keine Kamera gefunden.',
 		joinTitle: 'Dem Meeting beitreten',
 		yourName: 'Dein Name',
 		hearEveryoneIn: 'Alle hören auf',
@@ -113,7 +122,7 @@ export const de: Messages = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`Lies ${String(seconds)} Sekunden lang einen kurzen Satz vor: Alle hören deine Übersetzungen mit deiner eigenen Stimme. Wird gelöscht, wenn du gehst.`,
+			`Lies ${String(seconds)} Sekunden lang einen kurzen Satz vor: Alle hören deine Übersetzungen mit deiner eigenen Stimme. Wird verschlüsselt mit deinem Konto gespeichert.`,
 		requiredToJoin: 'Nimm deine Stimme auf, um beizutreten.',
 		pro: 'Pro',
 		paidSoon: 'Bald als kostenpflichtige Funktion verfügbar.',
@@ -125,10 +134,14 @@ export const de: Messages = {
 		creating: 'Deine Stimme wird erstellt…',
 		ready: 'Deine Stimme ist bereit',
 		redo: 'Neu aufnehmen',
-		readyHint: 'Übersetzungen klingen wie du. Wird gelöscht, wenn du gehst.',
+		readyHint:
+			'Übersetzungen klingen wie du. Die Aufnahme wird verschlüsselt mit deinem Konto gespeichert.',
+		keptReady: 'Deine gespeicherte Stimme ist bereit',
+		keptHint:
+			'Die mit deinem Konto gespeicherte Aufnahme wird verwendet. Lösche sie jederzeit über dein @-Menü.',
 		title: 'Lass Übersetzungen wie dich klingen',
 		hint: (seconds: number) =>
-			`Lies ${String(seconds)} Sekunden lang einen kurzen Satz vor. Optional und wird gelöscht, wenn du gehst.`,
+			`Lies ${String(seconds)} Sekunden lang einen kurzen Satz vor. Optional; wird verschlüsselt mit deinem Konto gespeichert.`,
 		tryAgain: 'Erneut versuchen',
 		record: (seconds: number) => `Meine Stimme aufnehmen (${String(seconds)} s)`,
 		noVoice:
@@ -137,6 +150,8 @@ export const de: Messages = {
 		failed: 'Deine Stimme konnte nicht erstellt werden.'
 	},
 	call: {
+		turnOnCamera: 'Kamera einschalten',
+		turnOffCamera: 'Kamera ausschalten',
 		turnOnMic: 'Mikrofon einschalten',
 		turnOffMic: 'Mikrofon ausschalten',
 		leaveCall: 'Anruf verlassen',
@@ -238,5 +253,46 @@ export const de: Messages = {
 		timeUpHint:
 			'Du hast die kostenlosen Minuten dieses Monats verbraucht. Sie erneuern sich am 1. (UTC).'
 	},
-	footer: { freeSoftware: 'Freie Software', sourceCode: 'Quellcode' }
+	terms: {
+		title: 'Nutzungsbedingungen',
+		updated: 'Zuletzt aktualisiert: 27. November 2026',
+		notice:
+			'Mit dem Erstellen deines Raums akzeptierst du die Nutzungsbedingungen, einschließlich der verschlüsselten Speicherung deiner Sprachaufnahme, um deine Stimme in Anrufen nachzubilden.',
+		read: 'Nutzungsbedingungen lesen',
+		sections: [
+			{
+				heading: 'Was Diceri ist',
+				body: 'Diceri ist ein Videoanruf-Dienst mit Live-Sprachübersetzung, betrieben als freie Open-Source-Software (AGPL-3.0). Jedes Konto hat einen Raum unter diceri.com/@username. Wer Diceri nutzt, akzeptiert diese Bedingungen.'
+			},
+			{
+				heading: 'Dein Konto',
+				body: 'Du registrierst dich mit Benutzername und Passwort; eine E-Mail-Adresse wird nicht abgefragt. Behalte dein Passwort für dich. Pro Netzwerk können nur wenige Konten erstellt werden, und der kostenlose Tarif enthält ein monatliches Kontingent an Anrufminuten.'
+			},
+			{
+				heading: 'Deine Stimme',
+				body: 'Um einem Anruf beizutreten, nimmst du etwa 10 Sekunden deiner Stimme auf. Damit erstellen wir bei unserem Sprachanbieter eine Kopie deiner Stimme, sodass andere deine Übersetzungen mit deiner eigenen Stimme hören. Wir speichern die Aufnahme verschlüsselt mit deinem Konto, um deine Stimme in späteren Anrufen nachbilden zu können, auch mit einem anderen Sprachanbieter, falls wir wechseln. Sie wird nur verwendet, um deine eigenen Übersetzungen zu sprechen, niemals, um für jemand anderen zu sprechen, und wird niemals verkauft oder für andere Zwecke weitergegeben.'
+			},
+			{
+				heading: 'Deine Stimme löschen',
+				body: 'Du kannst deine Aufnahme jederzeit mit „Meine Stimme löschen“ in deinem @-Menü löschen; sie wird auch mit deinem Konto gelöscht. Die für einen Anruf beim Sprachanbieter erstellten Kopien werden gelöscht, wenn dieser Anruf endet.'
+			},
+			{
+				heading: 'Was wir speichern und was nicht',
+				body: 'Wir speichern deinen Benutzernamen, eine geschützte Form deines Passworts, das Maskottchen deines Raums, deinen Tarif, wie viele Anrufminuten du verbraucht hast, einen verschlüsselten Fingerabdruck des Netzwerks, über das du dich registriert hast (niemals deine IP-Adresse), und deine Sprachaufnahme. Wir zeichnen keine Anrufe auf und speichern nicht, was gesagt wurde: Transkripte und Untertitel bleiben in deinem Browser.'
+			},
+			{
+				heading: 'Dienstleister',
+				body: 'Anrufe laufen über LiveKit; Sprache wird von ElevenLabs, Soniox und Google Gemini transkribiert, übersetzt und gesprochen. Sie erhalten nur, was für den Anruf nötig ist.'
+			},
+			{
+				heading: 'Faire Nutzung',
+				body: 'Nutze Diceri nicht, um gegen Gesetze zu verstoßen, Menschen zu belästigen oder dich als jemand anderes auszugeben. Wir können Konten, die den Dienst missbrauchen, einschränken oder schließen. Diceri wird so bereitgestellt, wie es ist, ohne Gewährleistung.'
+			},
+			{
+				heading: 'Änderungen',
+				body: 'Wir können diese Bedingungen aktualisieren; das Datum oben zeigt die neueste Version. Fragen: Eröffne ein Issue unter github.com/julianosig/diceri.com.'
+			}
+		]
+	},
+	footer: { freeSoftware: 'Freie Software', sourceCode: 'Quellcode', terms: 'Nutzungsbedingungen' }
 };

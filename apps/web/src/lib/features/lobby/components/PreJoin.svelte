@@ -8,7 +8,10 @@
 	import { isValidDisplayName, loadDisplayName, MAX_NAME_LENGTH } from '../display-name.ts';
 	import { LANGUAGES } from '#lib/features/translation/index.ts';
 	import { loadLanguage } from '../languages.ts';
-	import { getCapabilities, type Profile } from '../lobby-api.ts';
+	import { currentAccount } from '#lib/features/account/index.ts';
+	import { getCapabilities, type JoinDevices, type Profile } from '../lobby-api.ts';
+	import { CameraPreview } from '../camera-preview.svelte.ts';
+	import CameraSetup from './CameraSetup.svelte';
 	import { MicPreview } from '../mic-preview.svelte.ts';
 	import { VoiceRecorder } from '../voice-recorder.svelte.ts';
 	import { joinAction } from '../join-copy.ts';
@@ -21,13 +24,14 @@
 		isHost: boolean;
 		busy: boolean;
 		error?: string;
-		onjoin: (profile: Profile, deviceId: string | undefined) => void;
+		onjoin: (profile: Profile, devices: JoinDevices) => void;
 	}
 
 	let { roomId, entry, isHost, busy, error, onjoin }: Props = $props();
 	const action = $derived(joinAction(isHost, entry === 'open'));
 
 	const preview = new MicPreview();
+	const camera = new CameraPreview();
 	// svelte-ignore state_referenced_locally
 	const recorder = new VoiceRecorder(roomId);
 	let name = $state(loadDisplayName());
@@ -48,27 +52,40 @@
 	/** Recording your own voice: offered only when this deployment has it. */
 	let voiceCloning = $state(false);
 
+	async function reuseKeptVoice(): Promise<void> {
+		const account = await currentAccount().catch(() => null);
+		if (account?.hasVoice) await recorder.useKept();
+	}
+
 	onMount(() => {
 		getCapabilities()
 			.then((capabilities) => {
 				voiceCloning = capabilities.voiceCloning;
 				voiceRequired = capabilities.voiceRequired;
+				// A recording kept with the account is reused: no need to read again.
+				if (capabilities.voiceCloning) void reuseKeptVoice();
 			})
 			.catch(() => {
 				voiceCloning = false;
 			});
 		void preview.start();
+		void camera.start();
 		return () => {
 			void preview.stop();
+			camera.stop();
 		};
 	});
 
 	async function submit(event: SubmitEvent) {
 		event.preventDefault();
 		if (!canJoin) return;
-		const deviceId = preview.deviceId;
+		const devices: JoinDevices = {
+			microphone: preview.deviceId,
+			camera: camera.joinsWithCamera ? { deviceId: camera.deviceId } : undefined
+		};
 		await preview.stop();
-		onjoin({ name: name.trim(), outputLanguage, voiceId: recorder.voiceId }, deviceId);
+		camera.stop();
+		onjoin({ name: name.trim(), outputLanguage, voiceId: recorder.voiceId }, devices);
 	}
 
 	/** A field: its icon and control share one bordered box. */
@@ -85,6 +102,7 @@
 	<h1 class="w-full text-center text-3xl font-semibold tracking-tight">
 		{isHost ? i18n.t.openRoom.submit : i18n.t.lobby.joinTitle}
 	</h1>
+	<CameraSetup {camera} />
 	<label class="w-full text-start text-sm">
 		<span class="mb-1 block text-ink-muted">{i18n.t.lobby.yourName}</span>
 		<span class={fieldClass}>

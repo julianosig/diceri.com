@@ -1,5 +1,5 @@
 import { forgetHostKeys } from '#lib/features/room/index.ts';
-import { currentAccount, register, signIn, signOut } from './account-api.ts';
+import { currentAccount, deleteVoice, register, signIn, signOut } from './account-api.ts';
 import type { Account, Credentials, Registration } from './types.ts';
 import { normalizeUsername } from './username.ts';
 
@@ -27,6 +27,12 @@ export class AccountSession {
 			...credentials,
 			username: normalizeUsername(credentials.username)
 		});
+	}
+
+	/** "Delete my voice": the next call asks for a new recording. */
+	async deleteVoice(): Promise<void> {
+		await deleteVoice();
+		if (this.account) this.account = { ...this.account, hasVoice: false };
 	}
 
 	async signOut(): Promise<void> {

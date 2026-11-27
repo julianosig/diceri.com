@@ -123,9 +123,11 @@
 	<ControlBar
 		{meetingCode}
 		muted={session.muted}
+		cameraOn={session.cameraOn}
 		{panel}
 		badge={peopleBadge}
 		ontogglemute={() => session.toggleMute()}
+		ontogglecamera={() => session.setCamera(!session.cameraOn)}
 		onpanel={(next: CallPanel) => (panel = next)}
 		{onleave}
 		{onendforeveryone}

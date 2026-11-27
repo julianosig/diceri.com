@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { GithubMark } from '#lib/components/ui/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 
@@ -16,4 +17,6 @@
 		<GithubMark class="size-3.5" />
 		{i18n.t.footer.sourceCode}
 	</a>
+	·
+	<a class="underline" href={resolve('/terms')}>{i18n.t.footer.terms}</a>
 </footer>

@@ -10,6 +10,7 @@
 		JoinRequestToast,
 		PreJoin,
 		WaitingScreen,
+		type JoinDevices,
 		type Profile
 	} from '#lib/features/lobby/index.ts';
 	import type { Room } from '#lib/features/room/index.ts';
@@ -121,7 +122,7 @@
 				isHost={flow.isHost}
 				busy={flow.phase === 'joining'}
 				error={flow.error}
-				onjoin={(profile: Profile, deviceId: string | undefined) => flow.join(profile, deviceId)}
+				onjoin={(profile: Profile, devices: JoinDevices) => flow.join(profile, devices)}
 			/>
 		{/if}
 	</main>

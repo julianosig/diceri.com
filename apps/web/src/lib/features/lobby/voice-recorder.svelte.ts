@@ -1,7 +1,7 @@
 import { LevelMeter } from '#lib/features/call/index.ts';
 import { ApiError } from '#lib/api/http-client.ts';
 import { encodeWav } from '#lib/utils/wav.ts';
-import { recordVoice } from './lobby-api.ts';
+import { recordVoice, reuseKeptVoice } from './lobby-api.ts';
 
 /** Recording length: long enough for a close clone, short enough to not get in the way. */
 export const RECORD_SECONDS = 10;
@@ -25,6 +25,8 @@ export class VoiceRecorder {
 	level = $state(0);
 	error = $state<VoiceProblem | undefined>();
 	voiceId = $state<string | undefined>();
+	/** The voice comes from the recording kept with the account, not a new one. */
+	kept = $state(false);
 
 	#stream: MediaStream | undefined;
 	#recorder: MediaRecorder | undefined;
@@ -67,7 +69,23 @@ export class VoiceRecorder {
 		this.#cleanup();
 		this.step = 'idle';
 		this.voiceId = undefined;
+		this.kept = false;
 		this.error = undefined;
+	}
+
+	/** Uses the recording kept with the account (ADR 0015); stays idle if there is none. */
+	async useKept(): Promise<void> {
+		if (this.step !== 'idle') return;
+		this.step = 'creating';
+		try {
+			const { voiceId } = await reuseKeptVoice(this.roomId);
+			this.voiceId = voiceId;
+			this.kept = true;
+			this.step = 'ready';
+		} catch {
+			// No kept recording (or it could not be cloned): record a new one as usual.
+			this.step = 'idle';
+		}
 	}
 
 	#record(stream: MediaStream): void {
@@ -118,6 +136,7 @@ export class VoiceRecorder {
 		try {
 			const { voiceId } = await recordVoice(this.roomId, await toSpeechWav(sample));
 			this.voiceId = voiceId;
+			this.kept = false;
 			this.step = 'ready';
 		} catch (cause) {
 			// 400: the API heard no words in it (or could not read it): read the sentence again.

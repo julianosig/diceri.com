@@ -1,15 +1,17 @@
 <script lang="ts">
 	import { i18n } from '#lib/i18n/index.ts';
-	import { Mic, MicOff, PhoneOff, Settings, Users } from '@lucide/svelte';
+	import { Mic, MicOff, PhoneOff, Settings, Users, Video, VideoOff } from '@lucide/svelte';
 	import { cn } from '#lib/utils/cn.ts';
 	import type { CallPanel } from '../call-layout.ts';
 
 	interface Props {
 		meetingCode: string;
 		muted: boolean;
+		cameraOn: boolean;
 		panel: CallPanel;
 		badge: number;
 		ontogglemute: () => void;
+		ontogglecamera: () => void;
 		onpanel: (panel: CallPanel) => void;
 		onleave: () => void;
 		/** Host only: ends the meeting for everyone. */
@@ -19,9 +21,11 @@
 	let {
 		meetingCode,
 		muted,
+		cameraOn,
 		panel,
 		badge,
 		ontogglemute,
+		ontogglecamera,
 		onpanel,
 		onleave,
 		onendforeveryone
@@ -45,6 +49,18 @@
 			onclick={ontogglemute}
 		>
 			{#if muted}<MicOff class="size-5" />{:else}<Mic class="size-5" />{/if}
+		</button>
+		<button
+			type="button"
+			class={cn(
+				round,
+				cameraOn ? 'bg-control hover:bg-control/80' : 'bg-danger hover:bg-danger/90'
+			)}
+			aria-pressed={!cameraOn}
+			aria-label={cameraOn ? i18n.t.call.turnOffCamera : i18n.t.call.turnOnCamera}
+			onclick={ontogglecamera}
+		>
+			{#if cameraOn}<Video class="size-5" />{:else}<VideoOff class="size-5" />{/if}
 		</button>
 		<div class="relative">
 			<button

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { ArrowLeft, LoaderCircle, UserPlus } from '@lucide/svelte';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { MascotAvatar, MascotPicker, type MascotId } from '#lib/features/room/index.ts';
@@ -33,6 +34,13 @@
 		<p class="text-ink-muted">@{handle} · {t.mascotHint}</p>
 	</div>
 	<MascotPicker {value} {onchange} variant="large" />
+	<!-- Creating the account accepts the terms, which cover keeping the voice (ADR 0015). -->
+	<p class="max-w-md text-sm text-ink-muted">
+		{i18n.t.terms.notice}
+		<a class="font-medium text-brand-600 underline" href={resolve('/terms')} target="_blank">
+			{i18n.t.terms.read}
+		</a>
+	</p>
 	<div class="flex w-full flex-col-reverse items-center justify-center gap-3 sm:flex-row">
 		<Button variant="secondary" size="lg" type="button" disabled={pending} onclick={onback}>
 			<ArrowLeft class="size-5 rtl:rotate-180" aria-hidden="true" />

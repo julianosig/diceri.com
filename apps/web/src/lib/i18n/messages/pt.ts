@@ -4,6 +4,10 @@ export const pt: Messages = {
 	meta: { title: 'Diceri — alternativa ao Google Meet com tradução de voz nos dois sentidos' },
 	header: {
 		signOut: 'Sair',
+		deleteVoice: 'Apagar minha voz',
+		deleteVoiceConfirm:
+			'Apagar a gravação salva da sua voz? Você vai gravar uma nova na sua próxima chamada.',
+		voiceDeleted: 'A gravação da sua voz foi apagada.',
 		language: 'Idioma',
 		toDark: 'Mudar para o tema escuro',
 		toLight: 'Mudar para o tema claro'
@@ -85,6 +89,11 @@ export const pt: Messages = {
 		home: 'Voltar para o início'
 	},
 	lobby: {
+		camera: 'Câmera',
+		cameraOn: 'Ligar câmera',
+		cameraOff: 'Desligar câmera',
+		cameraBlocked: 'Permita a câmera no navegador para mostrar seu vídeo.',
+		cameraUnavailable: 'Nenhuma câmera encontrada.',
 		joinTitle: 'Entrar na reunião',
 		yourName: 'Seu nome',
 		hearEveryoneIn: 'Ouvir todos em',
@@ -112,7 +121,7 @@ export const pt: Messages = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`Leia uma frase curta por ${String(seconds)} segundos: todos ouvem suas traduções com a sua própria voz. Apagada quando você sair.`,
+			`Leia uma frase curta por ${String(seconds)} segundos: todos ouvem suas traduções com a sua própria voz. Guardada, criptografada, com a sua conta.`,
 		requiredToJoin: 'Grave sua voz para entrar.',
 		pro: 'Pro',
 		paidSoon: 'Em breve como recurso pago.',
@@ -124,10 +133,13 @@ export const pt: Messages = {
 		creating: 'Criando sua voz…',
 		ready: 'Sua voz está pronta',
 		redo: 'Refazer',
-		readyHint: 'As traduções vão soar como você. Apagada quando você sair.',
+		readyHint:
+			'As traduções vão soar como você. A gravação fica guardada, criptografada, com a sua conta.',
+		keptReady: 'Sua voz salva está pronta',
+		keptHint: 'Usando a gravação guardada com a sua conta. Apague quando quiser no seu menu @.',
 		title: 'Faça as traduções soarem como você',
 		hint: (seconds: number) =>
-			`Leia uma frase curta por ${String(seconds)} segundos. É opcional e apagada quando você sair.`,
+			`Leia uma frase curta por ${String(seconds)} segundos. É opcional; fica guardada, criptografada, com a sua conta.`,
 		tryAgain: 'Tentar de novo',
 		record: (seconds: number) => `Gravar minha voz (${String(seconds)} s)`,
 		noVoice: 'Não conseguimos ouvir com clareza. Leia a frase em voz alta e tente de novo.',
@@ -135,6 +147,8 @@ export const pt: Messages = {
 		failed: 'Não foi possível criar sua voz.'
 	},
 	call: {
+		turnOnCamera: 'Ligar câmera',
+		turnOffCamera: 'Desligar câmera',
 		turnOnMic: 'Ativar microfone',
 		turnOffMic: 'Desativar microfone',
 		leaveCall: 'Sair da chamada',
@@ -230,5 +244,46 @@ export const pt: Messages = {
 		timeUp: 'Seu tempo de chamada grátis acabou',
 		timeUpHint: 'Você usou os minutos grátis deste mês. Eles renovam no dia 1º (UTC).'
 	},
-	footer: { freeSoftware: 'Software livre', sourceCode: 'Código-fonte' }
+	terms: {
+		title: 'Termos de uso',
+		updated: 'Última atualização: 27 de novembro de 2026',
+		notice:
+			'Ao criar sua sala, você aceita os termos de uso, incluindo guardar a gravação da sua voz, criptografada, para recriar sua voz nas chamadas.',
+		read: 'Ler os termos de uso',
+		sections: [
+			{
+				heading: 'O que é o Diceri',
+				body: 'O Diceri é um serviço de videochamadas com tradução de voz ao vivo, mantido como software livre e de código aberto (AGPL-3.0). Cada conta tem uma sala em diceri.com/@username. Usar o Diceri significa aceitar estes termos.'
+			},
+			{
+				heading: 'Sua conta',
+				body: 'Você se cadastra com um nome de usuário e uma senha; nenhum e-mail é pedido. Não compartilhe sua senha com ninguém. Só é possível criar algumas contas por rede, e o plano gratuito inclui uma quantidade mensal de minutos de chamada.'
+			},
+			{
+				heading: 'Sua voz',
+				body: 'Para entrar em uma chamada, você grava cerca de 10 segundos da sua voz. Nós a usamos para criar uma cópia da sua voz no nosso provedor de voz, para que as pessoas ouçam suas traduções com a sua própria voz. Guardamos a gravação com a sua conta, criptografada, para podermos recriar sua voz em chamadas futuras, inclusive com outro provedor de voz se mudarmos. Ela é usada apenas para falar as suas próprias traduções, nunca para falar por outra pessoa, e nunca é vendida nem compartilhada para outros fins.'
+			},
+			{
+				heading: 'Apagar sua voz',
+				body: 'Você pode apagar sua gravação a qualquer momento com "Apagar minha voz" no seu menu @; ela também é apagada junto com a sua conta. As cópias feitas no provedor de voz para uma chamada são apagadas quando essa chamada termina.'
+			},
+			{
+				heading: 'O que guardamos e o que não guardamos',
+				body: 'Guardamos seu nome de usuário, uma forma protegida da sua senha, o mascote da sua sala, seu plano, quantos minutos de chamada você usou, uma impressão digital criptografada da rede de onde você se cadastrou (nunca o seu endereço IP) e a gravação da sua voz. Não gravamos chamadas e não guardamos o que foi dito: transcrições e legendas ficam no seu navegador.'
+			},
+			{
+				heading: 'Provedores de serviço',
+				body: 'As chamadas passam pelo LiveKit; a fala é transcrita, traduzida e falada pela ElevenLabs, Soniox e Google Gemini. Eles recebem apenas o necessário para realizar a chamada.'
+			},
+			{
+				heading: 'Uso justo',
+				body: 'Não use o Diceri para violar a lei, assediar pessoas ou se passar por alguém. Podemos limitar ou encerrar contas que abusem do serviço. O Diceri é fornecido como está, sem garantias.'
+			},
+			{
+				heading: 'Alterações',
+				body: 'Podemos atualizar estes termos; a data acima indica a versão mais recente. Dúvidas: abra uma issue em github.com/julianosig/diceri.com.'
+			}
+		]
+	},
+	footer: { freeSoftware: 'Software livre', sourceCode: 'Código-fonte', terms: 'Termos de uso' }
 };

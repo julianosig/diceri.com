@@ -15,7 +15,7 @@ export class ApiError extends Error {
 type FetchFn = typeof fetch;
 
 export interface RequestOptions {
-	method?: 'GET' | 'POST';
+	method?: 'GET' | 'POST' | 'DELETE';
 	/** Sent as JSON. */
 	body?: unknown;
 	/** Sent as-is with its own content type (e.g. a recording); excludes `body`. */

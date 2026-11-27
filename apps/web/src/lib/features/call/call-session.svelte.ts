@@ -6,6 +6,11 @@ import {
 	Room,
 	RoomEvent,
 	Track,
+	LocalVideoTrack,
+	RemoteVideoTrack,
+	VideoPresets,
+	type VideoTrack,
+	type Participant as RoomParticipant,
 	type RemoteParticipant,
 	type RemoteTrack,
 	type RemoteTrackPublication
@@ -49,6 +54,8 @@ export interface Participant {
 	isLocal: boolean;
 	/** Language the participant hears everyone in (BCP 47). */
 	outputLanguage: string | undefined;
+	/** Their camera, while it is on (and, for others, received). */
+	video: VideoTrack | undefined;
 }
 
 export interface CallSessionOptions {
@@ -56,6 +63,8 @@ export interface CallSessionOptions {
 	/** Language this participant hears everyone in; what they speak is detected. */
 	outputLanguage: string;
 	deviceId?: string;
+	/** Start with the camera on (chosen at pre-join); `deviceId` picks which one. */
+	camera?: { deviceId?: string };
 	/** Fetches hidden-listener credentials for the round-trip monitor. */
 	monitorCredentials: () => Promise<MediaCredentials>;
 	/** Called once when the host ends the meeting for everyone. */
@@ -70,6 +79,7 @@ export class CallSession {
 	activeFilter = $state<EnhancedFilter>('off');
 	devices = $state<MediaDeviceInfo[]>([]);
 	muted = $state(false);
+	cameraOn = $state(false);
 	level = $state(0);
 	monitor = $state<MonitorMode>('off');
 	participants = $state<Participant[]>([]);
@@ -111,6 +121,7 @@ export class CallSession {
 			const { serverUrl, token } = this.options.credentials;
 			await this.#room.connect(serverUrl, token);
 			await this.#publishMicrophone();
+			if (this.options.camera) await this.setCamera(true);
 			void this.loadDevices();
 			this.audioBlocked = !this.#room.canPlaybackAudio;
 			this.#stats.start(
@@ -159,6 +170,20 @@ export class CallSession {
 		if (this.muted) await track.unmute();
 		else await track.mute();
 		this.muted = !this.muted;
+		this.#refreshParticipants();
+	}
+
+	/** Turns the camera on or off; a camera that cannot start stays off. */
+	async setCamera(on: boolean): Promise<void> {
+		try {
+			await this.#room.localParticipant.setCameraEnabled(on, {
+				deviceId: this.options.camera?.deviceId,
+				resolution: VideoPresets.h540.resolution
+			});
+			this.cameraOn = on;
+		} catch {
+			this.cameraOn = false;
+		}
 		this.#refreshParticipants();
 	}
 
@@ -238,7 +263,8 @@ export class CallSession {
 			outputLanguage:
 				participant === local
 					? this.options.outputLanguage
-					: participant.attributes[OUTPUT_LANGUAGE_ATTRIBUTE]
+					: participant.attributes[OUTPUT_LANGUAGE_ATTRIBUTE],
+			video: cameraOf(participant)
 		}));
 	}
 
@@ -255,6 +281,10 @@ export class CallSession {
 			.on(RoomEvent.ActiveSpeakersChanged, refresh)
 			.on(RoomEvent.ConnectionQualityChanged, refresh)
 			.on(RoomEvent.ParticipantAttributesChanged, refresh)
+			.on(RoomEvent.TrackSubscribed, refresh)
+			.on(RoomEvent.TrackUnsubscribed, refresh)
+			.on(RoomEvent.LocalTrackPublished, refresh)
+			.on(RoomEvent.LocalTrackUnpublished, refresh)
 			.on(
 				RoomEvent.TrackSubscribed,
 				(
@@ -349,4 +379,12 @@ export class CallSession {
 		document.body.append(element);
 		this.#remoteElements.set(track, element);
 	}
+}
+
+/** A participant's camera track while it is on and (for others) received. */
+function cameraOf(participant: RoomParticipant): VideoTrack | undefined {
+	const publication = participant.getTrackPublication(Track.Source.Camera);
+	const track = publication?.track;
+	const video = track instanceof LocalVideoTrack || track instanceof RemoteVideoTrack;
+	return video && !publication?.isMuted ? track : undefined;
 }

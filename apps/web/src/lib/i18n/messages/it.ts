@@ -4,6 +4,10 @@ export const it: Messages = {
 	meta: { title: 'Diceri — alternativa a Google Meet con traduzione vocale bidirezionale' },
 	header: {
 		signOut: 'Esci',
+		deleteVoice: 'Elimina la mia voce',
+		deleteVoiceConfirm:
+			'Eliminare la registrazione salvata della tua voce? Ne registrerai una nuova alla prossima chiamata.',
+		voiceDeleted: 'La registrazione della tua voce è stata eliminata.',
 		language: 'Lingua',
 		toDark: 'Passa al tema scuro',
 		toLight: 'Passa al tema chiaro'
@@ -85,6 +89,11 @@ export const it: Messages = {
 		home: 'Torna alla home'
 	},
 	lobby: {
+		camera: 'Fotocamera',
+		cameraOn: 'Attiva fotocamera',
+		cameraOff: 'Disattiva fotocamera',
+		cameraBlocked: 'Consenti la fotocamera nel browser per mostrare il tuo video.',
+		cameraUnavailable: 'Nessuna fotocamera trovata.',
 		joinTitle: 'Partecipa alla riunione',
 		yourName: 'Il tuo nome',
 		hearEveryoneIn: 'Ascolta tutti in',
@@ -113,7 +122,7 @@ export const it: Messages = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`Leggi una frase breve per ${String(seconds)} secondi: tutti sentiranno le tue traduzioni con la tua voce. Viene cancellata quando esci.`,
+			`Leggi una frase breve per ${String(seconds)} secondi: tutti sentiranno le tue traduzioni con la tua voce. Viene conservata, cifrata, con il tuo account.`,
 		requiredToJoin: 'Registra la tua voce per entrare.',
 		pro: 'Pro',
 		paidSoon: 'Presto disponibile come funzione a pagamento.',
@@ -125,10 +134,14 @@ export const it: Messages = {
 		creating: 'Creazione della tua voce…',
 		ready: 'La tua voce è pronta',
 		redo: 'Rifai',
-		readyHint: 'Le traduzioni avranno la tua voce. Eliminata quando esci.',
+		readyHint:
+			'Le traduzioni avranno la tua voce. La registrazione è conservata, cifrata, con il tuo account.',
+		keptReady: 'La tua voce salvata è pronta',
+		keptHint:
+			'Stiamo usando la registrazione conservata con il tuo account. Eliminala quando vuoi dal tuo menu @.',
 		title: 'Fai parlare le traduzioni con la tua voce',
 		hint: (seconds: number) =>
-			`Leggi una frase breve per ${String(seconds)} secondi. Facoltativo, ed eliminato quando esci.`,
+			`Leggi una frase breve per ${String(seconds)} secondi. Facoltativo; conservato, cifrato, con il tuo account.`,
 		tryAgain: 'Riprova',
 		record: (seconds: number) => `Registra la mia voce (${String(seconds)} s)`,
 		noVoice: 'Non ti abbiamo sentito bene. Leggi la frase ad alta voce e riprova.',
@@ -136,6 +149,8 @@ export const it: Messages = {
 		failed: 'Impossibile creare la tua voce.'
 	},
 	call: {
+		turnOnCamera: 'Attiva fotocamera',
+		turnOffCamera: 'Disattiva fotocamera',
 		turnOnMic: 'Attiva microfono',
 		turnOffMic: 'Disattiva microfono',
 		leaveCall: 'Abbandona la chiamata',
@@ -235,5 +250,50 @@ export const it: Messages = {
 		timeUp: 'Il tuo tempo di chiamata gratuito è finito',
 		timeUpHint: 'Hai usato i minuti gratuiti di questo mese. Si rinnovano il giorno 1 (UTC).'
 	},
-	footer: { freeSoftware: 'Software libero', sourceCode: 'Codice sorgente' }
+	terms: {
+		title: 'Termini di utilizzo',
+		updated: 'Ultimo aggiornamento: 27 novembre 2026',
+		notice:
+			'Creando la tua stanza accetti i termini di utilizzo, inclusa la conservazione della registrazione della tua voce, cifrata, per ricreare la tua voce nelle chiamate.',
+		read: 'Leggi i termini di utilizzo',
+		sections: [
+			{
+				heading: 'Cos’è Diceri',
+				body: 'Diceri è un servizio di videochiamate con traduzione vocale in tempo reale, gestito come software libero e open source (AGPL-3.0). Ogni account ha una stanza su diceri.com/@username. Usare Diceri significa accettare questi termini.'
+			},
+			{
+				heading: 'Il tuo account',
+				body: 'Ti registri con un nome utente e una password; non viene chiesta nessuna email. Tieni la password per te. Si possono creare solo pochi account per rete, e il piano gratuito include una quantità mensile di minuti di chiamata.'
+			},
+			{
+				heading: 'La tua voce',
+				body: 'Per entrare in una chiamata registri circa 10 secondi della tua voce. La usiamo per creare una copia della tua voce presso il nostro fornitore vocale, così le persone sentono le tue traduzioni con la tua voce. Conserviamo la registrazione con il tuo account, cifrata, per poter ricreare la tua voce nelle chiamate successive, anche con un altro fornitore vocale se dovessimo cambiarlo. Viene usata solo per pronunciare le tue traduzioni, mai per parlare al posto di qualcun altro, e non viene mai venduta né condivisa per altri scopi.'
+			},
+			{
+				heading: 'Eliminare la tua voce',
+				body: 'Puoi eliminare la registrazione in qualsiasi momento con "Elimina la mia voce" nel tuo menu @; viene eliminata anche insieme al tuo account. Le copie create presso il fornitore vocale per una chiamata vengono eliminate al termine di quella chiamata.'
+			},
+			{
+				heading: 'Cosa conserviamo e cosa no',
+				body: 'Conserviamo il tuo nome utente, una forma protetta della tua password, la mascotte della tua stanza, il tuo piano, quanti minuti di chiamata hai usato, un’impronta cifrata della rete da cui ti sei registrato (mai il tuo indirizzo IP) e la registrazione della tua voce. Non registriamo le chiamate e non conserviamo ciò che è stato detto: trascrizioni e sottotitoli restano nel tuo browser.'
+			},
+			{
+				heading: 'Fornitori di servizi',
+				body: 'Le chiamate passano per LiveKit; il parlato viene trascritto, tradotto e pronunciato da ElevenLabs, Soniox e Google Gemini. Ricevono solo ciò che serve per fornire la chiamata.'
+			},
+			{
+				heading: 'Uso corretto',
+				body: 'Non usare Diceri per violare la legge, molestare le persone o spacciarti per qualcun altro. Possiamo limitare o chiudere gli account che abusano del servizio. Diceri è fornito così com’è, senza garanzie.'
+			},
+			{
+				heading: 'Modifiche',
+				body: 'Possiamo aggiornare questi termini; la data qui sopra indica la versione più recente. Domande: apri una issue su github.com/julianosig/diceri.com.'
+			}
+		]
+	},
+	footer: {
+		freeSoftware: 'Software libero',
+		sourceCode: 'Codice sorgente',
+		terms: 'Termini di utilizzo'
+	}
 };

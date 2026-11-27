@@ -10,6 +10,7 @@ export {
 	endCall,
 	hostSession,
 	monitorSession,
+	type JoinDevices,
 	type PendingRequest,
 	type Profile
 } from './lobby-api.ts';

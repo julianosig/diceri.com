@@ -111,3 +111,24 @@ test('anyone can walk into an open room at /@username', async ({ page, browser }
 	});
 	await expect(page.getByRole('article', { name: 'Walk-in' })).toBeVisible({ timeout: 20_000 });
 });
+
+test('people see each other on camera, and turning it off shows the avatar', async ({
+	page,
+	browser
+}) => {
+	await skipWithoutMedia(page);
+	await openMyRoom(page);
+	// Pre-join previews the (fake) camera, on by default.
+	await expect(page.getByRole('region', { name: 'Camera' }).locator('video')).toBeVisible();
+	await page.getByLabel('Your name').fill('Host');
+	await page.getByRole('button', { name: 'Join now' }).click();
+	await expect(page.getByRole('button', { name: 'Leave call' })).toBeVisible({ timeout: 20_000 });
+
+	const guest = await guestAsks(browser, page.url());
+	await page.getByRole('button', { name: 'Admit' }).click();
+	const hostTile = guest.getByRole('article', { name: 'Host' });
+	await expect(hostTile.locator('video')).toBeVisible({ timeout: 20_000 });
+
+	await page.getByRole('button', { name: 'Turn camera off' }).click();
+	await expect(hostTile.locator('video')).toBeHidden({ timeout: 10_000 });
+});

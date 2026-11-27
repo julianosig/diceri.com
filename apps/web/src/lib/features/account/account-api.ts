@@ -33,3 +33,8 @@ export function currentAccount(fetchFn?: typeof fetch): Promise<Account | null> 
 export function signOut(fetchFn?: typeof fetch): Promise<void> {
 	return requestVoid('/accounts/sign-out', { method: 'POST', fetchFn });
 }
+
+/** Deletes the voice recording kept with the signed-in account (ADR 0015). */
+export function deleteVoice(fetchFn?: typeof fetch): Promise<void> {
+	return requestVoid('/accounts/me/voice', { method: 'DELETE', fetchFn });
+}

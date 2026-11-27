@@ -8,6 +8,7 @@ import {
 	monitorSession,
 	saveDisplayName,
 	saveLanguage,
+	type JoinDevices,
 	type Profile
 } from '#lib/features/lobby/index.ts';
 import { limitText } from '#lib/features/plans/index.ts';
@@ -32,7 +33,7 @@ export class MeetingFlow {
 	deadline = $state<number | undefined>();
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
-	#deviceId: string | undefined;
+	#devices: JoinDevices = {};
 	#outputLanguage = 'en';
 
 	constructor(
@@ -51,10 +52,10 @@ export class MeetingFlow {
 		return this.hostKey !== undefined;
 	}
 
-	async join(profile: Profile, deviceId: string | undefined): Promise<void> {
+	async join(profile: Profile, devices: JoinDevices): Promise<void> {
 		saveDisplayName(profile.name);
 		saveLanguage(profile.outputLanguage);
-		this.#deviceId = deviceId;
+		this.#devices = devices;
 		this.#outputLanguage = profile.outputLanguage;
 		this.error = undefined;
 		if (!this.hostKey) {
@@ -108,7 +109,8 @@ export class MeetingFlow {
 		this.session = new CallSession({
 			credentials,
 			outputLanguage: this.#outputLanguage,
-			deviceId: this.#deviceId,
+			deviceId: this.#devices.microphone,
+			camera: this.#devices.camera,
 			monitorCredentials: () => monitorSession(roomId, accessKey),
 			onEndedByHost: () => {
 				this.endedBy ??= this.#reachedDeadline() ? 'limit' : 'host';

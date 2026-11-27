@@ -4,6 +4,9 @@ export const ko: Messages = {
 	meta: { title: 'Diceri — 양방향 음성 번역이 되는 Google Meet 대안' },
 	header: {
 		signOut: '로그아웃',
+		deleteVoice: '내 목소리 삭제',
+		deleteVoiceConfirm: '저장된 목소리 녹음을 삭제할까요? 다음 통화에서 새로 녹음하게 돼요.',
+		voiceDeleted: '목소리 녹음이 삭제되었어요.',
 		language: '언어',
 		toDark: '다크 테마로 전환',
 		toLight: '라이트 테마로 전환'
@@ -85,6 +88,11 @@ export const ko: Messages = {
 		home: '홈으로 돌아가기'
 	},
 	lobby: {
+		camera: '카메라',
+		cameraOn: '카메라 켜기',
+		cameraOff: '카메라 끄기',
+		cameraBlocked: '영상을 보여 주려면 브라우저에서 카메라를 허용하세요.',
+		cameraUnavailable: '카메라를 찾을 수 없어요.',
 		joinTitle: '회의 참여하기',
 		yourName: '이름',
 		hearEveryoneIn: '모두의 말을 들을 언어',
@@ -112,7 +120,7 @@ export const ko: Messages = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`짧은 문장을 ${String(seconds)}초 동안 읽어 주세요. 모두가 내 목소리로 번역을 듣게 돼요. 나가면 삭제돼요.`,
+			`짧은 문장을 ${String(seconds)}초 동안 읽어 주세요. 모두가 내 목소리로 번역을 듣게 돼요. 녹음은 암호화되어 내 계정에 보관돼요.`,
 		requiredToJoin: '참여하려면 목소리를 녹음하세요.',
 		pro: 'Pro',
 		paidSoon: '곧 유료 기능으로 제공됩니다.',
@@ -124,10 +132,12 @@ export const ko: Messages = {
 		creating: '목소리를 만드는 중…',
 		ready: '목소리가 준비되었습니다',
 		redo: '다시 하기',
-		readyHint: '번역이 내 목소리로 들립니다. 나가면 삭제됩니다.',
+		readyHint: '번역이 내 목소리로 들립니다. 녹음은 암호화되어 내 계정에 보관됩니다.',
+		keptReady: '저장된 목소리가 준비되었습니다',
+		keptHint: '내 계정에 보관된 녹음을 사용합니다. @ 메뉴에서 언제든지 삭제할 수 있습니다.',
 		title: '번역을 내 목소리로 들려주기',
 		hint: (seconds: number) =>
-			`짧은 문장을 ${String(seconds)}초 동안 읽으세요. 선택 사항이며 나가면 삭제됩니다.`,
+			`짧은 문장을 ${String(seconds)}초 동안 읽으세요. 선택 사항이며 녹음은 암호화되어 내 계정에 보관됩니다.`,
 		tryAgain: '다시 시도',
 		record: (seconds: number) => `내 목소리 녹음 (${String(seconds)}초)`,
 		noVoice: '목소리가 잘 들리지 않았습니다. 문장을 소리 내어 읽고 다시 시도하세요.',
@@ -135,6 +145,8 @@ export const ko: Messages = {
 		failed: '목소리를 만들 수 없습니다.'
 	},
 	call: {
+		turnOnCamera: '카메라 켜기',
+		turnOffCamera: '카메라 끄기',
 		turnOnMic: '마이크 켜기',
 		turnOffMic: '마이크 끄기',
 		leaveCall: '통화에서 나가기',
@@ -229,5 +241,46 @@ export const ko: Messages = {
 		timeUp: '무료 통화 시간이 끝났습니다',
 		timeUpHint: '이번 달 무료 통화 시간을 모두 사용했어요. 매월 1일(UTC)에 초기화돼요.'
 	},
-	footer: { freeSoftware: '자유 소프트웨어', sourceCode: '소스 코드' }
+	terms: {
+		title: '이용약관',
+		updated: '최종 업데이트: 2026년 11월 27일',
+		notice:
+			'방을 만들면 통화에서 내 목소리를 재현하기 위해 목소리 녹음을 암호화하여 보관하는 것을 포함한 이용약관에 동의하게 됩니다.',
+		read: '이용약관 읽기',
+		sections: [
+			{
+				heading: 'Diceri란',
+				body: 'Diceri는 실시간 음성 번역 기능이 있는 화상 통화 서비스이며, 자유 오픈 소스 소프트웨어(AGPL-3.0)로 운영됩니다. 각 계정은 diceri.com/@username에 방 하나를 가집니다. Diceri를 이용하면 이 약관에 동의하는 것입니다.'
+			},
+			{
+				heading: '내 계정',
+				body: '사용자 이름과 비밀번호로 가입하며, 이메일은 요구하지 않습니다. 비밀번호는 다른 사람과 공유하지 마세요. 네트워크당 만들 수 있는 계정은 몇 개로 제한되며, 무료 요금제에는 매월 일정량의 통화 시간(분)이 포함됩니다.'
+			},
+			{
+				heading: '내 목소리',
+				body: '통화에 참여하려면 약 10초 동안 내 목소리를 녹음합니다. 이 녹음으로 음성 제공업체에서 내 목소리의 사본을 만들어, 다른 사람들이 내 번역을 내 목소리로 들을 수 있게 합니다. 녹음은 암호화하여 내 계정과 함께 보관하며, 이후 통화에서 내 목소리를 다시 만들 수 있도록 합니다. 음성 제공업체를 바꾸는 경우 다른 제공업체에서도 다시 만들 수 있습니다. 녹음은 내 번역을 말하는 데에만 사용되며, 다른 사람을 대신해 말하는 데에는 절대 사용되지 않고, 판매되거나 다른 목적으로 공유되지 않습니다.'
+			},
+			{
+				heading: '내 목소리 삭제',
+				body: '@ 메뉴의 "내 목소리 삭제"로 언제든지 녹음을 삭제할 수 있으며, 계정을 삭제할 때도 함께 삭제됩니다. 통화를 위해 음성 제공업체에서 만든 사본은 해당 통화가 끝나면 삭제됩니다.'
+			},
+			{
+				heading: '보관하는 것과 보관하지 않는 것',
+				body: '사용자 이름, 보호된 형태의 비밀번호, 방 마스코트, 요금제, 사용한 통화 시간(분), 가입한 네트워크의 암호화된 지문(IP 주소는 절대 보관하지 않음), 그리고 목소리 녹음을 보관합니다. 통화를 녹화하거나 녹음하지 않으며, 말한 내용도 보관하지 않습니다. 대화 기록과 자막은 내 브라우저에만 남습니다.'
+			},
+			{
+				heading: '서비스 제공업체',
+				body: '통화는 LiveKit을 통해 이루어지며, 음성의 받아쓰기, 번역, 음성 합성은 ElevenLabs, Soniox, Google Gemini가 처리합니다. 이들은 통화 제공에 필요한 정보만 받습니다.'
+			},
+			{
+				heading: '공정한 이용',
+				body: '법을 어기거나, 다른 사람을 괴롭히거나, 다른 사람을 사칭하는 데 Diceri를 사용하지 마세요. 서비스를 악용하는 계정은 제한하거나 해지할 수 있습니다. Diceri는 있는 그대로 제공되며, 어떠한 보증도 하지 않습니다.'
+			},
+			{
+				heading: '변경',
+				body: '이 약관은 업데이트될 수 있으며, 위의 날짜가 최신 버전을 나타냅니다. 문의: github.com/julianosig/diceri.com에서 이슈를 열어 주세요.'
+			}
+		]
+	},
+	footer: { freeSoftware: '자유 소프트웨어', sourceCode: '소스 코드', terms: '이용약관' }
 };

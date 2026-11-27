@@ -7,6 +7,10 @@ export const en = {
 	meta: { title: 'Diceri — Google Meet alternative with two-way voice translation' },
 	header: {
 		signOut: 'Sign out',
+		deleteVoice: 'Delete my voice',
+		deleteVoiceConfirm:
+			'Delete your saved voice recording? You will record a new one at your next call.',
+		voiceDeleted: 'Your voice recording was deleted.',
 		language: 'Language',
 		toDark: 'Switch to dark theme',
 		toLight: 'Switch to light theme'
@@ -87,6 +91,11 @@ export const en = {
 		home: 'Back to home'
 	},
 	lobby: {
+		camera: 'Camera',
+		cameraOn: 'Turn camera on',
+		cameraOff: 'Turn camera off',
+		cameraBlocked: 'Allow the camera in your browser to show your video.',
+		cameraUnavailable: 'No camera found.',
 		joinTitle: 'Join the meeting',
 		yourName: 'Your name',
 		hearEveryoneIn: 'Hear everyone in',
@@ -114,7 +123,7 @@ export const en = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`Read one short sentence for ${String(seconds)} seconds: everyone hears your translations in your own voice. Deleted when you leave.`,
+			`Read one short sentence for ${String(seconds)} seconds: everyone hears your translations in your own voice. Kept, encrypted, with your account.`,
 		requiredToJoin: 'Record your voice to join.',
 		pro: 'Pro',
 		paidSoon: 'Coming soon as a paid feature.',
@@ -126,10 +135,13 @@ export const en = {
 		creating: 'Creating your voice…',
 		ready: 'Your voice is ready',
 		redo: 'Redo',
-		readyHint: 'Translations will sound like you. Deleted when you leave.',
+		readyHint:
+			'Translations will sound like you. The recording is kept, encrypted, with your account.',
+		keptReady: 'Your saved voice is ready',
+		keptHint: 'Using the recording kept with your account. Delete it any time from your @ menu.',
 		title: 'Make translations sound like you',
 		hint: (seconds: number) =>
-			`Read one short sentence for ${String(seconds)} seconds. Optional, and deleted when you leave.`,
+			`Read one short sentence for ${String(seconds)} seconds. Optional; kept, encrypted, with your account.`,
 		tryAgain: 'Try again',
 		record: (seconds: number) => `Record my voice (${String(seconds)}s)`,
 		noVoice: "We couldn't hear you clearly. Read the sentence out loud and try again.",
@@ -137,6 +149,8 @@ export const en = {
 		failed: 'Could not create your voice.'
 	},
 	call: {
+		turnOnCamera: 'Turn camera on',
+		turnOffCamera: 'Turn camera off',
 		turnOnMic: 'Turn on microphone',
 		turnOffMic: 'Turn off microphone',
 		leaveCall: 'Leave call',
@@ -233,7 +247,48 @@ export const en = {
 		timeUp: 'Your free call time is up',
 		timeUpHint: "You've used this month's free minutes. They renew on the 1st (UTC)."
 	},
-	footer: { freeSoftware: 'Free software', sourceCode: 'Source code' }
+	terms: {
+		title: 'Terms of use',
+		updated: 'Last updated: 27 November 2026',
+		notice:
+			'By creating your room you agree to the terms of use, including keeping your voice recording, encrypted, to recreate your voice in calls.',
+		read: 'Read the terms of use',
+		sections: [
+			{
+				heading: 'What Diceri is',
+				body: 'Diceri is a video-call service with live voice translation, run as free and open-source software (AGPL-3.0). Each account owns one room at diceri.com/@username. Using Diceri means accepting these terms.'
+			},
+			{
+				heading: 'Your account',
+				body: 'You sign up with a username and a password; no email is asked. Keep your password to yourself. A few accounts can be created per network, and the free plan includes a monthly amount of call minutes.'
+			},
+			{
+				heading: 'Your voice',
+				body: 'To join a call you record about 10 seconds of your voice. We use it to create a copy of your voice with our voice provider, so that people hear your translations in your own voice. We keep the recording with your account, encrypted, so we can recreate your voice in later calls, including with another voice provider if we change. It is used only to speak your own translations, never to speak for anyone else, and never sold or shared for other purposes.'
+			},
+			{
+				heading: 'Deleting your voice',
+				body: 'You can delete your recording at any time with "Delete my voice" in your @ menu; it is also deleted with your account. The copies made at the voice provider for a call are deleted when that call ends.'
+			},
+			{
+				heading: 'What we keep, and what we do not',
+				body: "We keep your username, a protected form of your password, your room's mascot, your plan, how many call minutes you used, an encrypted fingerprint of the network you signed up from (never your IP address) and your voice recording. We do not record calls and do not keep what was said: transcripts and captions stay in your browser."
+			},
+			{
+				heading: 'Service providers',
+				body: 'Calls run through LiveKit; speech is transcribed, translated and spoken by ElevenLabs, Soniox and Google Gemini. They receive only what is needed to provide the call.'
+			},
+			{
+				heading: 'Fair use',
+				body: 'Do not use Diceri to break the law, harass people or impersonate anyone. We may limit or close accounts that abuse the service. Diceri is provided as is, without warranties.'
+			},
+			{
+				heading: 'Changes',
+				body: 'We may update these terms; the date above shows the latest version. Questions: open an issue at github.com/julianosig/diceri.com.'
+			}
+		]
+	},
+	footer: { freeSoftware: 'Free software', sourceCode: 'Source code', terms: 'Terms of use' }
 };
 
 export type Messages = typeof en;

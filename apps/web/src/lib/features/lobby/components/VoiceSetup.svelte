@@ -91,7 +91,7 @@
 		<div class="flex items-center justify-between gap-2">
 			<p class="flex items-center gap-2 text-sm font-medium text-green-700">
 				<Check class="size-4" aria-hidden="true" />
-				{t.ready}
+				{recorder.kept ? t.keptReady : t.ready}
 			</p>
 			<Button
 				size="sm"
@@ -104,7 +104,7 @@
 				{t.redo}
 			</Button>
 		</div>
-		<p class="text-xs text-ink-muted">{t.readyHint}</p>
+		<p class="text-xs text-ink-muted">{recorder.kept ? t.keptHint : t.readyHint}</p>
 	{:else}
 		<p class="text-sm font-medium">{t.title}</p>
 		<p class="text-xs text-ink-muted">

@@ -4,6 +4,10 @@ export const fr: Messages = {
 	meta: { title: 'Diceri — alternative à Google Meet avec traduction vocale bidirectionnelle' },
 	header: {
 		signOut: 'Se déconnecter',
+		deleteVoice: 'Supprimer ma voix',
+		deleteVoiceConfirm:
+			'Supprimer l’enregistrement de votre voix ? Vous en enregistrerez un nouveau lors de votre prochain appel.',
+		voiceDeleted: 'L’enregistrement de votre voix a été supprimé.',
 		language: 'Langue',
 		toDark: 'Passer au thème sombre',
 		toLight: 'Passer au thème clair'
@@ -85,6 +89,11 @@ export const fr: Messages = {
 		home: 'Retour à l’accueil'
 	},
 	lobby: {
+		camera: 'Caméra',
+		cameraOn: 'Activer la caméra',
+		cameraOff: 'Couper la caméra',
+		cameraBlocked: 'Autorisez la caméra dans votre navigateur pour afficher votre vidéo.',
+		cameraUnavailable: 'Aucune caméra trouvée.',
 		joinTitle: 'Rejoindre la réunion',
 		yourName: 'Votre nom',
 		hearEveryoneIn: 'Entendre tout le monde en',
@@ -113,7 +122,7 @@ export const fr: Messages = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`Lisez une courte phrase pendant ${String(seconds)} secondes : tout le monde entend vos traductions avec votre propre voix. Supprimée quand vous partez.`,
+			`Lisez une courte phrase pendant ${String(seconds)} secondes : tout le monde entend vos traductions avec votre propre voix. Conservé, chiffré, avec votre compte.`,
 		requiredToJoin: 'Enregistrez votre voix pour rejoindre.',
 		pro: 'Pro',
 		paidSoon: 'Bientôt disponible en option payante.',
@@ -125,10 +134,14 @@ export const fr: Messages = {
 		creating: 'Création de votre voix…',
 		ready: 'Votre voix est prête',
 		redo: 'Recommencer',
-		readyHint: 'Les traductions auront votre voix. Supprimée quand vous partez.',
+		readyHint:
+			'Les traductions auront votre voix. L’enregistrement est conservé, chiffré, avec votre compte.',
+		keptReady: 'Votre voix enregistrée est prête',
+		keptHint:
+			'L’enregistrement conservé avec votre compte est utilisé. Supprimez-le à tout moment depuis votre menu @.',
 		title: 'Donnez votre voix aux traductions',
 		hint: (seconds: number) =>
-			`Lisez une courte phrase pendant ${String(seconds)} secondes. Facultatif, et supprimé quand vous partez.`,
+			`Lisez une courte phrase pendant ${String(seconds)} secondes. Facultatif ; conservé, chiffré, avec votre compte.`,
 		tryAgain: 'Réessayer',
 		record: (seconds: number) => `Enregistrer ma voix (${String(seconds)} s)`,
 		noVoice: 'Nous ne vous avons pas bien entendu. Lisez la phrase à voix haute et réessayez.',
@@ -136,6 +149,8 @@ export const fr: Messages = {
 		failed: 'Impossible de créer votre voix.'
 	},
 	call: {
+		turnOnCamera: 'Activer la caméra',
+		turnOffCamera: 'Couper la caméra',
 		turnOnMic: 'Activer le micro',
 		turnOffMic: 'Désactiver le micro',
 		leaveCall: 'Quitter l’appel',
@@ -237,5 +252,50 @@ export const fr: Messages = {
 		timeUpHint:
 			'Vous avez utilisé les minutes gratuites de ce mois. Elles se renouvellent le 1er (UTC).'
 	},
-	footer: { freeSoftware: 'Logiciel libre', sourceCode: 'Code source' }
+	terms: {
+		title: 'Conditions d’utilisation',
+		updated: 'Dernière mise à jour : 27 novembre 2026',
+		notice:
+			'En créant votre salle, vous acceptez les conditions d’utilisation, y compris la conservation de l’enregistrement de votre voix, chiffré, pour recréer votre voix pendant les appels.',
+		read: 'Lire les conditions d’utilisation',
+		sections: [
+			{
+				heading: 'Ce qu’est Diceri',
+				body: 'Diceri est un service d’appels vidéo avec traduction vocale en direct, exploité comme logiciel libre et open source (AGPL-3.0). Chaque compte possède une salle à l’adresse diceri.com/@username. Utiliser Diceri signifie accepter ces conditions.'
+			},
+			{
+				heading: 'Votre compte',
+				body: 'Vous vous inscrivez avec un nom d’utilisateur et un mot de passe ; aucune adresse e-mail n’est demandée. Gardez votre mot de passe pour vous. Seuls quelques comptes peuvent être créés par réseau, et l’offre gratuite inclut un nombre mensuel de minutes d’appel.'
+			},
+			{
+				heading: 'Votre voix',
+				body: 'Pour rejoindre un appel, vous enregistrez environ 10 secondes de votre voix. Nous l’utilisons pour créer une copie de votre voix chez notre fournisseur de voix, afin que les autres entendent vos traductions avec votre propre voix. Nous conservons l’enregistrement avec votre compte, chiffré, afin de pouvoir recréer votre voix lors d’appels ultérieurs, y compris avec un autre fournisseur de voix si nous en changeons. Il sert uniquement à prononcer vos propres traductions, jamais à parler à la place de quelqu’un d’autre, et il n’est jamais vendu ni partagé à d’autres fins.'
+			},
+			{
+				heading: 'Supprimer votre voix',
+				body: 'Vous pouvez supprimer votre enregistrement à tout moment avec « Supprimer ma voix » dans votre menu @ ; il est aussi supprimé avec votre compte. Les copies créées chez le fournisseur de voix pour un appel sont supprimées à la fin de cet appel.'
+			},
+			{
+				heading: 'Ce que nous conservons, et ce que nous ne conservons pas',
+				body: 'Nous conservons votre nom d’utilisateur, une forme protégée de votre mot de passe, la mascotte de votre salle, votre offre, le nombre de minutes d’appel utilisées, une empreinte chiffrée du réseau depuis lequel vous vous êtes inscrit (jamais votre adresse IP) et l’enregistrement de votre voix. Nous n’enregistrons pas les appels et ne conservons pas ce qui a été dit : les transcriptions et les sous-titres restent dans votre navigateur.'
+			},
+			{
+				heading: 'Prestataires',
+				body: 'Les appels passent par LiveKit ; la parole est transcrite, traduite et prononcée par ElevenLabs, Soniox et Google Gemini. Ils ne reçoivent que ce qui est nécessaire pour assurer l’appel.'
+			},
+			{
+				heading: 'Usage loyal',
+				body: 'N’utilisez pas Diceri pour enfreindre la loi, harceler des personnes ou usurper l’identité de quelqu’un. Nous pouvons limiter ou fermer les comptes qui abusent du service. Diceri est fourni tel quel, sans garantie.'
+			},
+			{
+				heading: 'Modifications',
+				body: 'Nous pouvons mettre à jour ces conditions ; la date ci-dessus indique la dernière version. Questions : ouvrez une issue sur github.com/julianosig/diceri.com.'
+			}
+		]
+	},
+	footer: {
+		freeSoftware: 'Logiciel libre',
+		sourceCode: 'Code source',
+		terms: 'Conditions d’utilisation'
+	}
 };

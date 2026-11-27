@@ -126,8 +126,12 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 		await fillProfile(bob);
 		await bob.page.getByRole('button', { name: /Record my voice/ }).click();
 		await expect(bob.page.getByText('Recording · read aloud')).toBeVisible();
-		await expect(bob.page.getByText(/I agree to Diceri using my voice/)).toBeVisible();
+		await expect(bob.page.getByText(/It's great to meet you/)).toBeVisible();
 		await expect(bob.page.getByText('Your voice is ready')).toBeVisible({ timeout: 30_000 });
+		// The recording is kept with the account: coming back reuses it, no reading again.
+		await bob.page.reload();
+		await expect(bob.page.getByText('Your saved voice is ready')).toBeVisible({ timeout: 30_000 });
+		await fillProfile(bob);
 
 		await bob.page.getByRole('button', { name: 'Join now' }).click();
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({

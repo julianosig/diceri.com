@@ -55,6 +55,8 @@ export default defineConfig({
 				DICERI_WRITE_LIMIT_PER_MINUTE: '0',
 				// The paid voice feature stays covered end to end while it is off in production.
 				DICERI_VOICE_CLONING: 'true',
+				// A throwaway key, so kept voice recordings use the encrypted store (ADR 0015).
+				DICERI_VOICE_KEY: Buffer.alloc(32, 7).toString('base64'),
 				// Tests open many rooms within a minute; production keeps the default caps.
 				DICERI_MAX_LIVE_CALLS: '1000',
 				DICERI_MONTHLY_CALL_MINUTES: '1000000',

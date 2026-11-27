@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { ChevronDown, LogOut } from '@lucide/svelte';
+	import { ChevronDown, LogOut, MicOff } from '@lucide/svelte';
 	import { i18n } from '#lib/i18n/index.ts';
 	import { MascotAvatar } from '#lib/features/room/index.ts';
 	import type { AccountSession } from '../account-session.svelte.ts';
@@ -12,6 +12,14 @@
 
 	let { session }: Props = $props();
 	let open = $state(false);
+	/** Shown in the menu once the kept voice recording is deleted. */
+	let voiceDeleted = $state(false);
+
+	async function removeVoice(): Promise<void> {
+		if (!window.confirm(i18n.t.header.deleteVoiceConfirm)) return;
+		await session.deleteVoice();
+		voiceDeleted = true;
+	}
 	let root = $state<HTMLElement>();
 
 	function closeOnOutside(event: PointerEvent) {
@@ -49,6 +57,19 @@
 				class="absolute end-0 top-full z-20 mt-2 min-w-48 rounded-xl border border-ink-muted/15 bg-surface p-1 shadow-lg"
 				role="menu"
 			>
+				{#if account.hasVoice}
+					<button
+						type="button"
+						role="menuitem"
+						class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-start text-sm text-ink hover:bg-surface-raised focus-visible:bg-surface-raised focus-visible:outline-none"
+						onclick={() => void removeVoice()}
+					>
+						<MicOff class="size-4 text-ink-muted" aria-hidden="true" />
+						{i18n.t.header.deleteVoice}
+					</button>
+				{:else if voiceDeleted}
+					<p role="status" class="px-3 py-2 text-sm text-ink-muted">{i18n.t.header.voiceDeleted}</p>
+				{/if}
 				<button
 					type="button"
 					role="menuitem"

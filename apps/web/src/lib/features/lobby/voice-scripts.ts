@@ -1,18 +1,17 @@
 /**
- * What people read while recording their voice (~10 s). The first sentence is
- * the spoken consent required by docs/decisions/0006-voice-cloning-consent.md.
+ * What people read while recording their voice (~10 s): plain conversation. Consent to
+ * keeping the recording comes from the terms of use (ADR 0015), not from this text.
  */
 const SCRIPTS: Partial<Record<string, string>> = {
-	pt: 'Eu autorizo o Diceri a usar a minha voz para me traduzir nesta chamada. Olá! É um prazer te conhecer, e fico feliz que a gente possa conversar hoje, mesmo em idiomas diferentes.',
-	en: "I agree to Diceri using my voice to translate me in this call. Hi! It's great to meet you, and I'm happy we can talk today, even in different languages.",
-	es: 'Autorizo a Diceri a usar mi voz para traducirme en esta llamada. ¡Hola! Es un placer conocerte, y me alegra que podamos hablar hoy, aunque sea en idiomas diferentes.',
-	fr: "J'autorise Diceri à utiliser ma voix pour me traduire pendant cet appel. Bonjour ! Ravi de te rencontrer, et content que nous puissions parler aujourd'hui, même dans des langues différentes.",
-	de: 'Ich erlaube Diceri, meine Stimme zu nutzen, um mich in diesem Anruf zu übersetzen. Hallo! Schön, dich kennenzulernen, und ich freue mich, dass wir heute reden können, auch in verschiedenen Sprachen.',
-	it: 'Autorizzo Diceri a usare la mia voce per tradurmi in questa chiamata. Ciao! È un piacere conoscerti, e sono felice che possiamo parlare oggi, anche in lingue diverse.'
+	pt: 'Olá! É um prazer te conhecer. Fico muito feliz que a gente possa conversar hoje, mesmo falando idiomas diferentes, e espero que esta chamada seja ótima para nós dois.',
+	en: "Hi! It's great to meet you. I'm really happy we can talk today, even though we speak different languages, and I hope this call goes well for both of us.",
+	es: '¡Hola! Es un placer conocerte. Me alegra mucho que podamos hablar hoy, aunque hablemos idiomas diferentes, y espero que esta llamada salga muy bien para los dos.',
+	fr: "Bonjour ! Ravi de te rencontrer. Je suis très content que nous puissions parler aujourd'hui, même dans des langues différentes, et j'espère que cet appel se passera bien pour nous deux.",
+	de: 'Hallo! Schön, dich kennenzulernen. Ich freue mich sehr, dass wir heute reden können, auch wenn wir verschiedene Sprachen sprechen, und ich hoffe, dieser Anruf wird für uns beide gut.',
+	it: 'Ciao! È un piacere conoscerti. Sono molto felice che possiamo parlare oggi, anche se parliamo lingue diverse, e spero che questa chiamata vada benissimo per entrambi.'
 };
 
-const ENGLISH =
-	"I agree to Diceri using my voice to translate me in this call. Hi! It's great to meet you, and I'm happy we can talk today, even in different languages.";
+const ENGLISH = SCRIPTS.en ?? '';
 
 /** Script in the given language (by base language), English otherwise. */
 export function voiceScript(language: string): string {

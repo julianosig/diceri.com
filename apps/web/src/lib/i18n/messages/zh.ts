@@ -5,6 +5,9 @@ export const zh: Messages = {
 	meta: { title: 'Diceri — 支持双向语音翻译的 Google Meet 替代方案' },
 	header: {
 		signOut: '退出登录',
+		deleteVoice: '删除我的声音',
+		deleteVoiceConfirm: '删除已保存的声音录音？你将在下次通话时重新录制。',
+		voiceDeleted: '你的声音录音已删除。',
 		language: '语言',
 		toDark: '切换到深色主题',
 		toLight: '切换到浅色主题'
@@ -84,6 +87,11 @@ export const zh: Messages = {
 		home: '返回首页'
 	},
 	lobby: {
+		camera: '摄像头',
+		cameraOn: '打开摄像头',
+		cameraOff: '关闭摄像头',
+		cameraBlocked: '请在浏览器中允许使用摄像头以显示你的视频。',
+		cameraUnavailable: '未找到摄像头。',
 		joinTitle: '加入会议',
 		yourName: '你的名字',
 		hearEveryoneIn: '用以下语言听所有人',
@@ -111,7 +119,7 @@ export const zh: Messages = {
 	},
 	voice: {
 		requiredHint: (seconds: number) =>
-			`朗读一句短句 ${String(seconds)} 秒：大家会用你自己的声音听到你的翻译。离开后即删除。`,
+			`朗读一句短句 ${String(seconds)} 秒：大家会用你自己的声音听到你的翻译。录音会加密保存在你的账户中。`,
 		requiredToJoin: '录制你的声音后才能加入。',
 		pro: 'Pro',
 		paidSoon: '即将作为付费功能推出。',
@@ -123,9 +131,12 @@ export const zh: Messages = {
 		creating: '正在生成你的声音…',
 		ready: '你的声音已就绪',
 		redo: '重录',
-		readyHint: '翻译将使用你的声音。离开时删除。',
+		readyHint: '翻译将使用你的声音。录音会加密保存在你的账户中。',
+		keptReady: '你保存的声音已就绪',
+		keptHint: '正在使用保存在你账户中的录音。可随时在 @ 菜单中删除。',
 		title: '让翻译听起来像你',
-		hint: (seconds: number) => `朗读一句短句，持续 ${String(seconds)} 秒。可选，离开时删除。`,
+		hint: (seconds: number) =>
+			`朗读一句短句，持续 ${String(seconds)} 秒。可选；录音会加密保存在你的账户中。`,
 		tryAgain: '重试',
 		record: (seconds: number) => `录制我的声音（${String(seconds)} 秒）`,
 		noVoice: '没能听清你的声音。请大声朗读这句话，然后重试。',
@@ -133,6 +144,8 @@ export const zh: Messages = {
 		failed: '无法生成你的声音。'
 	},
 	call: {
+		turnOnCamera: '打开摄像头',
+		turnOffCamera: '关闭摄像头',
 		turnOnMic: '打开麦克风',
 		turnOffMic: '关闭麦克风',
 		leaveCall: '离开通话',
@@ -226,5 +239,45 @@ export const zh: Messages = {
 		timeUp: '你的免费通话时间已用完',
 		timeUpHint: '你本月的免费分钟数已用完，将在每月 1 日（UTC）重置。'
 	},
-	footer: { freeSoftware: '自由软件', sourceCode: '源代码' }
+	terms: {
+		title: '使用条款',
+		updated: '最后更新：2026 年 11 月 27 日',
+		notice: '创建房间即表示你同意使用条款，包括加密保存你的声音录音，以便在通话中重现你的声音。',
+		read: '阅读使用条款',
+		sections: [
+			{
+				heading: 'Diceri 是什么',
+				body: 'Diceri 是一项带实时语音翻译的视频通话服务，以自由开源软件（AGPL-3.0）的形式运营。每个账户在 diceri.com/@username 拥有一个房间。使用 Diceri 即表示接受本条款。'
+			},
+			{
+				heading: '你的账户',
+				body: '你用用户名和密码注册，无需提供电子邮箱。请勿将密码告诉他人。每个网络只能创建少量账户，免费套餐每月包含一定的通话分钟数。'
+			},
+			{
+				heading: '你的声音',
+				body: '加入通话时，你需要录制约 10 秒的声音。我们用它在我们的语音服务商处创建你声音的副本，让大家用你自己的声音听到你的翻译。我们将录音加密后与你的账户一起保存，以便在之后的通话中重现你的声音，包括在我们更换语音服务商时使用新的服务商。录音仅用于说出你自己的翻译，绝不会用来替其他任何人说话，也绝不会出售或为其他目的共享。'
+			},
+			{
+				heading: '删除你的声音',
+				body: '你可以随时通过 @ 菜单中的“删除我的声音”删除录音；删除账户时录音也会一并删除。为某次通话在语音服务商处创建的副本会在该通话结束时删除。'
+			},
+			{
+				heading: '我们保存什么，不保存什么',
+				body: '我们保存你的用户名、经过保护处理的密码、房间吉祥物、套餐、已用的通话分钟数、你注册时所用网络的加密指纹（绝不保存你的 IP 地址）以及你的声音录音。我们不录制通话，也不保存通话内容：转写文本和字幕只保留在你的浏览器中。'
+			},
+			{
+				heading: '服务提供商',
+				body: '通话通过 LiveKit 进行；语音由 ElevenLabs、Soniox 和 Google Gemini 进行转写、翻译和朗读。它们只会收到提供通话所必需的内容。'
+			},
+			{
+				heading: '合理使用',
+				body: '请勿使用 Diceri 违反法律、骚扰他人或冒充任何人。我们可能会限制或关闭滥用服务的账户。Diceri 按“现状”提供，不作任何保证。'
+			},
+			{
+				heading: '变更',
+				body: '我们可能会更新本条款；上方日期为最新版本。如有疑问，请在 github.com/julianosig/diceri.com 提交 issue。'
+			}
+		]
+	},
+	footer: { freeSoftware: '自由软件', sourceCode: '源代码', terms: '使用条款' }
 };
