@@ -2,6 +2,7 @@ use std::env;
 use std::net::SocketAddr;
 
 use anyhow::Context as _;
+use diceri_infra::synthesis::TtsProvider;
 use secrecy::SecretString;
 
 /// Which speech-to-text provider transcribes speakers.
@@ -26,6 +27,10 @@ pub(crate) struct AgentConfig {
     pub(crate) soniox_api_key: Option<SecretString>,
     pub(crate) gemini_api_key: SecretString,
     pub(crate) elevenlabs_api_key: SecretString,
+    /// Who speaks translations and deletes clones; the API must clone with the same.
+    pub(crate) tts_provider: TtsProvider,
+    /// Required only when `tts_provider` is Inworld.
+    pub(crate) inworld_api_key: Option<SecretString>,
     /// `DICERI_DEPLOYMENT` (default `dev`): whose orphaned voice clones to sweep.
     pub(crate) deployment: String,
 }
@@ -56,6 +61,12 @@ impl AgentConfig {
                 .map(SecretString::from),
             gemini_api_key: secret("DICERI_GEMINI_API_KEY")?,
             elevenlabs_api_key: secret("DICERI_ELEVENLABS_API_KEY")?,
+            tts_provider: env::var("DICERI_TTS_PROVIDER")
+                .map_or(Ok(TtsProvider::default()), |raw| raw.parse())
+                .map_err(|error| anyhow::anyhow!("DICERI_TTS_PROVIDER {error}"))?,
+            inworld_api_key: env::var("DICERI_INWORLD_API_KEY")
+                .ok()
+                .map(SecretString::from),
             deployment: env::var("DICERI_DEPLOYMENT").unwrap_or_else(|_| "dev".to_owned()),
         })
     }

@@ -4,7 +4,10 @@ use anyhow::Context as _;
 use diceri_application::ports::{SpeechToText, TextToSpeech, Translator, VoiceCloner};
 use diceri_infra::LiveKitAccessIssuer;
 use diceri_infra::speech::{ScribeConfig, ScribeSpeechToText, SonioxConfig, SonioxSpeechToText};
-use diceri_infra::synthesis::{ElevenLabsConfig, ElevenLabsTextToSpeech, ElevenLabsVoiceCloner};
+use diceri_infra::synthesis::{
+    ElevenLabsConfig, ElevenLabsTextToSpeech, ElevenLabsVoiceCloner, InworldConfig,
+    InworldTextToSpeech, InworldVoiceCloner, TtsProvider,
+};
 use diceri_infra::translation::{GeminiConfig, GeminiTranslator};
 
 use crate::config::{AgentConfig, SttProvider};
@@ -23,6 +26,7 @@ pub(crate) struct Providers {
 impl Providers {
     pub(crate) fn from_config(config: &AgentConfig) -> anyhow::Result<Self> {
         let http = reqwest::Client::new();
+        let (tts, cloner) = voices(config, &http)?;
         Ok(Self {
             livekit_url: config.livekit_url.clone(),
             issuer: LiveKitAccessIssuer::new(
@@ -35,16 +39,42 @@ impl Providers {
                 GeminiConfig::new(config.gemini_api_key.clone()),
                 http.clone(),
             )),
-            tts: Arc::new(ElevenLabsTextToSpeech::new(
+            tts,
+            cloner,
+        })
+    }
+}
+
+/// The configured provider's synthesizer and voice cloner (the API clones with the same).
+fn voices(
+    config: &AgentConfig,
+    http: &reqwest::Client,
+) -> anyhow::Result<(Arc<dyn TextToSpeech>, Arc<dyn VoiceCloner>)> {
+    Ok(match config.tts_provider {
+        TtsProvider::ElevenLabs => (
+            Arc::new(ElevenLabsTextToSpeech::new(
                 ElevenLabsConfig::new(config.elevenlabs_api_key.clone()),
                 http.clone(),
             )),
-            cloner: Arc::new(ElevenLabsVoiceCloner::new(
+            Arc::new(ElevenLabsVoiceCloner::new(
                 config.elevenlabs_api_key.clone(),
-                http,
+                http.clone(),
             )),
-        })
-    }
+        ),
+        TtsProvider::Inworld => {
+            let key = config
+                .inworld_api_key
+                .clone()
+                .context("DICERI_INWORLD_API_KEY must be set")?;
+            (
+                Arc::new(InworldTextToSpeech::new(
+                    InworldConfig::new(key.clone()),
+                    http.clone(),
+                )),
+                Arc::new(InworldVoiceCloner::new(key, http.clone())),
+            )
+        }
+    })
 }
 
 fn speech_to_text(config: &AgentConfig) -> anyhow::Result<Arc<dyn SpeechToText>> {

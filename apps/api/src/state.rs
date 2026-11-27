@@ -10,7 +10,7 @@ use diceri_application::use_cases::{
     RoomService, VoiceService,
 };
 use diceri_infra::speech::{SonioxConfig, SonioxSpeechToText};
-use diceri_infra::synthesis::ElevenLabsVoiceCloner;
+use diceri_infra::synthesis::{ElevenLabsVoiceCloner, InworldVoiceCloner, TtsProvider};
 use diceri_infra::{
     Argon2Hasher, HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence,
     LiveKitRoomCloser, MemoryAccountRepository, MemoryRoomRepository, MemoryUsageRepository,
@@ -79,16 +79,7 @@ impl AppState {
                 ))
             });
         // Voice cloning is off unless switched on: no cloner, no voice service, nothing sent.
-        let cloner = config
-            .elevenlabs_api_key
-            .as_ref()
-            .filter(|_| config.voice_cloning)
-            .map(|key| -> Arc<dyn VoiceCloner> {
-                Arc::new(ElevenLabsVoiceCloner::new(
-                    key.clone(),
-                    reqwest::Client::new(),
-                ))
-            });
+        let cloner = voice_cloner(config).filter(|_| config.voice_cloning);
         let recognizer = config
             .soniox_api_key
             .as_ref()
@@ -206,4 +197,19 @@ fn keep_recordings(
     };
     let samples = Arc::new(SqliteVoiceSamples::sharing(sqlite, *key.expose_secret()));
     Some(voices.with_samples(samples, Arc::new(OsRandom)))
+}
+
+/// The configured provider's voice cloner, when its key is set.
+fn voice_cloner(config: &Config) -> Option<Arc<dyn VoiceCloner>> {
+    let http = reqwest::Client::new();
+    match config.tts_provider {
+        TtsProvider::ElevenLabs => config
+            .elevenlabs_api_key
+            .clone()
+            .map(|key| -> Arc<dyn VoiceCloner> { Arc::new(ElevenLabsVoiceCloner::new(key, http)) }),
+        TtsProvider::Inworld => config
+            .inworld_api_key
+            .clone()
+            .map(|key| -> Arc<dyn VoiceCloner> { Arc::new(InworldVoiceCloner::new(key, http)) }),
+    }
 }

@@ -4,6 +4,7 @@ use std::path::PathBuf;
 
 use anyhow::Context as _;
 use diceri_application::use_cases::{Capacity, PlanCatalogue};
+use diceri_infra::synthesis::TtsProvider;
 use secrecy::SecretString;
 
 use crate::limits_config::{capacity_from_env, plans_from_env};
@@ -47,6 +48,10 @@ pub struct Config {
     pub agent: Option<AgentConfig>,
     /// ElevenLabs key for voice cloning; `None` disables recording your voice.
     pub elevenlabs_api_key: Option<SecretString>,
+    /// Inworld key, when `tts_provider` is Inworld (`DICERI_INWORLD_API_KEY`).
+    pub inworld_api_key: Option<SecretString>,
+    /// Who clones voices (`DICERI_TTS_PROVIDER`); the media agent must use the same.
+    pub tts_provider: TtsProvider,
     /// Soniox key: checks a voice recording is clear speech before it is cloned, so
     /// recording your voice also needs it.
     pub soniox_api_key: Option<SecretString>,
@@ -110,6 +115,12 @@ impl Config {
             soniox_api_key: env::var("DICERI_SONIOX_API_KEY")
                 .ok()
                 .map(SecretString::from),
+            inworld_api_key: env::var("DICERI_INWORLD_API_KEY")
+                .ok()
+                .map(SecretString::from),
+            tts_provider: env::var("DICERI_TTS_PROVIDER")
+                .map_or(Ok(TtsProvider::default()), |raw| raw.parse())
+                .map_err(|error| anyhow::anyhow!("DICERI_TTS_PROVIDER {error}"))?,
             web_dir: env::var_os("DICERI_WEB_DIR").map(PathBuf::from),
             write_limit_per_minute: env::var("DICERI_WRITE_LIMIT_PER_MINUTE")
                 .map_or(Ok(DEFAULT_WRITE_LIMIT), |raw| raw.parse())
@@ -144,6 +155,8 @@ impl Config {
             livekit: None,
             agent: None,
             elevenlabs_api_key: None,
+            inworld_api_key: None,
+            tts_provider: TtsProvider::default(),
             soniox_api_key: None,
             web_dir: None,
             write_limit_per_minute: 0,

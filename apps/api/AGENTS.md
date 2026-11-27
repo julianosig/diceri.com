@@ -65,6 +65,8 @@ in responses.
 | `DICERI_VOICE_CLONING` | `false` | `true` offers recording your own voice (needs the ElevenLabs and Soniox keys) |
 | `DICERI_VOICE_KEY` | unset | 32 bytes in base64 (`openssl rand -base64 32`) encrypting each account's kept voice recording (ADR 0015); unset: recordings are not kept. Losing it loses the recordings (secret) |
 | `DICERI_VOICE_REQUIRED` | `false` | `true` makes joining a call need a recorded voice (ADR 0014); only with voice cloning |
+| `DICERI_TTS_PROVIDER` | `elevenlabs` | who clones voices: `elevenlabs` or `inworld` (ADR 0016); the media agent must use the same |
+| `DICERI_INWORLD_API_KEY` | unset | Inworld key when `DICERI_TTS_PROVIDER=inworld` (secret) |
 | `DICERI_ELEVENLABS_API_KEY` | unset | voice cloning (secret); recording a voice also needs the Soniox key |
 | `DICERI_SONIOX_API_KEY` | unset | checks a voice recording holds words before it is cloned (secret) |
 | `RUST_LOG` | `info,tower_http=debug` | tracing filter |
