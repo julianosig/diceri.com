@@ -1,8 +1,8 @@
-use axum::extract::FromRequestParts;
+use axum::extract::{FromRequestParts, OptionalFromRequestParts};
 use axum::http::header::{COOKIE, SET_COOKIE};
 use axum::http::request::Parts;
 use axum::http::{HeaderMap, HeaderValue};
-use diceri_application::use_cases::SESSION_TTL_MS;
+use diceri_application::use_cases::{AccountError, SESSION_TTL_MS};
 use diceri_domain::{AccessKey, Account};
 
 use crate::{ApiError, AppState};
@@ -48,6 +48,26 @@ impl FromRequestParts<AppState> for CurrentAccount {
     async fn from_request_parts(parts: &mut Parts, state: &AppState) -> Result<Self, ApiError> {
         let key = key_from_cookies(&parts.headers).ok_or(ApiError::Unauthorized)?;
         Ok(Self(state.accounts.authenticate(&key).await?))
+    }
+}
+
+/// `Option<CurrentAccount>`: `None` without a valid session instead of a 401, for asking
+/// "who is signed in?" without an error showing in every visitor's console.
+impl OptionalFromRequestParts<AppState> for CurrentAccount {
+    type Rejection = ApiError;
+
+    async fn from_request_parts(
+        parts: &mut Parts,
+        state: &AppState,
+    ) -> Result<Option<Self>, ApiError> {
+        let Some(key) = key_from_cookies(&parts.headers) else {
+            return Ok(None);
+        };
+        match state.accounts.authenticate(&key).await {
+            Ok(account) => Ok(Some(Self(account))),
+            Err(AccountError::Unauthorized) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 }
 

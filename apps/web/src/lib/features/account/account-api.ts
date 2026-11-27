@@ -1,4 +1,4 @@
-import { ApiError, requestJson, requestVoid } from '#lib/api/http-client.ts';
+import { requestJson, requestJsonOrNull, requestVoid } from '#lib/api/http-client.ts';
 import type { Account, Credentials, Registration } from './types.ts';
 
 /** The session lives in an HttpOnly cookie the browser sends by itself. */
@@ -24,14 +24,9 @@ export function checkAvailability(
 	});
 }
 
-/** The signed-in account, or `null` when there is no session. */
-export async function currentAccount(fetchFn?: typeof fetch): Promise<Account | null> {
-	try {
-		return await requestJson<Account>('/accounts/me', { fetchFn });
-	} catch (cause) {
-		if (cause instanceof ApiError && cause.status === 401) return null;
-		throw cause;
-	}
+/** The signed-in account, or `null` when there is no session (204 No Content). */
+export function currentAccount(fetchFn?: typeof fetch): Promise<Account | null> {
+	return requestJsonOrNull<Account>('/accounts/me', { fetchFn });
 }
 
 /** Answers 204 No Content and expires the session cookie. */

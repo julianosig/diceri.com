@@ -27,7 +27,7 @@ describe('account api', () => {
 	});
 
 	it('reports no account instead of failing when signed out', async () => {
-		const fetchFn = fakeFetch(401, { title: 'Unauthorized', status: 401 });
+		const fetchFn = vi.fn<typeof fetch>(() => Promise.resolve(new Response(null, { status: 204 })));
 		await expect(currentAccount(fetchFn)).resolves.toBeNull();
 	});
 

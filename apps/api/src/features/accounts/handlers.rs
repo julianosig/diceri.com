@@ -139,10 +139,14 @@ pub(crate) async fn profile(
     Ok(Json(AccountResponse::from(&account)))
 }
 
+/// The signed-in account and its use, or 204 No Content when nobody is signed in.
 pub(crate) async fn me(
     State(state): State<AppState>,
-    CurrentAccount(account): CurrentAccount,
-) -> Result<Json<MeResponse>, ApiError> {
+    signed_in: Option<CurrentAccount>,
+) -> Result<axum::response::Response, ApiError> {
+    let Some(CurrentAccount(account)) = signed_in else {
+        return Ok(StatusCode::NO_CONTENT.into_response());
+    };
     let allowance = state.metering.allowance(&account).await?;
     Ok(Json(MeResponse {
         account: AccountResponse::from(&account),
@@ -153,7 +157,8 @@ pub(crate) async fn me(
             monthly_minutes: allowance.limits.monthly_minutes,
             call_minutes: allowance.limits.call_minutes,
         },
-    }))
+    })
+    .into_response())
 }
 
 /// Ends this browser's session server-side and expires the cookie.

@@ -62,6 +62,15 @@ export async function requestJson<T>(path: string, options: RequestOptions = {})
 	return (await (await send(path, options)).json()) as T;
 }
 
+/** Like `requestJson`, but `null` when the endpoint answers 204 No Content. */
+export async function requestJsonOrNull<T>(
+	path: string,
+	options: RequestOptions = {}
+): Promise<T | null> {
+	const response = await send(path, options);
+	return response.status === 204 ? null : ((await response.json()) as T);
+}
+
 /** Like `requestJson` for endpoints that answer 204 No Content. */
 export async function requestVoid(path: string, options: RequestOptions = {}): Promise<void> {
 	await send(path, options);

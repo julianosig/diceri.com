@@ -89,8 +89,9 @@ async fn signing_out_ends_the_session() {
     .await;
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert!(cookie.unwrap().contains("Max-Age=0"));
+    // Nobody signed in is an answer, not an error.
     let (status, _, _) = exchange(&app, "GET", "/api/v1/accounts/me", &with_session, None).await;
-    assert_eq!(status, StatusCode::UNAUTHORIZED);
+    assert_eq!(status, StatusCode::NO_CONTENT);
 }
 
 #[tokio::test]
