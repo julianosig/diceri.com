@@ -18,7 +18,7 @@ mod room_settings;
 mod short_text;
 
 pub use access_key::{AccessKey, AccessKeyError};
-pub use account::{Account, Password, PasswordError, Username, UsernameError};
+pub use account::{Account, NetworkId, Password, PasswordError, Username, UsernameError};
 pub use display_name::{DisplayName, DisplayNameError};
 pub use ids::{AccountId, IdError, ParticipantId, RequestId, RoomId, SessionId};
 pub use join_request::{JoinRequest, RequestStatus};

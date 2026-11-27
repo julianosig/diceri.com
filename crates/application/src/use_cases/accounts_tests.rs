@@ -26,6 +26,7 @@ fn name(raw: &str) -> Username {
 
 fn registration(username: &str, password: &str) -> Registration {
     Registration {
+        network: None,
         username: name(username),
         password: password.parse().unwrap(),
         mascot: Mascot::Dragon,

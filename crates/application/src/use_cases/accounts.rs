@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, Account, Mascot, Password, Plan, Username};
+use diceri_domain::{AccessKey, Account, Mascot, NetworkId, Password, Plan, Username};
 
 use crate::ports::{
     AccountRepository, AccountRepositoryError, Clock, IdGenerator, NewSession, PasswordHasher,
@@ -14,6 +14,8 @@ pub const SESSION_TTL_MS: u64 = 30 * 24 * 60 * 60 * 1000;
 pub enum AccountError {
     #[error("this username is taken")]
     Taken,
+    #[error("an account was already signed up from this network")]
+    NetworkUsed,
     /// Wrong username or password, or an unknown/expired session (deliberately vague).
     #[error("wrong username or password")]
     Unauthorized,
@@ -29,6 +31,7 @@ impl From<AccountRepositoryError> for AccountError {
     fn from(error: AccountRepositoryError) -> Self {
         match error {
             AccountRepositoryError::Taken => Self::Taken,
+            AccountRepositoryError::NetworkUsed => Self::NetworkUsed,
             storage @ AccountRepositoryError::Storage(_) => Self::Repository(storage),
         }
     }
@@ -47,6 +50,8 @@ pub struct Registration {
     pub username: Username,
     pub password: Password,
     pub mascot: Mascot,
+    /// Where the sign-up comes from; `None` when one account per network is not enforced.
+    pub network: Option<NetworkId>,
 }
 
 /// Username + password accounts (no email). The username is also the name of the
@@ -101,10 +106,13 @@ impl AccountService {
         };
         let password_hash = self.hasher.hash(&registration.password).await?;
         self.accounts
-            .create(&StoredAccount {
-                account: account.clone(),
-                password_hash,
-            })
+            .create_from(
+                &StoredAccount {
+                    account: account.clone(),
+                    password_hash,
+                },
+                registration.network.as_ref(),
+            )
             .await?;
         self.start_session(account).await
     }

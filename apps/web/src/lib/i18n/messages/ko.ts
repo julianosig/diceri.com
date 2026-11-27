@@ -221,6 +221,8 @@ export const ko: Messages = {
 		freeLine: (minutes: number) => `무료: 매월 ${String(minutes)}분 통화.`
 	},
 	limits: {
+		network:
+			'방 이름은 네트워크당 하나만 만들 수 있어요. 이 네트워크에는 이미 하나가 있어요. 그 계정으로 로그인하세요.',
 		quota: '이번 달 요금제의 통화 시간을 모두 사용했어요. 매월 1일(UTC)에 초기화돼요.',
 		daily: '오늘의 무료 통화 시간을 모두 사용했습니다. 자정(UTC)에 다시 충전됩니다.',
 		monthly: '이번 달 Diceri 무료 용량이 모두 소진됐어요. 매월 1일(UTC)에 초기화돼요.',

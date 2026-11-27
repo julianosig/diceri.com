@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use diceri_application::ports::{
     AccountRepository, AccountRepositoryError, NewSession, StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, Plan, Username};
+use diceri_domain::{AccessKey, Account, AccountId, NetworkId, Plan, Username};
 use sha2::{Digest as _, Sha256};
 
 /// In-memory accounts and sessions for tests and quick local runs; hashes session
@@ -12,6 +12,8 @@ use sha2::{Digest as _, Sha256};
 #[derive(Debug, Default)]
 pub struct MemoryAccountRepository {
     accounts: Mutex<Vec<StoredAccount>>,
+    /// Networks accounts were signed up from (one account each).
+    networks: Mutex<Vec<NetworkId>>,
     /// `(token hash, account id, expires at)`.
     sessions: Mutex<Vec<(Vec<u8>, AccountId, u64)>>,
 }
@@ -26,13 +28,24 @@ fn poisoned<T>(_: T) -> AccountRepositoryError {
 
 #[async_trait]
 impl AccountRepository for MemoryAccountRepository {
-    async fn create(&self, stored: &StoredAccount) -> Result<(), AccountRepositoryError> {
+    async fn create_from(
+        &self,
+        stored: &StoredAccount,
+        network: Option<&NetworkId>,
+    ) -> Result<(), AccountRepositoryError> {
         let mut accounts = self.accounts.lock().map_err(poisoned)?;
+        let mut networks = self.networks.lock().map_err(poisoned)?;
         if accounts
             .iter()
             .any(|other| other.account.username == stored.account.username)
         {
             return Err(AccountRepositoryError::Taken);
+        }
+        if let Some(network) = network {
+            if networks.contains(network) {
+                return Err(AccountRepositoryError::NetworkUsed);
+            }
+            networks.push(*network);
         }
         accounts.push(stored.clone());
         Ok(())

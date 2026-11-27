@@ -227,6 +227,8 @@ export const de: Messages = {
 		freeLine: (minutes: number) => `Kostenlos: ${String(minutes)} Min. Anrufe jeden Monat.`
 	},
 	limits: {
+		network:
+			'Pro Netzwerk kann nur ein Raumname gesichert werden, und dieses hat schon einen. Melde dich damit an.',
 		quota:
 			'Du hast die Anrufminuten deines Tarifs für diesen Monat aufgebraucht. Sie erneuern sich am 1. (UTC).',
 		daily:

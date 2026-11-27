@@ -60,6 +60,8 @@ pub struct Config {
     pub database_url: String,
     /// Mark the session cookie `Secure` (HTTPS only); on in production.
     pub secure_cookies: bool,
+    /// Key for hashing sign-up networks (one account per network); unset: not enforced.
+    pub network_key: Option<SecretString>,
     /// Recording your own voice for translations (a paid feature, off until it ships).
     pub voice_cloning: bool,
     /// What each plan allows (`DICERI_<PLAN>_CALL_MINUTES`, `..._DAILY_MINUTES`).
@@ -108,6 +110,10 @@ impl Config {
             database_url: env::var("DICERI_DATABASE_URL")
                 .unwrap_or_else(|_| "sqlite://diceri.db".to_owned()),
             secure_cookies: env::var("DICERI_SECURE_COOKIES").is_ok_and(|value| value == "true"),
+            network_key: env::var("DICERI_NETWORK_KEY")
+                .ok()
+                .filter(|key| !key.is_empty())
+                .map(SecretString::from),
             voice_cloning: env::var("DICERI_VOICE_CLONING").is_ok_and(|value| value == "true"),
             plans: plans_from_env()?,
             capacity: capacity_from_env()?,
@@ -131,6 +137,7 @@ impl Config {
             deployment: "test".to_owned(),
             database_url: "sqlite::memory:".to_owned(),
             secure_cookies: false,
+            network_key: None,
             voice_cloning: false,
             plans: PlanCatalogue::default(),
             capacity: Capacity::default(),

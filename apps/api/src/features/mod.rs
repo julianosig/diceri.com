@@ -1,6 +1,8 @@
 //! HTTP features. One folder per feature: `routes`, `handlers`, `dto`.
 
 mod accounts;
+
+pub(crate) use accounts::SignupNetworks;
 mod capabilities;
 pub(crate) mod health;
 mod presence;

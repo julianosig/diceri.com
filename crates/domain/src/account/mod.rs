@@ -1,9 +1,11 @@
 //! A person's identity: `@username` (also their room's name), password and mascot.
 
+mod network_id;
 mod password;
 mod password_strength;
 mod username;
 
+pub use network_id::NetworkId;
 pub use password::{Password, PasswordError};
 pub use username::{Username, UsernameError};
 

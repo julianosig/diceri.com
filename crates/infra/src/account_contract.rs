@@ -4,7 +4,7 @@
 use diceri_application::ports::{
     AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, Mascot, Plan, SessionId, Username};
+use diceri_domain::{AccessKey, Account, AccountId, Mascot, NetworkId, Plan, SessionId, Username};
 
 /// A syntactically valid Argon2id PHC string (adapters never verify it).
 pub(crate) const HASH: &str = "$argon2id$v=19$m=19456,t=2,p=1$c2FsdHNhbHQ$aGFzaGhhc2hoYXNo";
@@ -45,6 +45,7 @@ pub(crate) async fn check(accounts: &dyn AccountRepository) {
     check_accounts(accounts, &ana).await;
     check_sessions(accounts, &ana).await;
     check_plans(accounts).await;
+    check_networks(accounts).await;
 }
 
 async fn check_plans(accounts: &dyn AccountRepository) {
@@ -53,6 +54,30 @@ async fn check_plans(accounts: &dyn AccountRepository) {
     assert!(accounts.set_plan(&name("ana"), Plan::Pro).await.unwrap());
     assert_eq!(found(accounts, "ana").await.plan, Plan::Pro);
     assert!(!accounts.set_plan(&name("nobody"), Plan::Pro).await.unwrap());
+}
+
+/// One account per network; a refused sign-up leaves nothing behind.
+async fn check_networks(accounts: &dyn AccountRepository) {
+    let home = NetworkId::from_hash([1; 32]);
+    let office = NetworkId::from_hash([2; 32]);
+    accounts
+        .create_from(&stored(20, "nia"), Some(&home))
+        .await
+        .unwrap();
+    assert!(matches!(
+        accounts.create_from(&stored(21, "noa"), Some(&home)).await,
+        Err(AccountRepositoryError::NetworkUsed)
+    ));
+    let noa = "noa".parse().unwrap();
+    assert!(accounts.find_by_username(&noa).await.unwrap().is_none());
+    accounts
+        .create_from(&stored(21, "noa"), Some(&office))
+        .await
+        .unwrap();
+    accounts
+        .create_from(&stored(22, "ned"), None)
+        .await
+        .unwrap();
 }
 
 async fn found(accounts: &dyn AccountRepository, username: &str) -> Account {

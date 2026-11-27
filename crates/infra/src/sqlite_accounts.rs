@@ -5,7 +5,7 @@ use async_trait::async_trait;
 use diceri_application::ports::{
     AccountRepository, AccountRepositoryError, NewSession, PasswordHash, StoredAccount,
 };
-use diceri_domain::{AccessKey, Account, AccountId, Plan, Username};
+use diceri_domain::{AccessKey, Account, AccountId, NetworkId, Plan, Username};
 use sha2::{Digest as _, Sha256};
 use sqlx::migrate::Migrator;
 use sqlx::sqlite::{
@@ -102,6 +102,18 @@ fn millis(value: u64) -> i64 {
 }
 
 /// Creation time is the instant encoded in the UUIDv7 id (Unix milliseconds).
+/// A unique violation becomes `taken`; any other failure is a storage error.
+fn unique_or<T>(
+    result: Result<T, sqlx::Error>,
+    taken: AccountRepositoryError,
+) -> Result<T, AccountRepositoryError> {
+    match result {
+        Ok(value) => Ok(value),
+        Err(sqlx::Error::Database(error)) if error.is_unique_violation() => Err(taken),
+        Err(error) => Err(storage(&error)),
+    }
+}
+
 fn created_at_ms(id: &AccountId) -> i64 {
     let (seconds, nanos) = id
         .as_uuid()
@@ -139,8 +151,18 @@ impl TryFrom<AccountRow> for StoredAccount {
 
 #[async_trait]
 impl AccountRepository for SqliteAccountRepository {
-    async fn create(&self, stored: &StoredAccount) -> Result<(), AccountRepositoryError> {
+    async fn create_from(
+        &self,
+        stored: &StoredAccount,
+        network: Option<&NetworkId>,
+    ) -> Result<(), AccountRepositoryError> {
         let account = &stored.account;
+        // Read-then-write across two tables: one IMMEDIATE transaction (AGENTS.md §14).
+        let mut tx = self
+            .pool
+            .begin_with("BEGIN IMMEDIATE")
+            .await
+            .map_err(|e| storage(&e))?;
         let result = sqlx::query(
             "INSERT INTO accounts (id, username, password_hash, mascot, plan, created_at) \
              VALUES (?, ?, ?, ?, ?, ?)",
@@ -151,15 +173,23 @@ impl AccountRepository for SqliteAccountRepository {
         .bind(account.mascot.as_str())
         .bind(account.plan.as_str())
         .bind(created_at_ms(&account.id))
-        .execute(&self.pool)
+        .execute(&mut *tx)
         .await;
-        match result {
-            Ok(_) => Ok(()),
-            Err(sqlx::Error::Database(error)) if error.is_unique_violation() => {
-                Err(AccountRepositoryError::Taken)
-            }
-            Err(error) => Err(storage(&error)),
+        unique_or(result, AccountRepositoryError::Taken)?;
+        if let Some(network) = network {
+            // Served by `pk_signup_networks`.
+            let result = sqlx::query(
+                "INSERT INTO signup_networks (network_hash, account_id, created_at) \
+                 VALUES (?, ?, ?)",
+            )
+            .bind(network.as_bytes().as_slice())
+            .bind(account.id.as_uuid())
+            .bind(created_at_ms(&account.id))
+            .execute(&mut *tx)
+            .await;
+            unique_or(result, AccountRepositoryError::NetworkUsed)?;
         }
+        tx.commit().await.map_err(|e| storage(&e))
     }
 
     async fn find_by_username(

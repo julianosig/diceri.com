@@ -1,4 +1,4 @@
-use diceri_domain::{AccessKey, Account, AccountId, Plan, SessionId, Username};
+use diceri_domain::{AccessKey, Account, AccountId, NetworkId, Plan, SessionId, Username};
 
 use super::PasswordHash;
 
@@ -6,6 +6,8 @@ use super::PasswordHash;
 pub enum AccountRepositoryError {
     #[error("username is taken")]
     Taken,
+    #[error("an account was already signed up from this network")]
+    NetworkUsed,
     #[error("account storage failed: {0}")]
     Storage(String),
 }
@@ -32,7 +34,17 @@ pub struct NewSession<'a> {
 #[async_trait::async_trait]
 pub trait AccountRepository: Send + Sync {
     /// Fails with `Taken` when the username already exists.
-    async fn create(&self, account: &StoredAccount) -> Result<(), AccountRepositoryError>;
+    async fn create(&self, account: &StoredAccount) -> Result<(), AccountRepositoryError> {
+        self.create_from(account, None).await
+    }
+
+    /// Creates the account and, atomically, records the network it was signed up from:
+    /// `Taken` when the username exists, `NetworkUsed` when that network has an account.
+    async fn create_from(
+        &self,
+        account: &StoredAccount,
+        network: Option<&NetworkId>,
+    ) -> Result<(), AccountRepositoryError>;
 
     async fn find_by_username(
         &self,

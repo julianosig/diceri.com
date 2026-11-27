@@ -136,6 +136,10 @@ impl From<AccountError> for ApiError {
     fn from(error: AccountError) -> Self {
         match error {
             AccountError::Taken => Self::Conflict(error.to_string()),
+            AccountError::NetworkUsed => Self::Limit {
+                limit: "network",
+                detail: "only one room username can be claimed per network",
+            },
             AccountError::Unauthorized => Self::Unauthorized,
             AccountError::Repository(source) => Self::Internal(source.into()),
             AccountError::Hasher(source) => Self::Internal(source.into()),

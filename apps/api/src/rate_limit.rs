@@ -69,12 +69,19 @@ impl RateLimiter {
     }
 
     fn client_ip(&self, headers: &HeaderMap, peer: Option<IpAddr>) -> Option<IpAddr> {
-        let from_header = self
-            .ip_header
-            .as_ref()
-            .and_then(|name| headers.get(name)?.to_str().ok()?.trim().parse().ok());
-        from_header.or(peer)
+        client_ip(headers, peer, self.ip_header.as_ref())
     }
+}
+
+/// The client's address: the proxy's header when configured and valid, else the peer.
+pub(crate) fn client_ip(
+    headers: &HeaderMap,
+    peer: Option<IpAddr>,
+    ip_header: Option<&HeaderName>,
+) -> Option<IpAddr> {
+    let from_header =
+        ip_header.and_then(|name| headers.get(name)?.to_str().ok()?.trim().parse().ok());
+    from_header.or(peer)
 }
 
 /// Middleware: rejects POSTs over the limit with `429` problem details.

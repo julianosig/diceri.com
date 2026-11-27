@@ -18,6 +18,7 @@ use diceri_infra::{
 };
 
 use crate::Config;
+use crate::features::SignupNetworks;
 
 /// Accounts over `repository` with Argon2id passwords and the OS clock/randomness.
 fn account_service(repository: Arc<dyn AccountRepository>) -> AccountService {
@@ -44,9 +45,23 @@ pub struct AppState {
     pub metering: MeteringService,
     /// Session cookies are `Secure` (HTTPS only).
     pub secure_cookies: bool,
+    /// One account per network; `None` when not enforced (no key configured).
+    pub(crate) signup_networks: Option<SignupNetworks>,
 }
 
 impl AppState {
+    /// Allows one sign-up per network, hashing addresses with `key`; `ip_header` names the
+    /// proxy header with the real client address.
+    #[must_use]
+    pub fn one_account_per_network(
+        mut self,
+        key: secrecy::SecretString,
+        ip_header: Option<axum::http::HeaderName>,
+    ) -> Self {
+        self.signup_networks = Some(SignupNetworks::new(key, ip_header));
+        self
+    }
+
     /// Composition root: wires adapters chosen by configuration.
     pub async fn from_config(config: &Config) -> anyhow::Result<Self> {
         let media = config
@@ -88,6 +103,15 @@ impl AppState {
             .with_stores(accounts, usage)
             .with_limits(config.plans, config.capacity);
         state.secure_cookies = config.secure_cookies;
+        if let Some(key) = config.network_key.clone() {
+            let header = config
+                .client_ip_header
+                .as_deref()
+                .and_then(|name| name.parse().ok());
+            state = state.one_account_per_network(key, header);
+        } else {
+            tracing::warn!("DICERI_NETWORK_KEY unset: one account per network is not enforced");
+        }
         if let Some(livekit) = &config.livekit {
             let room_closer = Arc::new(LiveKitRoomCloser::new(
                 &livekit.url,
@@ -153,6 +177,7 @@ impl AppState {
                 Capacity::default(),
             ),
             secure_cookies: false,
+            signup_networks: None,
             admission: AdmissionService::new(repository, random, ids, media),
         }
     }

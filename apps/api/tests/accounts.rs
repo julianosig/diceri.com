@@ -136,3 +136,42 @@ async fn signing_up_refuses_a_password_that_is_easy_to_guess() {
         assert_eq!(status, StatusCode::BAD_REQUEST, "{weak}");
     }
 }
+
+#[tokio::test]
+async fn one_room_username_per_network() {
+    let state = diceri_api::AppState::in_memory(None).one_account_per_network(
+        secrecy::SecretString::from("network-key".to_owned()),
+        Some(axum::http::HeaderName::from_static("cf-connecting-ip")),
+    );
+    let app = diceri_api::build_router(state, &diceri_api::Config::for_tests());
+    let from = |ip: &str| [("cf-connecting-ip", ip.to_owned())];
+    let signup_from = |username: &str| signup(username, PASSWORD, "ninja");
+    let first = exchange(
+        &app,
+        "POST",
+        "/api/v1/accounts",
+        &from("203.0.113.9"),
+        Some(signup_from("ana")),
+    )
+    .await;
+    assert_eq!(first.0, StatusCode::CREATED);
+    let (status, _, problem) = exchange(
+        &app,
+        "POST",
+        "/api/v1/accounts",
+        &from("203.0.113.9"),
+        Some(signup_from("bia")),
+    )
+    .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(problem["limit"], "network");
+    let other = exchange(
+        &app,
+        "POST",
+        "/api/v1/accounts",
+        &from("198.51.100.7"),
+        Some(signup_from("bia")),
+    )
+    .await;
+    assert_eq!(other.0, StatusCode::CREATED);
+}

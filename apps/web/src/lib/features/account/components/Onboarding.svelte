@@ -12,6 +12,7 @@
 	import { ApiError } from '#lib/api/http-client.ts';
 	import { Button } from '#lib/components/ui/index.ts';
 	import { randomMascot, type MascotId } from '#lib/features/room/index.ts';
+	import { limitText } from '#lib/features/plans/index.ts';
 	import { i18n } from '#lib/i18n/index.ts';
 	import type { AccountSession } from '../account-session.svelte.ts';
 	import {
@@ -75,7 +76,7 @@
 	function message(cause: unknown): string {
 		if (cause instanceof ApiError && cause.status === 409) return t.taken;
 		if (cause instanceof ApiError && cause.status === 401) return t.wrongPassword;
-		return t.failed;
+		return limitText(cause, i18n.t) ?? t.failed;
 	}
 
 	function describe(found: PasswordProblem): string {

@@ -104,7 +104,11 @@ impl AccountRepository for InMemoryAccounts {
         Ok(found.map(|stored| stored.account.plan = plan).is_some())
     }
 
-    async fn create(&self, account: &StoredAccount) -> Result<(), AccountRepositoryError> {
+    async fn create_from(
+        &self,
+        account: &StoredAccount,
+        _network: Option<&diceri_domain::NetworkId>,
+    ) -> Result<(), AccountRepositoryError> {
         let mut accounts = self.accounts.lock().unwrap();
         if accounts
             .iter()

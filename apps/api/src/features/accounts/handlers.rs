@@ -1,5 +1,8 @@
 use axum::Json;
-use axum::extract::{Path, Query, State};
+use std::net::SocketAddr;
+
+use axum::Extension;
+use axum::extract::{ConnectInfo, Path, Query, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::response::IntoResponse;
 use diceri_application::use_cases::{Registration, SignedIn};
@@ -74,11 +77,20 @@ fn signed_in(state: &AppState, signed_in: &SignedIn) -> impl IntoResponse + use<
     )
 }
 
+/// Signs up; one account per network when a network key is configured.
 pub(crate) async fn register(
     State(state): State<AppState>,
+    connect: Option<Extension<ConnectInfo<SocketAddr>>>,
+    headers: HeaderMap,
     Json(body): Json<RegisterRequest>,
 ) -> Result<impl IntoResponse, ApiError> {
+    // The peer is absent in in-process tests; `main` serves with connect info.
+    let peer = connect.map(|Extension(ConnectInfo(addr))| addr.ip());
     let registration = Registration {
+        network: state
+            .signup_networks
+            .as_ref()
+            .and_then(|networks| networks.of(&headers, peer)),
         username: body.username.parse::<Username>().map_err(invalid)?,
         password: body.password.parse::<Password>().map_err(invalid)?,
         mascot: body.mascot.parse::<Mascot>().map_err(invalid)?,

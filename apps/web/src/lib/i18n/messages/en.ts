@@ -225,6 +225,8 @@ export const en = {
 		freeLine: (minutes: number) => `Free: ${String(minutes)} min of calls every month.`
 	},
 	limits: {
+		network:
+			'Only one room username can be claimed per network, and this one already has one. Sign in to it instead.',
 		quota: "You've used this month's call minutes on your plan. They renew on the 1st (UTC).",
 		daily: "You've used today's free call minutes. They renew at midnight (UTC).",
 		monthly: "Diceri's free capacity for this month is used up. It renews on the 1st (UTC).",

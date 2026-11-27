@@ -47,6 +47,7 @@ in responses.
 | `DICERI_CLIENT_IP_HEADER` | unset | client IP header behind a proxy (`cf-connecting-ip` for Cloudflare) |
 | `DICERI_DEPLOYMENT` | `dev` | names voice clones `diceri-<deployment>-…`; API and agent must match |
 | `DICERI_DATABASE_URL` | `sqlite://diceri.db` | SQLite file for accounts (the only durable data) |
+| `DICERI_NETWORK_KEY` | unset | secret for hashing sign-up networks: one room username per IPv4 address or IPv6 /64 (unset: not enforced; needs `DICERI_CLIENT_IP_HEADER` behind a proxy) |
 | `DICERI_SECURE_COOKIES` | `false` | `true` marks the session cookie `Secure` (HTTPS); on in production |
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
 | `DICERI_LIVEKIT_API_KEY` | unset | LiveKit API key |
