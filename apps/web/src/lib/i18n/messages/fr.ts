@@ -279,7 +279,7 @@ export const fr: Messages = {
 			},
 			{
 				heading: 'Supprimer votre voix',
-				body: 'Vous pouvez supprimer votre enregistrement à tout moment avec « Supprimer ma voix » dans votre menu @ ; il est aussi supprimé avec votre compte. Les copies créées chez le fournisseur de voix pour un appel sont supprimées à la fin de cet appel.'
+				body: 'Vous pouvez supprimer votre enregistrement à tout moment avec « Supprimer ma voix » dans votre menu @ ; il est aussi supprimé avec votre compte. La copie de votre voix créée chez le fournisseur de voix est conservée pour vos appels tant que votre enregistrement existe, et elle est supprimée avec lui.'
 			},
 			{
 				heading: 'Ce que nous conservons, et ce que nous ne conservons pas',

@@ -274,7 +274,7 @@ export const en = {
 			},
 			{
 				heading: 'Deleting your voice',
-				body: 'You can delete your recording at any time with "Delete my voice" in your @ menu; it is also deleted with your account. The copies made at the voice provider for a call are deleted when that call ends.'
+				body: 'You can delete your recording at any time with "Delete my voice" in your @ menu; it is also deleted with your account. The copy of your voice made at the voice provider is kept for your calls while your recording is saved, and is deleted with it.'
 			},
 			{
 				heading: 'What we keep, and what we do not',

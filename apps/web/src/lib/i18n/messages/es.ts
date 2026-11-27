@@ -273,7 +273,7 @@ export const es: Messages = {
 			},
 			{
 				heading: 'Borrar tu voz',
-				body: 'Puedes borrar tu grabación en cualquier momento con "Borrar mi voz" en tu menú @; también se borra junto con tu cuenta. Las copias hechas en el proveedor de voz para una llamada se borran cuando esa llamada termina.'
+				body: 'Puedes borrar tu grabación en cualquier momento con "Borrar mi voz" en tu menú @; también se borra con tu cuenta. La copia de tu voz creada en el proveedor de voz se conserva para tus llamadas mientras tu grabación esté guardada, y se borra junto con ella.'
 			},
 			{
 				heading: 'Qué guardamos y qué no',

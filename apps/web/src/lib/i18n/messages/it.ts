@@ -277,7 +277,7 @@ export const it: Messages = {
 			},
 			{
 				heading: 'Eliminare la tua voce',
-				body: 'Puoi eliminare la registrazione in qualsiasi momento con "Elimina la mia voce" nel tuo menu @; viene eliminata anche insieme al tuo account. Le copie create presso il fornitore vocale per una chiamata vengono eliminate al termine di quella chiamata.'
+				body: 'Puoi eliminare la tua registrazione in qualsiasi momento con "Elimina la mia voce" nel tuo menu @; viene eliminata anche con il tuo account. La copia della tua voce creata presso il fornitore di voce resta disponibile per le tue chiamate finché la registrazione è salvata, e viene eliminata insieme a essa.'
 			},
 			{
 				heading: 'Cosa conserviamo e cosa no',

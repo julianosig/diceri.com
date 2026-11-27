@@ -37,7 +37,9 @@ export default defineConfig({
 			env: {
 				DICERI_AGENT_BIND_ADDRESS: `127.0.0.1:${String(AGENT_PORT)}`,
 				// Own voice-clone namespace: the agent's startup sweep must not touch dev or prod.
-				DICERI_DEPLOYMENT: 'e2e'
+				DICERI_DEPLOYMENT: 'e2e',
+				// Same throwaway key as the API: account clones outlive calls (ADR 0017).
+				DICERI_VOICE_KEY: Buffer.alloc(32, 7).toString('base64')
 			},
 			// Surfaces per-phrase latency logs in the test output.
 			stdout: 'pipe',

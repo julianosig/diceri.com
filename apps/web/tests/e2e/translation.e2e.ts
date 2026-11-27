@@ -146,6 +146,13 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 		// The fixture is a synthetic voice, which the provider refuses to clone-speak,
 		// so this also proves the stock-voice fallback keeps translations flowing.
 		await expectCaption(ana, 'Bob', /parque/i);
+		// The account's clone outlives the call (ADR 0017); deleting the voice removes it.
+		bob.page.once('dialog', (dialog) => void dialog.accept());
+		await bob.page.getByRole('button', { name: 'Leave call' }).click();
+		await bob.page.goto('/');
+		await bob.page.getByRole('button', { name: /@[a-z0-9_]+$/ }).click();
+		await bob.page.getByRole('menuitem', { name: 'Delete my voice' }).click();
+		await expect(bob.page.getByText('Your voice recording was deleted.')).toBeVisible();
 	} finally {
 		await Promise.all([bob.browser.close(), ana.browser.close()]);
 	}

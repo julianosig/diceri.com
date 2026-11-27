@@ -271,7 +271,7 @@ export const pt: Messages = {
 			},
 			{
 				heading: 'Apagar sua voz',
-				body: 'Você pode apagar sua gravação a qualquer momento com "Apagar minha voz" no seu menu @; ela também é apagada junto com a sua conta. As cópias feitas no provedor de voz para uma chamada são apagadas quando essa chamada termina.'
+				body: 'Você pode apagar sua gravação a qualquer momento em "Apagar minha voz", no menu do seu @; ela também é apagada junto com a sua conta. A cópia da sua voz feita no provedor de voz fica guardada para as suas chamadas enquanto a gravação existir, e é apagada junto com ela.'
 			},
 			{
 				heading: 'O que guardamos e o que não guardamos',

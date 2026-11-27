@@ -280,7 +280,7 @@ export const de: Messages = {
 			},
 			{
 				heading: 'Deine Stimme löschen',
-				body: 'Du kannst deine Aufnahme jederzeit mit „Meine Stimme löschen“ in deinem @-Menü löschen; sie wird auch mit deinem Konto gelöscht. Die für einen Anruf beim Sprachanbieter erstellten Kopien werden gelöscht, wenn dieser Anruf endet.'
+				body: 'Du kannst deine Aufnahme jederzeit mit „Meine Stimme löschen“ in deinem @-Menü löschen; sie wird auch mit deinem Konto gelöscht. Die Kopie deiner Stimme beim Stimmanbieter bleibt für deine Anrufe erhalten, solange deine Aufnahme gespeichert ist, und wird mit ihr gelöscht.'
 			},
 			{
 				heading: 'Was wir speichern und was nicht',
