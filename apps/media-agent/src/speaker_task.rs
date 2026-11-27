@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use diceri_application::ports::{STT_SAMPLE_RATE, VoiceId};
+use diceri_application::ports::{STT_SAMPLE_RATE, SpeechStream, SpeechToTextError, VoiceId};
 use diceri_domain::LanguageCode;
 use diceri_media::{Conversation, PipelineOutput, SpeakerConfig, SpeakerPipeline};
 use futures_util::StreamExt as _;
@@ -9,6 +9,10 @@ use livekit::webrtc::audio_stream::native::NativeAudioStream;
 use tokio::sync::{mpsc, watch};
 
 use crate::providers::Providers;
+
+/// Attempts at opening speech-to-text, and the pause between them (about a minute).
+const OPEN_ATTEMPTS: u32 = 20;
+const OPEN_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(3);
 
 /// Who is speaking on a subscribed microphone track. Their spoken language is
 /// detected; `hints` are the languages present in the room when they joined.
@@ -22,6 +26,31 @@ pub(crate) struct Speaker {
     pub track: RemoteAudioTrack,
 }
 
+/// Tries to open speech-to-text for this speaker: providers cap concurrent streams, so a
+/// refusal is retried for about a minute (a seat frees when another call ends) before the
+/// speaker is given up on.
+async fn open_speech_to_text(providers: &Providers, speaker: &Speaker) -> Option<SpeechStream> {
+    for attempt in 1..=OPEN_ATTEMPTS {
+        match providers.stt.open(&speaker.hints).await {
+            Ok(stream) => return Some(stream),
+            Err(error) if attempt < OPEN_ATTEMPTS => {
+                warn_retrying(&error, &speaker.identity, attempt);
+                tokio::time::sleep(OPEN_RETRY_DELAY).await;
+            }
+            Err(error) => warn_given_up(&error, &speaker.identity),
+        }
+    }
+    None
+}
+
+fn warn_retrying(error: &SpeechToTextError, speaker: &str, attempt: u32) {
+    tracing::warn!(%error, speaker, attempt, "speech-to-text refused, retrying");
+}
+
+fn warn_given_up(error: &SpeechToTextError, speaker: &str) {
+    tracing::error!(%error, speaker, "could not open speech-to-text");
+}
+
 /// Transcribes one speaker and runs their translation pipeline until the track ends.
 pub(crate) async fn run(
     speaker: Speaker,
@@ -30,12 +59,8 @@ pub(crate) async fn run(
     conversation: Arc<Conversation>,
     targets: watch::Receiver<Vec<LanguageCode>>,
 ) {
-    let stream = match providers.stt.open(&speaker.hints).await {
-        Ok(stream) => stream,
-        Err(error) => {
-            tracing::error!(%error, speaker = %speaker.identity, "could not open speech-to-text");
-            return;
-        }
+    let Some(stream) = open_speech_to_text(&providers, &speaker).await else {
+        return;
     };
     pump_audio(&speaker.track, stream.audio);
     let config = SpeakerConfig {
