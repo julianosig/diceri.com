@@ -2,7 +2,7 @@
 //!
 //! | Method | Path | Auth |
 //! | --- | --- | --- |
-//! | GET | `/capabilities` | — (`{ voiceCloning, voiceRequired, plans }`) |
+//! | GET | `/capabilities` | — (`{ voiceCloning, voiceRequired, plans, beta? }`) |
 
 use axum::extract::State;
 use axum::routing::get;
@@ -10,17 +10,27 @@ use axum::{Json, Router};
 use diceri_domain::Plan;
 use serde::Serialize;
 
-use crate::AppState;
+use crate::{ApiError, AppState};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub(crate) struct CapabilitiesResponse {
-    /// Recording your own voice for translations (a paid feature, off until it ships).
+    /// Recording your own voice for translations.
     voice_cloning: bool,
     /// Joining a call needs a recorded voice.
     voice_required: bool,
     /// Every plan and its limits, free first (everyone's default).
     plans: Vec<PlanResponse>,
+    /// Private beta spots; absent when sign-up is open.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    beta: Option<BetaResponse>,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct BetaResponse {
+    spots: u64,
+    spots_left: u64,
 }
 
 #[derive(Debug, Serialize)]
@@ -38,7 +48,9 @@ pub(crate) fn routes() -> Router<AppState> {
     Router::new().route("/capabilities", get(capabilities))
 }
 
-async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesResponse> {
+async fn capabilities(
+    State(state): State<AppState>,
+) -> Result<Json<CapabilitiesResponse>, ApiError> {
     let catalogue = state.metering.plans();
     let plans = Plan::ALL
         .into_iter()
@@ -53,9 +65,18 @@ async fn capabilities(State(state): State<AppState>) -> Json<CapabilitiesRespons
             }
         })
         .collect();
-    Json(CapabilitiesResponse {
+    let beta = state
+        .accounts
+        .beta_spots()
+        .await?
+        .map(|spots| BetaResponse {
+            spots: spots.total,
+            spots_left: spots.left,
+        });
+    Ok(Json(CapabilitiesResponse {
         voice_cloning: state.voices.is_some(),
         voice_required: state.voice_required,
         plans,
-    })
+        beta,
+    }))
 }

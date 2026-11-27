@@ -40,6 +40,13 @@ impl From<AccountRepositoryError> for AccountError {
     }
 }
 
+/// The private beta: how many accounts it takes, and how many spots are still free.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct BetaSpots {
+    pub total: u64,
+    pub left: u64,
+}
+
 /// A signed-in browser: the account and the bearer token for its session cookie.
 #[derive(Debug, Clone)]
 pub struct SignedIn {
@@ -139,6 +146,18 @@ impl AccountService {
 
     /// Whether `username` is still free (usernames are public room addresses, so this
     /// reveals nothing a visit to `/@username` would not).
+    /// The private beta's size and its free spots, or `None` when sign-up is open.
+    pub async fn beta_spots(&self) -> Result<Option<BetaSpots>, AccountError> {
+        let Some(total) = self.max_accounts else {
+            return Ok(None);
+        };
+        let taken = self.accounts.count().await?;
+        Ok(Some(BetaSpots {
+            total,
+            left: total.saturating_sub(taken),
+        }))
+    }
+
     pub async fn is_available(&self, username: &Username) -> Result<bool, AccountError> {
         Ok(self.accounts.find_by_username(username).await?.is_none())
     }
