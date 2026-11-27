@@ -42,11 +42,7 @@
 	});
 </script>
 
-<section
-	class="flex w-full flex-col gap-3 rounded-tile border border-ink-muted/20 p-4 text-start"
-	aria-label={t.section}
-	aria-live="polite"
->
+<section class="flex w-full flex-col gap-3 text-start" aria-label={t.section} aria-live="polite">
 	{#if !available}
 		<!-- Shown but switched off: it will be a paid feature. -->
 		<div class="flex items-center justify-between gap-2">
@@ -111,7 +107,12 @@
 			{required ? t.requiredHint(RECORD_SECONDS) : t.hint(RECORD_SECONDS)}
 		</p>
 		{#if recorder.error}<p role="alert" class="text-xs text-red-600">{t[recorder.error]}</p>{/if}
-		<Button size="sm" onclick={record}>
+		<!-- When joining needs it, recording is the main step, so it gets the main button size. -->
+		<Button
+			size={required ? 'lg' : 'sm'}
+			class={required ? 'self-center' : undefined}
+			onclick={record}
+		>
 			<Mic class="size-4" aria-hidden="true" />
 			{recorder.step === 'error' ? t.tryAgain : t.record(RECORD_SECONDS)}
 		</Button>

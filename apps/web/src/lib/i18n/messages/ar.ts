@@ -128,7 +128,6 @@ export const ar: Messages = {
 	voice: {
 		requiredHint: (seconds: number) =>
 			`اقرأ جملة قصيرة لمدة ${String(seconds)} ثوانٍ: سيسمع الجميع ترجماتك بصوتك أنت. يُحفظ التسجيل مشفّرًا مع حسابك.`,
-		requiredToJoin: 'سجّل صوتك للانضمام.',
 		pro: 'Pro',
 		paidSoon: 'قريبًا كميزة مدفوعة.',
 		section: 'صوتك',

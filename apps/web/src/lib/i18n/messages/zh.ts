@@ -123,7 +123,6 @@ export const zh: Messages = {
 	voice: {
 		requiredHint: (seconds: number) =>
 			`朗读一句短句 ${String(seconds)} 秒：大家会用你自己的声音听到你的翻译。录音会加密保存在你的账户中。`,
-		requiredToJoin: '录制你的声音后才能加入。',
 		pro: 'Pro',
 		paidSoon: '即将作为付费功能推出。',
 		section: '你的声音',

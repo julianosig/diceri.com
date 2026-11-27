@@ -126,7 +126,6 @@ export const it: Messages = {
 	voice: {
 		requiredHint: (seconds: number) =>
 			`Leggi una frase breve per ${String(seconds)} secondi: tutti sentiranno le tue traduzioni con la tua voce. Viene conservata, cifrata, con il tuo account.`,
-		requiredToJoin: 'Registra la tua voce per entrare.',
 		pro: 'Pro',
 		paidSoon: 'Presto disponibile come funzione a pagamento.',
 		section: 'La tua voce',

@@ -171,18 +171,20 @@
 		deviceId={preview.deviceId}
 		onbeforerecord={() => preview.stop()}
 	/>
-	<Button type="submit" size="lg" disabled={!canJoin}>
-		{#if busy}
-			<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
-			{i18n.t.lobby.joining}
-		{:else if action === 'join'}
-			<Video class="size-5" aria-hidden="true" />
-			{i18n.t.lobby.joinNow}
-		{:else}
-			<Hand class="size-5" aria-hidden="true" />
-			{i18n.t.lobby.askToJoin}
-		{/if}
-	</Button>
-	{#if needsVoice}<p class="text-sm text-ink-muted">{i18n.t.voice.requiredToJoin}</p>{/if}
+	<!-- Joining waits for the voice: until it is ready, recording is the only button. -->
+	{#if !needsVoice}
+		<Button type="submit" size="lg" disabled={!canJoin}>
+			{#if busy}
+				<LoaderCircle class="size-5 animate-spin" aria-hidden="true" />
+				{i18n.t.lobby.joining}
+			{:else if action === 'join'}
+				<Video class="size-5" aria-hidden="true" />
+				{i18n.t.lobby.joinNow}
+			{:else}
+				<Hand class="size-5" aria-hidden="true" />
+				{i18n.t.lobby.askToJoin}
+			{/if}
+		</Button>
+	{/if}
 	{#if error}<p role="alert" class="text-sm text-red-600">{error}</p>{/if}
 </form>

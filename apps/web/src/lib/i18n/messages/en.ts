@@ -127,7 +127,6 @@ export const en = {
 	voice: {
 		requiredHint: (seconds: number) =>
 			`Read one short sentence for ${String(seconds)} seconds: everyone hears your translations in your own voice. Kept, encrypted, with your account.`,
-		requiredToJoin: 'Record your voice to join.',
 		pro: 'Pro',
 		paidSoon: 'Coming soon as a paid feature.',
 		section: 'Your voice',
