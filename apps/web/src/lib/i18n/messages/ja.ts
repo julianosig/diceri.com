@@ -35,6 +35,8 @@ export const ja: Messages = {
 		passwordsMatch: 'パスワードが一致しました',
 		tooShort: (min: number) => `${String(min)} 文字以上にしてください。`,
 		tooLong: (max: number) => `${String(max)} 文字以内にしてください。`,
+		tooEasy:
+			'推測されやすいパスワードです。blue-otter-sings のように、関係のない単語を組み合わせてください。',
 		mismatch: 'パスワードが一致しません。',
 		create: 'ルームを作成',
 		creating: '作成中…',

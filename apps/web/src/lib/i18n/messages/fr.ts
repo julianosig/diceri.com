@@ -36,6 +36,8 @@ export const fr: Messages = {
 		passwordsMatch: 'Les mots de passe correspondent',
 		tooShort: (min: number) => `Utilisez au moins ${String(min)} caractères.`,
 		tooLong: (max: number) => `Utilisez au plus ${String(max)} caractères.`,
+		tooEasy:
+			'Trop facile à deviner. Essayez quelques mots sans rapport, comme loutre-bleue-chante.',
 		mismatch: 'Les mots de passe ne correspondent pas.',
 		create: 'Créer ma salle',
 		creating: 'Création…',

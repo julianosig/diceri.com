@@ -36,6 +36,8 @@ export const de: Messages = {
 		passwordsMatch: 'Passwörter stimmen überein',
 		tooShort: (min: number) => `Verwende mindestens ${String(min)} Zeichen.`,
 		tooLong: (max: number) => `Verwende höchstens ${String(max)} Zeichen.`,
+		tooEasy:
+			'Zu leicht zu erraten. Versuche ein paar zusammenhanglose Wörter, etwa blauer-otter-singt.',
 		mismatch: 'Die Passwörter stimmen nicht überein.',
 		create: 'Meinen Raum erstellen',
 		creating: 'Wird erstellt…',

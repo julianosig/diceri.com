@@ -41,6 +41,7 @@ export const ar: Messages = {
 		passwordsMatch: 'كلمتا المرور متطابقتان',
 		tooShort: (min: number) => `استخدم ${String(min)} أحرف على الأقل.`,
 		tooLong: (max: number) => `استخدم ${String(max)} حرفًا كحد أقصى.`,
+		tooEasy: 'سهلة التخمين جدًا. جرّب بضع كلمات غير مترابطة، مثل blue-otter-sings.',
 		mismatch: 'كلمتا المرور غير متطابقتين.',
 		create: 'أنشئ غرفتي',
 		creating: 'جارٍ الإنشاء…',

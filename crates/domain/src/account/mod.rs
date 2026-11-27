@@ -1,6 +1,7 @@
 //! A person's identity: `@username` (also their room's name), password and mascot.
 
 mod password;
+mod password_strength;
 mod username;
 
 pub use password::{Password, PasswordError};

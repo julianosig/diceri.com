@@ -36,6 +36,8 @@ export const it: Messages = {
 		passwordsMatch: 'Le password coincidono',
 		tooShort: (min: number) => `Usa almeno ${String(min)} caratteri.`,
 		tooLong: (max: number) => `Usa al massimo ${String(max)} caratteri.`,
+		tooEasy:
+			'Troppo facile da indovinare. Prova con alcune parole scollegate, come lontra-blu-canta.',
 		mismatch: 'Le password non coincidono.',
 		create: 'Crea la mia stanza',
 		creating: 'Creazione…',

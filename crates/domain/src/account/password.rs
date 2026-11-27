@@ -5,8 +5,8 @@ const MIN_CHARS: usize = 8;
 /// Bounds the cost of hashing attacker-supplied input.
 const MAX_CHARS: usize = 128;
 
-/// A user-chosen password, validated for length only (NIST SP 800-63B: no
-/// composition rules). It is only ever hashed (Argon2id); never stored or logged.
+/// A user-chosen password, validated for length (NIST SP 800-63B: no composition
+/// rules); a new one is also checked against guessable ones (`password_strength`). It is only ever hashed (Argon2id); never stored or logged.
 #[derive(Clone, PartialEq, Eq)]
 pub struct Password(String);
 
@@ -16,6 +16,8 @@ pub enum PasswordError {
     TooShort,
     #[error("password must be at most {MAX_CHARS} characters")]
     TooLong,
+    #[error("password is too easy to guess")]
+    TooEasy,
 }
 
 impl Password {

@@ -36,6 +36,7 @@ export const hi: Messages = {
 		passwordsMatch: 'पासवर्ड मेल खाते हैं',
 		tooShort: (min: number) => `कम से कम ${String(min)} अक्षरों का इस्तेमाल करें।`,
 		tooLong: (max: number) => `ज़्यादा से ज़्यादा ${String(max)} अक्षरों का इस्तेमाल करें।`,
+		tooEasy: 'इसका अंदाज़ा लगाना बहुत आसान है। blue-otter-sings जैसे कुछ असंबंधित शब्द आज़माएँ।',
 		mismatch: 'पासवर्ड मेल नहीं खाते।',
 		create: 'मेरा रूम बनाएँ',
 		creating: 'बन रहा है…',

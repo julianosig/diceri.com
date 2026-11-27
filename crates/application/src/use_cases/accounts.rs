@@ -21,6 +21,8 @@ pub enum AccountError {
     Repository(AccountRepositoryError),
     #[error(transparent)]
     Hasher(#[from] PasswordHasherError),
+    #[error(transparent)]
+    WeakPassword(#[from] diceri_domain::PasswordError),
 }
 
 impl From<AccountRepositoryError> for AccountError {
@@ -87,6 +89,9 @@ impl AccountService {
 
     /// Creates the account and signs this browser in.
     pub async fn register(&self, registration: Registration) -> Result<SignedIn, AccountError> {
+        registration
+            .password
+            .ensure_hard_to_guess(registration.username.as_str())?;
         let account = Account {
             id: self.ids.account_id(),
             username: registration.username,

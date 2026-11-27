@@ -139,6 +139,7 @@ impl From<AccountError> for ApiError {
             AccountError::Unauthorized => Self::Unauthorized,
             AccountError::Repository(source) => Self::Internal(source.into()),
             AccountError::Hasher(source) => Self::Internal(source.into()),
+            AccountError::WeakPassword(source) => Self::Validation(source.to_string()),
         }
     }
 }

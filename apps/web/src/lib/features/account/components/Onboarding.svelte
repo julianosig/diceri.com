@@ -62,7 +62,7 @@
 		usernames.status === 'available' ? 'create' : usernames.status === 'taken' ? 'signin' : null
 	);
 	const handle = $derived(normalizeUsername(username));
-	const problem = $derived(mode === 'create' ? passwordProblem(password, repeat) : null);
+	const problem = $derived(mode === 'create' ? passwordProblem(password, repeat, handle) : null);
 	const canSubmit = $derived(
 		!pending &&
 			mode !== null &&
@@ -81,6 +81,7 @@
 	function describe(found: PasswordProblem): string {
 		if (found === 'too-short') return t.tooShort(MIN_PASSWORD_LENGTH);
 		if (found === 'too-long') return t.tooLong(MAX_PASSWORD_LENGTH);
+		if (found === 'too-easy') return t.tooEasy;
 		return t.mismatch;
 	}
 

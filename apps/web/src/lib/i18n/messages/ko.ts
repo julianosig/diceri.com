@@ -36,6 +36,8 @@ export const ko: Messages = {
 		passwordsMatch: '비밀번호가 일치합니다',
 		tooShort: (min: number) => `${String(min)}자 이상 입력하세요.`,
 		tooLong: (max: number) => `${String(max)}자 이하로 입력하세요.`,
+		tooEasy:
+			'너무 쉽게 추측할 수 있어요. blue-otter-sings처럼 서로 관련 없는 단어 몇 개를 써 보세요.',
 		mismatch: '비밀번호가 일치하지 않습니다.',
 		create: '내 방 만들기',
 		creating: '만드는 중…',

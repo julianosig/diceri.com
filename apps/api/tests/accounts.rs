@@ -125,3 +125,13 @@ async fn a_claimed_username_has_a_public_profile() {
     let (status, _) = send(&app, "GET", "/api/v1/users/a!", None, None).await;
     assert_eq!(status, StatusCode::NOT_FOUND);
 }
+
+#[tokio::test]
+async fn signing_up_refuses_a_password_that_is_easy_to_guess() {
+    let app = app(false);
+    for weak in ["12345678", "Password123!", "ana_92-rocks"] {
+        let body = signup("ana_92", weak, "ninja");
+        let (status, _, _) = exchange(&app, "POST", "/api/v1/accounts", &[], Some(body)).await;
+        assert_eq!(status, StatusCode::BAD_REQUEST, "{weak}");
+    }
+}

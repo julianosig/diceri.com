@@ -36,6 +36,8 @@ export const ru: Messages = {
 		passwordsMatch: 'Пароли совпадают',
 		tooShort: (min: number) => `Используйте не меньше ${String(min)} символов.`,
 		tooLong: (max: number) => `Используйте не больше ${String(max)} символов.`,
+		tooEasy:
+			'Слишком легко угадать. Попробуйте несколько несвязанных слов, например синяя-выдра-поёт.',
 		mismatch: 'Пароли не совпадают.',
 		create: 'Создать мою комнату',
 		creating: 'Создаём…',

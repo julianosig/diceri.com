@@ -36,6 +36,7 @@ export const zh: Messages = {
 		passwordsMatch: '两次密码一致',
 		tooShort: (min: number) => `请至少使用 ${String(min)} 个字符。`,
 		tooLong: (max: number) => `最多使用 ${String(max)} 个字符。`,
+		tooEasy: '太容易被猜到了。试试几个不相关的词，比如 blue-otter-sings。',
 		mismatch: '两次输入的密码不一致。',
 		create: '创建我的房间',
 		creating: '正在创建…',

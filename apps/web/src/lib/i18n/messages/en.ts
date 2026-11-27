@@ -39,6 +39,7 @@ export const en = {
 		passwordsMatch: 'Passwords match',
 		tooShort: (min: number) => `Use at least ${String(min)} characters.`,
 		tooLong: (max: number) => `Use at most ${String(max)} characters.`,
+		tooEasy: 'Too easy to guess. Try a few unrelated words, like blue-otter-sings.',
 		mismatch: 'The passwords do not match.',
 		create: 'Create my room',
 		creating: 'Creating…',
