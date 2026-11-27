@@ -59,6 +59,7 @@ async fn check_plans(accounts: &dyn AccountRepository) {
 
 /// Up to `max_accounts` per network; a refused sign-up leaves nothing behind.
 async fn check_networks(accounts: &dyn AccountRepository) {
+    let before = accounts.count().await.unwrap();
     let two = |seed| {
         Some(SignupNetwork {
             id: NetworkId::from_hash([seed; 32]),
@@ -85,6 +86,8 @@ async fn check_networks(accounts: &dyn AccountRepository) {
         .create_from(&stored(23, "nat"), None)
         .await
         .unwrap();
+    // Counted: nia, noa, ned and nat; the refused sign-up is not.
+    assert_eq!(accounts.count().await.unwrap(), before + 4);
 }
 
 async fn found(accounts: &dyn AccountRepository, username: &str) -> Account {

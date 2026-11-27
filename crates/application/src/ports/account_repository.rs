@@ -54,6 +54,9 @@ pub trait AccountRepository: Send + Sync {
         network: Option<SignupNetwork>,
     ) -> Result<(), AccountRepositoryError>;
 
+    /// How many accounts exist (the private beta caps sign-ups).
+    async fn count(&self) -> Result<u64, AccountRepositoryError>;
+
     async fn find_by_username(
         &self,
         username: &Username,

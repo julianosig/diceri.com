@@ -176,3 +176,32 @@ async fn a_network_claims_a_limited_number_of_room_usernames() {
     .await;
     assert_eq!(other.0, StatusCode::CREATED);
 }
+
+#[tokio::test]
+async fn a_full_private_beta_refuses_new_accounts_but_not_sign_in() {
+    let mut state = diceri_api::AppState::in_memory(None);
+    state.accounts = state.accounts.clone().with_max_accounts(Some(1));
+    let app = diceri_api::build_router(state, &diceri_api::Config::for_tests());
+    let first = exchange(
+        &app,
+        "POST",
+        "/api/v1/accounts",
+        &[],
+        Some(signup("ana", PASSWORD, "ninja")),
+    )
+    .await;
+    assert_eq!(first.0, StatusCode::CREATED);
+    let (status, _, problem) = exchange(
+        &app,
+        "POST",
+        "/api/v1/accounts",
+        &[],
+        Some(signup("bia", PASSWORD, "ninja")),
+    )
+    .await;
+    assert_eq!(status, StatusCode::TOO_MANY_REQUESTS);
+    assert_eq!(problem["limit"], "beta");
+    let login = json!({ "username": "ana", "password": PASSWORD });
+    let (status, _, _) = exchange(&app, "POST", "/api/v1/accounts/session", &[], Some(login)).await;
+    assert_eq!(status, StatusCode::OK);
+}

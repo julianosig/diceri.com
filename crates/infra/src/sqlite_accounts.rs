@@ -212,6 +212,15 @@ impl AccountRepository for SqliteAccountRepository {
         tx.commit().await.map_err(|e| storage(&e))
     }
 
+    async fn count(&self) -> Result<u64, AccountRepositoryError> {
+        // A full count over the primary key: a few thousand rows during the private beta.
+        let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM accounts")
+            .fetch_one(&self.pool)
+            .await
+            .map_err(|e| storage(&e))?;
+        Ok(u64::try_from(count).unwrap_or(0))
+    }
+
     async fn find_by_username(
         &self,
         username: &Username,

@@ -52,6 +52,11 @@ impl AccountRepository for MemoryAccountRepository {
         Ok(())
     }
 
+    async fn count(&self) -> Result<u64, AccountRepositoryError> {
+        let accounts = self.accounts.lock().map_err(poisoned)?;
+        Ok(u64::try_from(accounts.len()).unwrap_or(u64::MAX))
+    }
+
     async fn find_by_username(
         &self,
         username: &Username,

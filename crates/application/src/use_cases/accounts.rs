@@ -14,6 +14,9 @@ pub const SESSION_TTL_MS: u64 = 30 * 24 * 60 * 60 * 1000;
 pub enum AccountError {
     #[error("this username is taken")]
     Taken,
+    /// The private beta has all the accounts it takes.
+    #[error("the private beta is full")]
+    BetaFull,
     #[error("an account was already signed up from this network")]
     NetworkUsed,
     /// Wrong username or password, or an unknown/expired session (deliberately vague).
@@ -64,6 +67,8 @@ pub struct AccountService {
     random: Arc<dyn RandomSource>,
     ids: Arc<dyn IdGenerator>,
     clock: Arc<dyn Clock>,
+    /// The private beta's account cap; `None`: open sign-up.
+    max_accounts: Option<u64>,
 }
 
 impl std::fmt::Debug for AccountService {
@@ -89,7 +94,15 @@ impl AccountService {
             random,
             ids,
             clock,
+            max_accounts: None,
         }
+    }
+
+    /// Caps how many accounts can be created (a private beta); sign-in is unaffected.
+    #[must_use]
+    pub fn with_max_accounts(mut self, max_accounts: Option<u64>) -> Self {
+        self.max_accounts = max_accounts;
+        self
     }
 
     /// Creates the account and signs this browser in.
@@ -97,6 +110,13 @@ impl AccountService {
         registration
             .password
             .ensure_hard_to_guess(registration.username.as_str())?;
+        // Checked before creating: a few sign-ups racing at the cap may pass, which is fine
+        // for a beta size.
+        if let Some(max) = self.max_accounts
+            && self.accounts.count().await? >= max
+        {
+            return Err(AccountError::BetaFull);
+        }
         let account = Account {
             id: self.ids.account_id(),
             username: registration.username,

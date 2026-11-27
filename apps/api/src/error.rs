@@ -136,6 +136,10 @@ impl From<AccountError> for ApiError {
     fn from(error: AccountError) -> Self {
         match error {
             AccountError::Taken => Self::Conflict(error.to_string()),
+            AccountError::BetaFull => Self::Limit {
+                limit: "beta",
+                detail: "the private beta has no free spots right now",
+            },
             AccountError::NetworkUsed => Self::Limit {
                 limit: "network",
                 detail: "this network already claimed as many room usernames as allowed",

@@ -120,6 +120,10 @@ impl AccountRepository for InMemoryAccounts {
         Ok(())
     }
 
+    async fn count(&self) -> Result<u64, AccountRepositoryError> {
+        Ok(u64::try_from(self.accounts.lock().unwrap().len()).unwrap())
+    }
+
     async fn find_by_username(
         &self,
         username: &Username,

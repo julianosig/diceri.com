@@ -93,7 +93,7 @@ impl AppState {
         let usage = Arc::new(SqliteUsageRepository::sharing(&sqlite));
         state.voices = keep_recordings(state.voices, &sqlite, config);
         let accounts: Arc<dyn AccountRepository> = Arc::new(sqlite);
-        state.accounts = account_service(accounts.clone());
+        state.accounts = account_service(accounts.clone()).with_max_accounts(config.max_accounts);
         state.metering = state
             .metering
             .with_stores(accounts, usage)
