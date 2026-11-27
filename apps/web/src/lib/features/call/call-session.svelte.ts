@@ -30,7 +30,6 @@ import {
 	originalVolume,
 	parseCaption,
 	parseTranslatedTrack,
-	PREVIEW_ATTRIBUTE,
 	TranscriptLog,
 	wantsTranslatedTrack,
 	type Listener
@@ -39,7 +38,7 @@ import { StatsPoller, type CallMetrics } from './stats-poller.ts';
 
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
 /** Hear yourself: off, local mic, through the server, or translated by the agent. */
-export type MonitorMode = 'off' | 'local' | 'loopback' | 'translated';
+export type MonitorMode = 'off' | 'local' | 'loopback';
 
 export interface Participant {
 	identity: string;
@@ -76,10 +75,6 @@ export class CallSession {
 	participants = $state<Participant[]>([]);
 	audioBlocked = $state(false);
 	metrics = $state<CallMetrics>({});
-	/** Language to hear yourself in while the monitor is `translated`. */
-	previewLanguage = $state('en');
-	/** Language your own speech was last detected in. */
-	ownSpokenLanguage = $state<string | undefined>();
 	readonly captions: CaptionFeed;
 	/** Everything said while connected, originals and translations (stays in this browser). */
 	readonly transcript = new TranscriptLog();
@@ -96,8 +91,6 @@ export class CallSession {
 
 	constructor(private readonly options: CallSessionOptions) {
 		this.settings.deviceId = options.deviceId;
-		// Hear yourself the way you chose to hear everyone.
-		this.previewLanguage = options.outputLanguage;
 		this.captions = new CaptionFeed(
 			() => this.#listener(),
 			(speaker) => {
@@ -127,8 +120,6 @@ export class CallSession {
 			);
 			this.status = 'connected';
 			this.#refreshParticipants();
-			// Monitor choices made while connecting are applied now.
-			await this.#publishPreview();
 		} catch (cause) {
 			this.status = 'error';
 			this.error = cause instanceof Error ? cause.message : String(cause);
@@ -160,23 +151,6 @@ export class CallSession {
 			this.#loopback = new LoopbackMonitor(this.options.credentials.identity);
 			await this.#loopback.start(await this.options.monitorCredentials());
 		}
-		await this.#publishPreview();
-	}
-
-	async setPreviewLanguage(code: string): Promise<void> {
-		this.previewLanguage = code;
-		if (this.monitor === 'translated') await this.#publishPreview();
-	}
-
-	/**
-	 * Tells the agent which language to translate us into for ourselves (empty = off).
-	 * Before the connection is up this is a no-op; `connect` calls it again.
-	 */
-	async #publishPreview(): Promise<void> {
-		if (this.status !== 'connected') return;
-		const preview = this.monitor === 'translated' ? this.previewLanguage : '';
-		await this.#room.localParticipant.setAttributes({ [PREVIEW_ATTRIBUTE]: preview });
-		this.#syncTranslatedTracks();
 	}
 
 	async toggleMute(): Promise<void> {
@@ -295,9 +269,6 @@ export class CallSession {
 				if (topic !== CAPTIONS_TOPIC) return;
 				const caption = parseCaption(payload);
 				if (!caption) return;
-				if (caption.speaker === this.options.credentials.identity && caption.kind === 'original') {
-					this.ownSpokenLanguage = caption.language;
-				}
 				this.captions.push(caption);
 				this.transcript.record(caption, this.#nameOf(caption.speaker));
 			})
@@ -350,18 +321,8 @@ export class CallSession {
 	#listener(): Listener {
 		return {
 			identity: this.options.credentials.identity,
-			outputLanguage: this.options.outputLanguage,
-			preview: this.monitor === 'translated' ? this.previewLanguage : undefined
+			outputLanguage: this.options.outputLanguage
 		};
-	}
-
-	/** Re-subscribes to wanted translations and drops unwanted ones after a change. */
-	#syncTranslatedTracks(): void {
-		const agent = this.#room.remoteParticipants.get(AGENT_IDENTITY);
-		for (const publication of agent?.trackPublications.values() ?? []) {
-			const wanted = this.#wants(publication);
-			if (wanted !== publication.isSubscribed) publication.setSubscribed(wanted);
-		}
 	}
 
 	#nameOf(identity: string): string {

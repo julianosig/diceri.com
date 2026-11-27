@@ -11,8 +11,6 @@ export {
 	originalVolume,
 	OUTPUT_LANGUAGE_ATTRIBUTE,
 	parseTranslatedTrack,
-	PREVIEW_ATTRIBUTE,
-	sameLanguage,
 	wantsTranslatedTrack,
 	type Listener,
 	type TranslatedTrack

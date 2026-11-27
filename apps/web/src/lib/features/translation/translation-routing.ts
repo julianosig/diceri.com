@@ -5,8 +5,6 @@
 
 export const AGENT_IDENTITY = 'diceri-translator';
 export const CAPTIONS_TOPIC = 'diceri.captions';
-/** Attribute asking the agent to translate this speaker for themselves (apps/media-agent/src/targets.rs). */
-export const PREVIEW_ATTRIBUTE = 'preview_language';
 /** Attribute with the language a participant hears everyone in (set by the API token). */
 export const OUTPUT_LANGUAGE_ATTRIBUTE = 'output_language';
 /** Volume of the original voice under a translation, like an interpreter booth. */
@@ -44,17 +42,11 @@ export interface Listener {
 	identity: string;
 	/** Language this listener hears everyone in. */
 	outputLanguage: string;
-	/** Language this listener previews their own voice in, if any. */
-	preview: string | undefined;
 }
 
-/**
- * Whether a listener plays a translated track: translations of others into their
- * language, or their own voice in the language they are previewing.
- */
+/** Whether a listener plays a translated track: others translated into their language. */
 export function wantsTranslatedTrack(track: TranslatedTrack, listener: Listener): boolean {
-	if (track.speaker === listener.identity) {
-		return listener.preview !== undefined && sameLanguage(track.language, listener.preview);
-	}
-	return sameLanguage(track.language, listener.outputLanguage);
+	return (
+		track.speaker !== listener.identity && sameLanguage(track.language, listener.outputLanguage)
+	);
 }

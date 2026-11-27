@@ -186,17 +186,11 @@ export const fr: Messages = {
 		monitorOff: 'Désactivé',
 		local: 'Local',
 		viaServer: 'Via le serveur',
-		translated: 'Traduit',
 		monitorOffHint: 'Vous ne vous entendez pas.',
 		localHint:
 			'Écoutez votre micro après le filtre anti-bruit, instantanément. Pour juger le filtre.',
 		viaServerHint:
 			'Écoutez-vous après un aller-retour par le serveur média. Pour juger la transmission.',
-		translatedHint:
-			'Écoutez votre propre voix traduite par l’agent. Parlez, faites une pause, écoutez.',
-		translateMeInto: 'Me traduire en',
-		sameLanguage: (language: string) =>
-			`Vous parlez ${language}, la langue que vous avez choisie : il n’y a rien à traduire. Choisissez une autre langue pour vous entendre traduit.`,
 		connection: 'Connexion',
 		direction: 'Sens',
 		bitrate: 'Débit',

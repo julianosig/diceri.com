@@ -33,16 +33,14 @@ describe('language rules', () => {
 });
 
 describe('wantsTranslatedTrack', () => {
-	const me = { identity: 'me', outputLanguage: 'pt-BR', preview: undefined };
+	const me = { identity: 'me', outputLanguage: 'pt-BR' };
 
 	it('plays translations of others into my language only', () => {
 		expect(wantsTranslatedTrack({ speaker: 'bob', language: 'pt-BR' }, me)).toBe(true);
 		expect(wantsTranslatedTrack({ speaker: 'bob', language: 'es' }, me)).toBe(false);
 	});
 
-	it('plays my own voice only in the preview language', () => {
-		const own = { speaker: 'me', language: 'ja' };
-		expect(wantsTranslatedTrack(own, me)).toBe(false);
-		expect(wantsTranslatedTrack(own, { ...me, preview: 'ja' })).toBe(true);
+	it('never plays my own voice back', () => {
+		expect(wantsTranslatedTrack({ speaker: 'me', language: 'pt-BR' }, me)).toBe(false);
 	});
 });

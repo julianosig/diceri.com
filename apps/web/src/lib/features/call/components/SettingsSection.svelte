@@ -10,10 +10,9 @@
 	let { title, icon: Icon, children }: Props = $props();
 </script>
 
-<!-- One group of the call settings panel: an icon-led title, then its controls. -->
-<section
-	class="flex flex-col gap-3 border-t border-ink-muted/15 pt-5 first-of-type:border-t-0 first-of-type:pt-0"
->
+<!-- One group of the call settings panel: an icon-led title, then its controls; groups are
+	separated by space alone, no rules. -->
+<section class="flex flex-col gap-3 not-first-of-type:mt-4">
 	<h3 class="flex items-center gap-2 text-xs font-semibold tracking-wider text-ink-muted uppercase">
 		<Icon class="size-4 text-brand-500" />
 		{title}

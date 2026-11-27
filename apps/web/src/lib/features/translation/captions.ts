@@ -28,8 +28,7 @@ export function parseCaption(payload: Uint8Array): CaptionMessage | undefined {
 
 /**
  * Whether a listener should see a caption: speech detected in their output
- * language as said, everything else as a translation into it, and, while
- * previewing, their own recognized text and its translation.
+ * language as said, everything else as a translation into it; never their own speech.
  * `speakerLanguage` is the language last detected for the speaker (for partials).
  */
 export function isCaptionForListener(
@@ -37,11 +36,7 @@ export function isCaptionForListener(
 	listener: Listener,
 	speakerLanguage: string | undefined
 ): boolean {
-	if (message.speaker === listener.identity) {
-		if (listener.preview === undefined) return false;
-		if (message.kind === 'original') return true;
-		return message.kind === 'translation' && sameLanguage(message.language, listener.preview);
-	}
+	if (message.speaker === listener.identity) return false;
 	if (message.kind === 'partial') return sameLanguage(speakerLanguage, listener.outputLanguage);
 	return sameLanguage(message.language, listener.outputLanguage);
 }

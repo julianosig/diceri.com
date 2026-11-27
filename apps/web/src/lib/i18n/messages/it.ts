@@ -186,16 +186,11 @@ export const it: Messages = {
 		monitorOff: 'Disattivato',
 		local: 'Locale',
 		viaServer: 'Tramite server',
-		translated: 'Tradotto',
 		monitorOffHint: 'Non senti la tua voce.',
 		localHint:
 			'Ascolta il tuo microfono dopo il filtro antirumore, all’istante. Per valutare il filtro.',
 		viaServerHint:
 			'Ascoltati dopo un giro di andata e ritorno sul server multimediale. Per valutare la trasmissione.',
-		translatedHint: 'Ascolta la tua voce tradotta dall’agente. Parla, fai una pausa e ascolta.',
-		translateMeInto: 'Traducimi in',
-		sameLanguage: (language: string) =>
-			`Stai parlando ${language}, la lingua che hai scelto, quindi non c’è niente da tradurre. Scegli un’altra lingua per sentirti tradotto.`,
 		connection: 'Connessione',
 		direction: 'Direzione',
 		bitrate: 'Bitrate',

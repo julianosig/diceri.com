@@ -92,36 +92,12 @@ test('three people hear each other translated into their own language', async ({
 	}
 });
 
-test('a person alone can hear their own voice translated', async ({ baseURL }) => {
-	test.setTimeout(120_000);
-	const url = baseURL ?? 'http://127.0.0.1:4180';
-	const bob = await launch('Bob', 'en', url);
-	try {
-		await signUp(bob.page);
-		await openMyRoom(bob.page);
-		await fillProfile(bob);
-		await bob.page.getByRole('button', { name: 'Join now' }).click();
-		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
-			timeout: 20_000
-		});
-		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
-		await bob.page.getByRole('radio', { name: 'Translated' }).click();
-		await bob.page.getByLabel('Translate me into').selectOption('pt-BR');
-
-		await expectCaption(bob, 'Bob', /parque/i);
-		await expect
-			.poll(() => bob.page.locator('audio').count(), { timeout: 20_000 })
-			.toBeGreaterThan(0);
-	} finally {
-		await bob.browser.close();
-	}
-});
-
 test('detects the spoken language regardless of the output language', async ({ baseURL }) => {
 	test.setTimeout(120_000);
 	const url = baseURL ?? 'http://127.0.0.1:4180';
-	// Hears in English but speaks Portuguese (the pt-BR fixture).
+	// Bob hears English but speaks Portuguese (the pt-BR fixture); Ana hears Spanish.
 	const bob = await launch('Bob', 'en', url, 'pt-BR');
+	const ana = await launch('Ana', 'es', url);
 	try {
 		await signUp(bob.page);
 		await openMyRoom(bob.page);
@@ -130,14 +106,11 @@ test('detects the spoken language regardless of the output language', async ({ b
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
 			timeout: 20_000
 		});
-		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
-		await bob.page.getByRole('radio', { name: 'Translated' }).click();
-		await bob.page.getByLabel('Translate me into').selectOption('es');
+		await admit(bob.page, ana);
 
-		await expectCaption(bob, 'Bob', /contrato/i);
-		await expectCaption(bob, 'Bob', /mañana|tarde/i);
+		await expectCaption(ana, 'Bob', /mañana|tarde/i);
 	} finally {
-		await bob.browser.close();
+		await Promise.all([bob.browser.close(), ana.browser.close()]);
 	}
 });
 
@@ -145,6 +118,7 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 	test.setTimeout(120_000);
 	const url = baseURL ?? 'http://127.0.0.1:4180';
 	const bob = await launch('Bob', 'en', url);
+	const ana = await launch('Ana', 'pt-BR', url);
 	try {
 		await signUp(bob.page);
 		await openMyRoom(bob.page);
@@ -158,40 +132,12 @@ test('recording a voice takes seconds and the call keeps translating', async ({ 
 		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
 			timeout: 20_000
 		});
-		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
-		await bob.page.getByRole('radio', { name: 'Translated' }).click();
-		await bob.page.getByLabel('Translate me into').selectOption('pt-BR');
+		await admit(bob.page, ana);
 		// The fixture is a synthetic voice, which the provider refuses to clone-speak,
 		// so this also proves the stock-voice fallback keeps translations flowing.
-		await expectCaption(bob, 'Bob', /parque/i);
+		await expectCaption(ana, 'Bob', /parque/i);
 	} finally {
-		await bob.browser.close();
-	}
-});
-
-test('previewing in the language you speak explains there is nothing to translate', async ({
-	baseURL
-}) => {
-	test.setTimeout(120_000);
-	const url = baseURL ?? 'http://127.0.0.1:4180';
-	// Hears English and speaks English; the preview starts in the output language.
-	const bob = await launch('Bob', 'en', url);
-	try {
-		await signUp(bob.page);
-		await openMyRoom(bob.page);
-		await fillProfile(bob);
-		await bob.page.getByRole('button', { name: 'Join now' }).click();
-		await expect(bob.page.getByRole('button', { name: 'Leave call' })).toBeVisible({
-			timeout: 20_000
-		});
-		await bob.page.getByRole('button', { name: 'Audio settings' }).click();
-		await bob.page.getByRole('radio', { name: 'Translated' }).click();
-		await expect(bob.page.getByLabel('Translate me into')).toHaveValue('en');
-		await expect(bob.page.getByRole('status')).toContainText("You're speaking English", {
-			timeout: 30_000
-		});
-	} finally {
-		await bob.browser.close();
+		await Promise.all([bob.browser.close(), ana.browser.close()]);
 	}
 });
 

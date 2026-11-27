@@ -188,16 +188,10 @@ export const de: Messages = {
 		monitorOff: 'Aus',
 		local: 'Lokal',
 		viaServer: 'Über Server',
-		translated: 'Übersetzt',
 		monitorOffHint: 'Du hörst dich nicht selbst.',
 		localHint: 'Hör dein Mikrofon nach dem Rauschfilter, sofort. Zum Beurteilen des Filters.',
 		viaServerHint:
 			'Hör dich nach einem Umweg über den Medienserver. Zum Beurteilen der Übertragung.',
-		translatedHint:
-			'Hör deine eigene Stimme, vom Agenten übersetzt. Sprich, mach eine Pause und hör zu.',
-		translateMeInto: 'Mich übersetzen auf',
-		sameLanguage: (language: string) =>
-			`Du sprichst ${language}, die Sprache, die du gewählt hast, also gibt es nichts zu übersetzen. Wähle eine andere Sprache, um dich übersetzt zu hören.`,
 		connection: 'Verbindung',
 		direction: 'Richtung',
 		bitrate: 'Bitrate',

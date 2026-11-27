@@ -184,15 +184,9 @@ export const ja: Messages = {
 		monitorOff: 'オフ',
 		local: 'ローカル',
 		viaServer: 'サーバー経由',
-		translated: '翻訳',
 		monitorOffHint: '自分の声は聞こえません。',
 		localHint: 'ノイズフィルタ後のマイク音声をすぐに聞きます。フィルタの品質を確認できます。',
 		viaServerHint: 'メディアサーバーを往復した自分の声を聞きます。伝送品質を確認できます。',
-		translatedHint:
-			'エージェントが翻訳した自分の声を聞きます。話して、間をおいて、聞いてください。',
-		translateMeInto: '自分の声の翻訳先',
-		sameLanguage: (language: string) =>
-			`選んだ言語（${language}）で話しているため、翻訳するものがありません。翻訳された自分の声を聞くには、別の言語を選んでください。`,
 		connection: '接続',
 		direction: '方向',
 		bitrate: 'ビットレート',

@@ -187,15 +187,10 @@ export const en = {
 		monitorOff: 'Off',
 		local: 'Local',
 		viaServer: 'Via server',
-		translated: 'Translated',
 		monitorOffHint: 'You do not hear yourself.',
 		localHint: 'Hear your mic after the noise filter, instantly. Judges filter quality.',
 		viaServerHint:
 			'Hear yourself after a round trip through the media server. Judges transmission.',
-		translatedHint: 'Hear your own voice translated by the agent. Speak, pause, and listen.',
-		translateMeInto: 'Translate me into',
-		sameLanguage: (language: string) =>
-			`You're speaking ${language}, the language you picked, so there is nothing to translate. Pick another language to hear yourself translated.`,
 		connection: 'Connection',
 		direction: 'Direction',
 		bitrate: 'Bitrate',
