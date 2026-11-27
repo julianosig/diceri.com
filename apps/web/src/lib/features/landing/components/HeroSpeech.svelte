@@ -101,7 +101,7 @@
 	}
 
 	.token-out {
-		background: var(--color-brand-500);
+		background: var(--color-brand-600);
 		animation: travel-out 6s ease-in-out both;
 	}
 

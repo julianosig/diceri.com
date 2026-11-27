@@ -26,7 +26,7 @@
 -->
 <!-- Smaller on phones, so the Diceri mark between them can be larger. -->
 <div class={cn('absolute bottom-0 h-[70%] sm:h-[94%]', className)}>
-	<img {src} {width} {height} alt="" class="h-full w-auto" />
+	<img {src} {width} {height} alt="" decoding="async" fetchpriority="low" class="h-full w-auto" />
 	{#key cycle}
 		{#if cue === 'talk'}
 			<span class="cue mouth-spot" style:left="{x}%" style:top="{y}%" aria-hidden="true">
