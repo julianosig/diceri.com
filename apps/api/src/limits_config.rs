@@ -6,7 +6,7 @@ use std::str::FromStr;
 
 use anyhow::Context as _;
 use diceri_application::use_cases::{Capacity, PlanCatalogue};
-use diceri_domain::PlanLimits;
+use diceri_domain::{PlanLimits, Room};
 
 /// `name` parsed as a number, or `default` when unset.
 fn number<T: FromStr>(name: &str, default: T) -> anyhow::Result<T> {
@@ -17,6 +17,19 @@ fn number<T: FromStr>(name: &str, default: T) -> anyhow::Result<T> {
             .with_context(|| format!("{name} must be a whole number")),
         Err(_) => Ok(default),
     }
+}
+
+/// `DICERI_<PLAN>_PARTICIPANTS`: from 1 (the owner alone) to as many people as a room can hold
+/// voices for, since joining needs one's own voice.
+fn participants(prefix: &str, default: u8) -> anyhow::Result<u8> {
+    let name = format!("DICERI_{prefix}_PARTICIPANTS");
+    let value: u8 = number(&name, default)?;
+    let most = u8::try_from(Room::MAX_VOICES).unwrap_or(u8::MAX);
+    anyhow::ensure!(
+        (1..=most).contains(&value),
+        "{name} must be between 1 and {most}"
+    );
+    Ok(value)
 }
 
 /// One plan: `DICERI_<PLAN>_{CALL,DAILY,MONTHLY}_MINUTES` and `DICERI_<PLAN>_PRICE_CENTS`.
@@ -38,10 +51,7 @@ fn plan(prefix: &str, defaults: PlanLimits) -> anyhow::Result<PlanLimits> {
             &format!("DICERI_{prefix}_PRICE_CENTS"),
             defaults.monthly_price_cents,
         )?,
-        participants: number(
-            &format!("DICERI_{prefix}_PARTICIPANTS"),
-            defaults.participants,
-        )?,
+        participants: participants(prefix, defaults.participants)?,
     })
 }
 
