@@ -260,6 +260,8 @@ impl AdmissionService {
             RequestStatus::Denied => KnockOutcome::Denied,
             RequestStatus::Admitted => {
                 room.ensure_open()?;
+                // The voice may have been recorded again (another tab) while waiting.
+                ensure_voice_belongs(&room, &request.account, &request.profile)?;
                 let identity = self.seat(&room, &request.account).await?;
                 let ticket = self.grant(
                     &room.id,
