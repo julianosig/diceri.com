@@ -65,14 +65,18 @@ export class CallMonitor {
 	/** Superseded or failed attempts never linger. */
 	async #startLoopback(request: number): Promise<void> {
 		const current = () => request === this.#request && !this.options.isClosing();
+		let loopback: LoopbackMonitor | undefined;
 		try {
 			const credentials = await this.options.credentials();
 			if (!current()) return;
-			const loopback = new LoopbackMonitor(this.options.identity);
+			loopback = new LoopbackMonitor(this.options.identity);
 			this.#loopback = loopback;
 			await loopback.start(credentials);
 			if (!current()) await loopback.stop();
 		} catch {
+			// A listener that connected before failing never stays behind.
+			await loopback?.stop().catch(() => undefined);
+			if (this.#loopback === loopback) this.#loopback = undefined;
 			if (!current()) return;
 			this.mode = 'off';
 			this.options.onFailed();
