@@ -9,8 +9,7 @@ use diceri_domain::{Account, Room, RoomId, Username};
 
 use super::plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 use crate::ports::{
-    AccountRepository, CallMembers, Clock, MediaAccessError, MediaPresence, MediaRoomCloser,
-    RoomRepository, UsageRepository,
+    AccountRepository, Clock, MediaPresence, MediaRoomCloser, RoomRepository, UsageRepository,
 };
 
 const DAY_MS: u64 = 86_400_000;
@@ -294,82 +293,6 @@ impl MeteringService {
     }
 }
 
-/// Whether anyone is in `room`'s call (a provider error counts as nobody).
-async fn someone_in(presence: &dyn MediaPresence, room: &RoomId) -> bool {
-    match presence.people_in(room).await {
-        Ok(people) => people > 0,
-        Err(error) => {
-            tracing::warn!(%error, room_id = %room, "usage meter could not see the call");
-            false
-        }
-    }
-}
-
-async fn close_ended(closer: &dyn MediaRoomCloser, room: &RoomId) {
-    if let Err(error) = closer.close(room).await {
-        warn_not_closed(&error, room);
-    }
-}
-
-/// Hidden listeners are named `monitor-<seat>`: one whose person is not in the call goes.
-async fn remove_orphan_listeners(
-    presence: &dyn MediaPresence,
-    closer: &dyn MediaRoomCloser,
-    room: &RoomId,
-) {
-    let Ok(CallMembers { people, listeners }) = presence.call_members(room).await else {
-        return;
-    };
-    for listener in listeners {
-        let seat = listener.strip_prefix("monitor-");
-        if seat.is_none_or(|seat| !people.iter().any(|person| person == seat))
-            && let Err(error) = closer.remove(room, &listener).await
-        {
-            tracing::warn!(%error, room_id = %room, "listener not removed");
-        }
-    }
-}
-
-/// Runs `work` for at most `SWEEP_BUDGET`: a slow media server never stalls the meter.
-async fn within_budget(work: impl Future<Output = ()>, what: &str) {
-    if tokio::time::timeout(SWEEP_BUDGET, work).await.is_err() {
-        tracing::warn!(what, "took too long; the rest waits for the next minute");
-    }
-}
-
-/// Disconnects everyone from the calls that reached their plan's limit, all at once, each
-/// with its own deadline.
-async fn close_at_limit(closer: &Arc<dyn MediaRoomCloser>, rooms: Vec<RoomId>) {
-    let mut closing = tokio::task::JoinSet::new();
-    for room in rooms {
-        tracing::info!(room_id = %room, "call ended: plan limit reached");
-        let closer = closer.clone();
-        closing.spawn(async move {
-            if tokio::time::timeout(CLOSE_TIMEOUT, close_ended(closer.as_ref(), &room))
-                .await
-                .is_err()
-            {
-                warn_close_timed_out(&room);
-            }
-        });
-    }
-    while closing.join_next().await.is_some() {}
-}
-
-fn warn_close_timed_out(room: &RoomId) {
-    tracing::warn!(room_id = %room, "media room close timed out");
-}
-
-fn warn_not_closed(error: &MediaAccessError, room: &RoomId) {
-    tracing::warn!(%error, room_id = %room, "media room not closed");
-}
-
-/// How long tidying one media room (closing it, or removing listeners) may take.
-const CLOSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
-
-/// How long the minute's sweep of ended calls may take before charging goes ahead.
-const SWEEP_BUDGET: std::time::Duration = std::time::Duration::from_secs(10);
-
 /// Days since the Unix epoch (UTC) of an instant in milliseconds.
 fn utc_day(ms: u64) -> u32 {
     u32::try_from(ms / DAY_MS).unwrap_or(u32::MAX)
@@ -389,6 +312,11 @@ fn month_start(day: u32) -> u32 {
     u32::try_from(i64::from(day) - (day_of_month - 1)).unwrap_or(0)
 }
 
+mod media;
+
+use media::{
+    CLOSE_TIMEOUT, close_at_limit, close_ended, remove_orphan_listeners, someone_in, within_budget,
+};
+
 #[cfg(test)]
-#[path = "metering_tests.rs"]
 mod tests;
