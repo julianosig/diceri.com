@@ -137,7 +137,7 @@ impl Harness {
         }
         drop(tx);
         let (_targets_tx, targets_rx) = watch::channel(targets.iter().map(|t| lang(t)).collect());
-        pipeline.run(rx, targets_rx).await;
+        pipeline.run(rx, targets_rx, 0).await;
         Self {
             output,
             translator,
@@ -300,7 +300,7 @@ async fn an_unchanged_translation_is_captioned_but_not_spoken() {
     }
     drop(tx);
     let (_targets, targets_rx) = watch::channel(vec![lang("pt-BR")]);
-    pipeline.run(rx, targets_rx).await;
+    pipeline.run(rx, targets_rx, 0).await;
     let translations = output
         .captions
         .lock()
@@ -365,7 +365,7 @@ async fn speaks_the_first_sentence_before_the_translation_ends() {
     }
     drop(tx);
     let (_targets, targets_rx) = watch::channel(vec![lang("en")]);
-    pipeline.run(rx, targets_rx).await;
+    pipeline.run(rx, targets_rx, 0).await;
     let spoken: Vec<usize> = output.spoken.lock().unwrap().iter().map(|s| s.2).collect();
     assert_eq!(
         spoken,

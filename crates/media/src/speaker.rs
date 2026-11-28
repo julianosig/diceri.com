@@ -76,9 +76,19 @@ impl SpeakerPipeline {
     }
 
     /// Runs until the transcript stream ends, then lets queued phrases finish.
-    /// `targets` holds the languages listeners want and may change at any time.
-    pub async fn run(self, mut events: Events, targets: watch::Receiver<Vec<LanguageCode>>) {
-        let mut state = StreamState::default();
+    /// `targets` holds the languages listeners want and may change at any time. Phrases are
+    /// numbered from `first_phrase`: a stream reopened for the same speaker must start above
+    /// the last one, or its captions would replace earlier lines of the transcript.
+    pub async fn run(
+        self,
+        mut events: Events,
+        targets: watch::Receiver<Vec<LanguageCode>>,
+        first_phrase: u64,
+    ) {
+        let mut state = StreamState {
+            phrase: first_phrase,
+            ..StreamState::default()
+        };
         while let Some(event) = events.recv().await {
             match event {
                 Ok(event) => self.on_event(&mut state, event, &targets).await,

@@ -86,7 +86,7 @@ pub(crate) async fn run(
             output.clone(),
             conversation.clone(),
         )
-        .run(stream.events, targets.clone())
+        .run(stream.events, targets.clone(), first_phrase())
         .await;
         if track_ended.load(Ordering::Relaxed) {
             return;
@@ -127,6 +127,17 @@ fn pump_audio(
             }
         }
     });
+}
+
+/// Numbers a new stream's phrases from the current time in milliseconds: always above the
+/// phrases of any earlier stream for the same speaker (a reconnect, or a new microphone after
+/// a reload), which go up by one per phrase.
+fn first_phrase() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_or(0, |since| {
+            u64::try_from(since.as_millis()).unwrap_or(u64::MAX)
+        })
 }
 
 fn warn_reopening(speaker: &str) {
