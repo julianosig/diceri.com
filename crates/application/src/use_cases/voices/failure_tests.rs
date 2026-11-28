@@ -111,3 +111,76 @@ async fn deleting_a_voice_the_provider_cannot_delete_keeps_everything_for_a_retr
     assert!(service.has_saved(&ana).await.unwrap());
     assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), voice);
 }
+
+/// Takes a while to clone and longer to delete (like a real provider); remembers both.
+#[derive(Default)]
+struct SlowCloner {
+    made: Mutex<Vec<String>>,
+    deleted: Mutex<Vec<String>>,
+}
+
+#[async_trait]
+impl VoiceCloner for SlowCloner {
+    fn provider(&self) -> &'static str {
+        "inworld"
+    }
+
+    async fn create(&self, _: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
+        tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+        let mut made = self.made.lock().unwrap();
+        let voice = format!("clone-{}", made.len());
+        made.push(voice.clone());
+        Ok(VoiceId(voice))
+    }
+
+    async fn delete(&self, voice: &VoiceId) -> Result<(), VoiceCloneError> {
+        tokio::time::sleep(std::time::Duration::from_millis(60)).await;
+        self.deleted.lock().unwrap().push(voice.0.clone());
+        Ok(())
+    }
+
+    async fn delete_all_named(&self, _: &str) -> Result<usize, VoiceCloneError> {
+        Ok(0)
+    }
+}
+
+#[tokio::test]
+async fn deleting_while_another_tab_records_leaves_no_untracked_clone() {
+    let (service, _, room_id) = setup().await;
+    let cloner = Arc::new(SlowCloner::default());
+    let samples = Arc::new(Samples::default());
+    let service = VoiceService {
+        cloner: cloner.clone(),
+        ..service
+    }
+    .with_samples(
+        samples.clone(),
+        Arc::new(crate::test_support::FakeClock(
+            std::sync::atomic::AtomicU64::new(5),
+        )),
+    );
+    let ana = AccountId::from_parts(1, [1; 10]);
+    service
+        .record_for(&room_id, &ana, recording(true))
+        .await
+        .unwrap();
+    // One tab deletes the voice; while the provider deletes it, another tab records again.
+    let (deleted, _) = tokio::join!(service.delete_saved(&ana), async {
+        tokio::time::sleep(std::time::Duration::from_millis(5)).await;
+        service.record_for(&room_id, &ana, recording(true)).await
+    });
+    deleted.unwrap();
+    // Every clone ever made is either deleted at the provider or still tracked.
+    let kept = samples
+        .kept_clone(&ana)
+        .await
+        .unwrap()
+        .map(|kept| kept.voice.0);
+    let gone = cloner.deleted.lock().unwrap().clone();
+    for made in cloner.made.lock().unwrap().iter() {
+        assert!(
+            gone.contains(made) || kept.as_ref() == Some(made),
+            "{made} untracked"
+        );
+    }
+}

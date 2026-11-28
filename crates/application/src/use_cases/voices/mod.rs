@@ -1,4 +1,5 @@
-use std::sync::Arc;
+use std::collections::HashMap;
+use std::sync::{Arc, PoisonError};
 
 use diceri_domain::{AccountId, Room, RoomCode, RoomId, RoomRuleError};
 
@@ -74,6 +75,25 @@ pub struct VoiceService {
     account_prefix: String,
     /// Where each account's recording is kept (ADR 0015); `None`: not kept.
     samples: Option<(Arc<dyn VoiceSampleStore>, Arc<dyn Clock>)>,
+    /// One voice operation at a time per account: a recording finishing while "Delete my
+    /// voice" runs (another tab) must not leave a clone nobody tracks.
+    locks: Arc<AccountLocks>,
+}
+
+#[derive(Default)]
+struct AccountLocks(std::sync::Mutex<HashMap<AccountId, Arc<tokio::sync::Mutex<()>>>>);
+
+impl AccountLocks {
+    async fn lock(&self, account: &AccountId) -> tokio::sync::OwnedMutexGuard<()> {
+        let lock = self
+            .0
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .entry(*account)
+            .or_default()
+            .clone();
+        lock.lock_owned().await
+    }
 }
 
 impl std::fmt::Debug for VoiceService {
@@ -99,6 +119,7 @@ impl VoiceService {
             name_prefix: clone_name_prefix(deployment),
             account_prefix: account_clone_prefix(deployment),
             samples: None,
+            locks: Arc::default(),
         }
     }
 
@@ -129,6 +150,7 @@ impl VoiceService {
         account: &AccountId,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
+        let _one_at_a_time = self.locks.lock(account).await;
         let room = self.checked_room(code, &sample).await?;
         let Some((samples, clock)) = &self.samples else {
             let voice = self.cloner.create(&self.call_name(&room), sample).await?;
@@ -164,6 +186,7 @@ impl VoiceService {
         account: &AccountId,
     ) -> Result<VoiceId, VoiceError> {
         let (samples, _) = self.samples.as_ref().ok_or(VoiceError::NoSavedVoice)?;
+        let _one_at_a_time = self.locks.lock(account).await;
         let room = self
             .rooms
             .find_by_code(code)
@@ -207,6 +230,7 @@ impl VoiceService {
         let Some((samples, _)) = &self.samples else {
             return Ok(false);
         };
+        let _one_at_a_time = self.locks.lock(account).await;
         // The provider first: if it fails, nothing is deleted and the person can try again,
         // instead of losing the only reference to a clone that still exists.
         if let Some(kept) = samples
