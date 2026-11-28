@@ -180,8 +180,7 @@ export class CallSession {
 	async #restartMicrophone(patch: Partial<AudioSettings>, revision: number): Promise<void> {
 		const track = this.#micTrack();
 		if (!track) return;
-		const mode = this.monitor;
-		await this.setMonitor('off');
+		await this.#monitor.pause();
 		// Left the call while the monitor closed: never open a microphone again.
 		if (this.#isClosing()) return;
 		const target = { ...this.#applied, ...patch };
@@ -211,7 +210,8 @@ export class CallSession {
 		this.activeFilter = result.active;
 		this.error = problem ?? result.error;
 		await this.#startMeter(outgoingMediaTrack(track));
-		await this.setMonitor(mode);
+		// The caller's latest monitor choice, even one made during the change.
+		await this.#monitor.resume(outgoingMediaTrack(track));
 	}
 
 	/** A microphone track with the current settings, muted when the caller is. */
