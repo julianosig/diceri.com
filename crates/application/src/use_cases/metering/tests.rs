@@ -201,6 +201,11 @@ impl Fixture {
     }
 }
 
+/// Lets calls closed on their own task finish closing.
+async fn settle() {
+    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
+}
+
 #[tokio::test]
 async fn charges_the_owner_only_while_someone_is_in_the_call() {
     let f = fixture();
@@ -227,6 +232,7 @@ async fn ends_a_call_at_the_plans_call_limit() {
         f.metering.tick().await;
     }
     assert!(f.room(&room).await.is_ended());
+    settle().await;
     assert_eq!(*f.closer.0.lock().unwrap(), vec![room.id]);
 }
 
@@ -327,6 +333,7 @@ async fn an_ended_call_still_open_at_the_media_server_is_closed() {
     let other = RoomId::from_parts(9, [9; 10]);
     f.people.0.lock().unwrap().insert(other, 2);
     f.metering.tick().await;
+    settle().await;
     assert_eq!(*f.closer.0.lock().unwrap(), vec![room.id]);
 }
 

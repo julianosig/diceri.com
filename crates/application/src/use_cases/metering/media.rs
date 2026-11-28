@@ -1,22 +1,44 @@
 //! The meter's work with the media server: who is in each call, and closing or tidying
 //! media rooms, each with a deadline so a slow server never stalls the meter.
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use diceri_domain::RoomId;
 
 use crate::ports::{CallMembers, MediaAccessError, MediaPresence, MediaRoomCloser};
 
-/// Whether anyone is in `room`'s call (a provider error counts as nobody).
-/// Whether anyone is in `room`'s call (a provider error counts as nobody).
-pub(super) async fn someone_in(presence: &dyn MediaPresence, room: &RoomId) -> bool {
-    match presence.people_in(room).await {
-        Ok(people) => people > 0,
-        Err(error) => {
-            tracing::warn!(%error, room_id = %room, "usage meter could not see the call");
-            false
+/// The rooms with someone in their call, asked all at once.
+pub(super) async fn occupied(
+    presence: &Arc<dyn MediaPresence>,
+    rooms: impl Iterator<Item = RoomId>,
+) -> HashSet<RoomId> {
+    let mut checks = tokio::task::JoinSet::new();
+    for room in rooms {
+        let presence = presence.clone();
+        checks.spawn(async move { (room, someone_in(presence.as_ref(), &room).await) });
+    }
+    let mut busy = HashSet::new();
+    while let Some(Ok((room, someone))) = checks.join_next().await {
+        if someone {
+            busy.insert(room);
         }
     }
+    busy
+}
+
+/// Whether anyone is in `room`'s call (a provider error counts as nobody).
+pub(super) async fn someone_in(presence: &dyn MediaPresence, room: &RoomId) -> bool {
+    match tokio::time::timeout(CLOSE_TIMEOUT, presence.people_in(room)).await {
+        Ok(Ok(people)) => people > 0,
+        Ok(Err(error)) => warn_unseen(room, &error.to_string()),
+        Err(_) => warn_unseen(room, "media server too slow"),
+    }
+}
+
+pub(super) fn warn_unseen(room: &RoomId, reason: &str) -> bool {
+    tracing::warn!(room_id = %room, reason, "usage meter could not see the call");
+    false
 }
 
 pub(super) async fn close_ended(closer: &dyn MediaRoomCloser, room: &RoomId) {
@@ -51,23 +73,15 @@ pub(super) async fn within_budget(work: impl Future<Output = ()>, what: &str) {
     }
 }
 
-/// Disconnects everyone from the calls that reached their plan's limit, all at once, each
-/// with its own deadline.
-pub(super) async fn close_at_limit(closer: &Arc<dyn MediaRoomCloser>, rooms: Vec<RoomId>) {
-    let mut closing = tokio::task::JoinSet::new();
-    for room in rooms {
-        tracing::info!(room_id = %room, "call ended: plan limit reached");
-        let closer = closer.clone();
-        closing.spawn(async move {
-            if tokio::time::timeout(CLOSE_TIMEOUT, close_ended(closer.as_ref(), &room))
-                .await
-                .is_err()
-            {
-                warn_close_timed_out(&room);
-            }
-        });
+/// Disconnects everyone from a call that reached its plan's limit, within a deadline.
+pub(super) async fn close_within_deadline(closer: Arc<dyn MediaRoomCloser>, room: RoomId) {
+    tracing::info!(room_id = %room, "call ended: plan limit reached");
+    if tokio::time::timeout(CLOSE_TIMEOUT, close_ended(closer.as_ref(), &room))
+        .await
+        .is_err()
+    {
+        warn_close_timed_out(&room);
     }
-    while closing.join_next().await.is_some() {}
 }
 
 pub(super) fn warn_close_timed_out(room: &RoomId) {

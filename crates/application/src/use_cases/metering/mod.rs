@@ -178,42 +178,41 @@ impl MeteringService {
             "tidying media rooms",
         )
         .await;
-        let (in_call, reached) = self.charge_live_calls(presence.as_ref()).await;
-        // Charged first, closed after, all at once: slow closes never delay a charge.
-        within_budget(
-            close_at_limit(closer, reached),
-            "closing calls at their limit",
-        )
-        .await;
+        let in_call = self.charge_live_calls(presence, closer).await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         calls.in_call = in_call;
         calls.admitted.clear();
     }
 
-    /// Charges every call someone is in; returns those rooms and the ones this ended.
+    /// Charges every call someone is in and returns those rooms. Who is in each call is asked
+    /// all at once, each with a deadline; a call this ends is closed on its own task at once,
+    /// so neither a slow media server nor a slow close holds up another call.
     async fn charge_live_calls(
         &self,
-        presence: &dyn MediaPresence,
-    ) -> (HashSet<RoomId>, Vec<RoomId>) {
+        presence: &Arc<dyn MediaPresence>,
+        closer: &Arc<dyn MediaRoomCloser>,
+    ) -> HashSet<RoomId> {
         let rooms = self
             .rooms
             .live_rooms()
             .await
             .inspect_err(|error| tracing::warn!(%error, "usage meter could not list rooms"))
             .unwrap_or_default();
-        let (mut in_call, mut reached) = (HashSet::new(), Vec::new());
-        for room in rooms {
-            if !someone_in(presence, &room.id).await {
-                continue;
-            }
-            in_call.insert(room.id);
-            match self.charge(room.id).await {
-                Ok(true) => reached.push(room.id),
-                Ok(false) => {}
-                Err(error) => tracing::warn!(%error, room_id = %room.id, "call minute not charged"),
-            }
+        let in_call = occupied(presence, rooms.iter().map(|room| room.id)).await;
+        for room in &in_call {
+            self.charge_or_close(*room, closer).await;
         }
-        (in_call, reached)
+        in_call
+    }
+
+    async fn charge_or_close(&self, room: RoomId, closer: &Arc<dyn MediaRoomCloser>) {
+        match self.charge(room).await {
+            Ok(true) => {
+                tokio::spawn(close_within_deadline(closer.clone(), room));
+            }
+            Ok(false) => {}
+            Err(error) => warn_not_charged(&error, &room),
+        }
     }
 
     /// Closes media rooms still open for calls that ended (a close that failed, or someone
@@ -293,6 +292,10 @@ impl MeteringService {
     }
 }
 
+fn warn_not_charged(error: &LimitError, room: &RoomId) {
+    tracing::warn!(%error, room_id = %room, "call minute not charged");
+}
+
 /// Days since the Unix epoch (UTC) of an instant in milliseconds.
 fn utc_day(ms: u64) -> u32 {
     u32::try_from(ms / DAY_MS).unwrap_or(u32::MAX)
@@ -315,7 +318,8 @@ fn month_start(day: u32) -> u32 {
 mod media;
 
 use media::{
-    CLOSE_TIMEOUT, close_at_limit, close_ended, remove_orphan_listeners, someone_in, within_budget,
+    CLOSE_TIMEOUT, close_ended, close_within_deadline, occupied, remove_orphan_listeners,
+    within_budget,
 };
 
 #[cfg(test)]
