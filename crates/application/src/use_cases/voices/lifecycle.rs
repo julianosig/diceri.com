@@ -1,11 +1,12 @@
-//! How voice operations run: one at a time per account, with retried cleanup of unused
-//! clones.
+//! How voice operations run: one at a time per account, to completion even when the
+//! request that started them is cut short, and with retried cleanup of unused clones.
 
 use std::collections::HashMap;
 use std::sync::{Arc, PoisonError};
 
 use diceri_domain::AccountId;
 
+use super::VoiceError;
 use crate::ports::{VoiceCloneError, VoiceCloner, VoiceId};
 
 /// Attempts at deleting a clone that could not join its call, and the pause between them.
@@ -39,6 +40,16 @@ pub(super) async fn discard_with_retries(cloner: &dyn VoiceCloner, voice: &Voice
             Err(error) => warn_discard_failed(&error, voice),
         }
     }
+}
+
+/// Runs `work` on its own task and waits for it: a request cut short by its time limit
+/// stops waiting, but a clone already made is still kept or deleted, never left untracked.
+pub(super) async fn to_completion<T: Send + 'static>(
+    work: impl Future<Output = Result<T, VoiceError>> + Send + 'static,
+) -> Result<T, VoiceError> {
+    tokio::spawn(work)
+        .await
+        .map_err(|_| VoiceError::Interrupted)?
 }
 
 fn warn_discard_retry(error: &VoiceCloneError, attempt: u32) {

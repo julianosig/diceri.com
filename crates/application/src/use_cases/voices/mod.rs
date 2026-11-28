@@ -51,6 +51,9 @@ pub enum VoiceError {
     NoSavedVoice,
     #[error(transparent)]
     Samples(#[from] VoiceSampleStoreError),
+    /// The operation's task stopped before finishing (a panic).
+    #[error("voice operation stopped unexpectedly")]
+    Interrupted,
 }
 
 impl From<RoomChangeError> for VoiceError {
@@ -133,6 +136,16 @@ impl VoiceService {
         account: &AccountId,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
+        let (this, code, account) = (self.clone(), code.clone(), *account);
+        to_completion(async move { this.record(&code, &account, sample).await }).await
+    }
+
+    async fn record(
+        &self,
+        code: &RoomCode,
+        account: &AccountId,
+        sample: VoiceSample,
+    ) -> Result<VoiceId, VoiceError> {
         let _one_at_a_time = self.locks.lock(account).await;
         let room = self.checked_room(code, &sample).await?;
         let Some((samples, clock)) = &self.samples else {
@@ -168,6 +181,15 @@ impl VoiceService {
     /// The account's voice for this room: its kept clone when the provider holds one
     /// (instant), otherwise a clone made once from the kept recording and kept from then on.
     pub async fn clone_saved(
+        &self,
+        code: &RoomCode,
+        account: &AccountId,
+    ) -> Result<VoiceId, VoiceError> {
+        let (this, code, account) = (self.clone(), code.clone(), *account);
+        to_completion(async move { this.reuse_saved(&code, &account).await }).await
+    }
+
+    async fn reuse_saved(
         &self,
         code: &RoomCode,
         account: &AccountId,
@@ -220,6 +242,11 @@ impl VoiceService {
     /// "Delete my voice": the account's clone at the provider, then the kept recording;
     /// `false` when there was no recording.
     pub async fn delete_saved(&self, account: &AccountId) -> Result<bool, VoiceError> {
+        let (this, account) = (self.clone(), *account);
+        to_completion(async move { this.forget_saved(&account).await }).await
+    }
+
+    async fn forget_saved(&self, account: &AccountId) -> Result<bool, VoiceError> {
         let Some((samples, _)) = &self.samples else {
             return Ok(false);
         };
@@ -335,7 +362,7 @@ fn warn_not_kept(error: &VoiceSampleStoreError, account: &AccountId) {
 
 mod lifecycle;
 
-use lifecycle::{AccountLocks, discard_with_retries};
+use lifecycle::{AccountLocks, discard_with_retries, to_completion};
 
 #[cfg(test)]
 mod failure_tests;

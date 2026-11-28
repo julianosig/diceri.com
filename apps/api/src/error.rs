@@ -204,6 +204,7 @@ impl From<VoiceError> for ApiError {
             VoiceError::Clone(source) => clone_failed(source),
             VoiceError::Repository(source) => Self::Internal(source.into()),
             VoiceError::Samples(source) => Self::Internal(source.into()),
+            VoiceError::Interrupted => Self::Internal(anyhow::anyhow!("voice operation stopped")),
         }
     }
 }
