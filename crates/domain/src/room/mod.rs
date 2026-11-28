@@ -211,10 +211,11 @@ impl Room {
         self.seats.reserve_for_owner(owner);
     }
 
-    /// The media identity of the owner's seat, once they have joined.
+    /// Who of the people `present` in the call should not be there: beyond its size, decided
+    /// the same way for every caller (the owner first, then the newest grants).
     #[must_use]
-    pub fn owner_seat(&self) -> Option<&str> {
-        self.seats.owner_identity()
+    pub fn beyond_size(&self, present: &[String]) -> Vec<String> {
+        self.seats.beyond_size(self.max_participants, present)
     }
 
     /// The media identity of `account`'s seat, if it has joined this call before.

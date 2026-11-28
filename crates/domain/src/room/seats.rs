@@ -42,6 +42,34 @@ impl Seats {
         present.contains(&seat.identity) || now_ms.saturating_sub(seat.issued_at_ms) < SEAT_GRACE_MS
     }
 
+    /// Who of `present` is beyond a call of `size`, the same answer for whoever asks: the
+    /// owner always stays, then the seats given credentials most recently (a newer grant
+    /// beats an old connection coming back), then anyone without a seat.
+    pub(crate) fn beyond_size(&self, size: u8, present: &[String]) -> Vec<String> {
+        let owner = self.owner_identity();
+        let mut ranked: Vec<(&String, u64)> = present
+            .iter()
+            .filter(|identity| Some(identity.as_str()) != owner)
+            .map(|identity| {
+                let issued = self
+                    .seats
+                    .iter()
+                    .find(|seat| seat.identity == *identity)
+                    .map_or(0, |seat| seat.issued_at_ms.saturating_add(1));
+                (identity, issued)
+            })
+            .collect();
+        // Newest first; ties broken by identity so every caller agrees.
+        ranked.sort_by(|a, b| b.1.cmp(&a.1).then_with(|| a.0.cmp(b.0)));
+        // The owner's place is kept for them, here or not.
+        let places = usize::from(size).saturating_sub(1);
+        ranked
+            .into_iter()
+            .skip(places)
+            .map(|(identity, _)| identity.clone())
+            .collect()
+    }
+
     pub(crate) fn identity_of(&self, account: &AccountId) -> Option<&str> {
         self.seats
             .iter()
@@ -195,6 +223,25 @@ mod tests {
             seats
                 .claim(account(0), "p-owner".to_owned(), 2, Some(&[]), 0)
                 .is_some()
+        );
+    }
+
+    #[test]
+    fn beyond_size_keeps_the_owner_then_the_newest_grants() {
+        let mut seats = Seats::default();
+        seats.reserve_for_owner(account(0));
+        seats.claim(account(0), "p-owner".to_owned(), 2, Some(&[]), 0);
+        seats.claim(account(1), "p-old".to_owned(), 2, Some(&[]), 10);
+        // The old guest's place went to a newer guest; the old one comes back anyway.
+        seats.claim(account(2), "p-new".to_owned(), 2, Some(&[]), LATER);
+        let present = present(&["p-old", "p-owner", "p-new", "p-stranger"]);
+        assert_eq!(
+            seats.beyond_size(2, &present),
+            vec!["p-old".to_owned(), "p-stranger".to_owned()]
+        );
+        assert_eq!(
+            seats.beyond_size(3, &present),
+            vec!["p-stranger".to_owned()]
         );
     }
 

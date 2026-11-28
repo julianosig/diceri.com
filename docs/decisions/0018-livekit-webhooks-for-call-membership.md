@@ -28,11 +28,16 @@ reconnects and late tokens, then reaches the API the moment it happens.
 - `POST /api/v1/livekit/webhook` verifies LiveKit's signature (a JWT signed with the
   project's API key, carrying the SHA-256 of the body) and ignores rooms this API does not
   know: development and end-to-end runs share the LiveKit project.
-- `participant_joined`: a call that has ended is closed again; a person beyond the call's size
-  (other than its owner) is removed; a hidden listener whose person is not in the call is
-  removed; the call counts against the service's capacity at once.
-- `participant_left`: the person's hidden listener (`monitor-<seat>`) is removed at once.
-- `room_finished`: the call stops counting against the capacity.
+- `participant_joined`: a call that has ended is closed again; people beyond the call's size
+  are removed; a hidden listener whose person is not in the call is removed; the call counts
+  against the service's capacity at once.
+- Who is beyond the size is one rule of the room, used by every event and by the sweep, so
+  they all pick the same people whatever order reports arrive in: the owner's place is always
+  kept, then the seats given credentials most recently, then anyone without a seat.
+- `participant_left`: the person's hidden listener (`monitor-<seat>`) is removed, unless the
+  person is back already (a reload reuses both identities; reports can come late or twice).
+- `room_finished`: the call stops counting against the capacity (the owner keeps counting if
+  they already have a newer call).
 - Webhook delivery is not guaranteed (LiveKit retries, then gives up), so the minute's sweep
   stays as a backstop, and every action is idempotent (removing someone already gone is fine).
 - The webhook URL and signing key are set in the LiveKit Cloud project

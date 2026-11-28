@@ -85,10 +85,13 @@ impl super::MeteringService {
     }
 
     /// `room`'s media room closed: it stops counting (a reservation still holds its time).
-    pub fn note_finished(&self, room: RoomId, owner: &Username) {
+    /// `owner` is `None` when they already have another call, which keeps counting.
+    pub fn note_finished(&self, room: RoomId, owner: Option<&Username>) {
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         calls.in_call.remove(&room);
-        calls.live_owners.remove(owner);
+        if let Some(owner) = owner {
+            calls.live_owners.remove(owner);
+        }
     }
 }
 

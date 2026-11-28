@@ -125,13 +125,15 @@ async fn someone_beyond_the_calls_size_is_removed_but_never_its_owner() {
     f.connected(&["p-owner", "p-guest", "p-late"]);
     f.join("p-late").await;
     assert_eq!(f.removed(), vec!["p-late".to_owned()]);
+    // Whoever's report comes next, the same person goes, never the owner.
     f.join("p-owner").await;
-    assert_eq!(f.removed(), vec!["p-late".to_owned()]);
+    assert_eq!(f.removed(), vec!["p-late".to_owned(); 2]);
 }
 
 #[tokio::test]
 async fn people_within_the_calls_size_stay() {
     let f = fixture().await;
+    f.seat_owner("p-owner").await;
     f.connected(&["p-owner", "p-guest"]);
     f.join("p-guest").await;
     assert_eq!(f.removed(), Vec::<String>::new());
@@ -159,14 +161,30 @@ async fn joining_a_call_that_ended_closes_it_again() {
 }
 
 #[tokio::test]
-async fn a_person_leaving_takes_their_listener_along() {
+async fn a_person_leaving_takes_their_listener_along_unless_they_are_back() {
     let f = fixture().await;
-    let event = MediaEvent::Left {
+    let left = || MediaEvent::Left {
         room: f.room.id,
         identity: "p-guest".to_owned(),
     };
-    f.events.handle(event).await;
+    // Back already (a reload): a late report leaves the new listener alone.
+    f.connected(&["p-guest"]);
+    f.events.handle(left()).await;
+    assert_eq!(f.removed(), Vec::<String>::new());
+    f.connected(&[]);
+    f.events.handle(left()).await;
     assert_eq!(f.removed(), vec!["monitor-p-guest".to_owned()]);
+}
+
+#[tokio::test]
+async fn departures_from_rooms_of_another_deployment_are_left_alone() {
+    let f = fixture().await;
+    let event = MediaEvent::Left {
+        room: RoomId::from_parts(9, [9; 10]),
+        identity: "p-x".to_owned(),
+    };
+    f.events.handle(event).await;
+    assert_eq!(f.removed(), Vec::<String>::new());
 }
 
 #[tokio::test]

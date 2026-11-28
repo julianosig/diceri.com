@@ -281,10 +281,9 @@ impl MeteringService {
         }
     }
 
-    /// Closes media rooms still open for calls that ended (a close that failed, or someone
-    /// connecting with credentials issued just before the end), and disconnects hidden
-    /// listeners whose person left the call, from what charging already looked at. Only rooms
-    /// this service knows are touched, never another deployment's; each with its own deadline.
+    /// Closes media rooms still open for calls that ended, and removes people beyond a call's
+    /// size and listeners without their person, from what charging already looked at. Only
+    /// rooms this service knows are touched, never another deployment's; each with a deadline.
     async fn tidy_media_rooms(
         &self,
         presence: &Arc<dyn MediaPresence>,
@@ -306,13 +305,17 @@ impl MeteringService {
                     async move { close_ended(closer.as_ref(), &room).await },
                     room,
                 ));
-            } else if checked.members.get(&room).is_some_and(has_orphan_listeners) {
+            } else if checked
+                .members
+                .get(&room)
+                .is_some_and(|m| needs_tidy(&stored, m))
+            {
                 // Looked at again just before: someone may have rejoined with a new listener.
                 let presence = presence.clone();
                 work.spawn(within_deadline(
                     async move {
                         if let Some(fresh) = members_of(presence.as_ref(), &room).await {
-                            remove_orphan_listeners(closer.as_ref(), &room, fresh).await;
+                            tidy_members(closer.as_ref(), &stored, fresh).await;
                         }
                     },
                     room,
@@ -389,8 +392,8 @@ mod media;
 use capacity::{LiveCalls, owners_of, without_live_room};
 
 use media::{
-    close_ended, close_within_deadline, has_orphan_listeners, members_of, open_media_rooms,
-    remove_orphan_listeners, within_budget, within_deadline,
+    close_ended, close_within_deadline, members_of, needs_tidy, open_media_rooms, tidy_members,
+    within_budget, within_deadline,
 };
 
 #[cfg(test)]

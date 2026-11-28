@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use diceri_domain::RoomId;
+use diceri_domain::{Room, RoomId};
 
 use crate::ports::{CallMembers, MediaAccessError, MediaPresence, MediaRoomCloser};
 
@@ -50,7 +50,23 @@ fn is_orphan(listener: &str, people: &[String]) -> bool {
         .is_none_or(|seat| !people.iter().any(|person| person == seat))
 }
 
-pub(super) fn has_orphan_listeners(members: &CallMembers) -> bool {
+/// Whether `room`'s call holds a listener without its person or people beyond its size.
+pub(super) fn needs_tidy(room: &Room, members: &CallMembers) -> bool {
+    has_orphan_listeners(members) || !room.beyond_size(&members.people).is_empty()
+}
+
+/// Removes people beyond the call's size (the same rule as the media events) and
+/// listeners without their person.
+pub(super) async fn tidy_members(closer: &dyn MediaRoomCloser, room: &Room, members: CallMembers) {
+    for identity in room.beyond_size(&members.people) {
+        if let Err(error) = closer.remove(&room.id, &identity).await {
+            tracing::warn!(%error, room_id = %room.id, "person beyond the size not removed");
+        }
+    }
+    remove_orphan_listeners(closer, &room.id, members).await;
+}
+
+fn has_orphan_listeners(members: &CallMembers) -> bool {
     members
         .listeners
         .iter()
@@ -58,7 +74,7 @@ pub(super) fn has_orphan_listeners(members: &CallMembers) -> bool {
 }
 
 /// Hidden listeners are named `monitor-<seat>`: one whose person is not in the call goes.
-pub(super) async fn remove_orphan_listeners(
+async fn remove_orphan_listeners(
     closer: &dyn MediaRoomCloser,
     room: &RoomId,
     CallMembers { people, listeners }: CallMembers,

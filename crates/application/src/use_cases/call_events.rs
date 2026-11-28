@@ -80,21 +80,19 @@ impl CallEventsService {
             if let Some(metering) = &self.metering {
                 metering.note_live(room_id, room.owner.clone());
             }
-            if self.is_over_size(&room, identity).await {
-                self.remove(room_id, identity).await;
-            }
+            self.keep_to_size(&room).await;
         }
     }
 
-    /// Whether the call now holds more people than its size, `identity` being one too many.
-    /// The owner is never the one too many. Unknown presence: not over (the sweep checks).
-    async fn is_over_size(&self, room: &Room, identity: &str) -> bool {
-        if room.owner_seat() == Some(identity) {
-            return false;
-        }
-        match self.presence.call_members(&room.id).await {
-            Ok(members) => members.people.len() > usize::from(room.max_participants),
-            Err(_) => false,
+    /// Removes whoever is beyond the call's size, by the room's one rule (the owner stays,
+    /// then the newest grants), so every event and the sweep agree on who goes, whoever
+    /// joined last. Unknown presence: nothing (the sweep checks again).
+    async fn keep_to_size(&self, room: &Room) {
+        let Ok(members) = self.presence.call_members(&room.id).await else {
+            return;
+        };
+        for identity in room.beyond_size(&members.people) {
+            self.remove(room.id, &identity).await;
         }
     }
 
@@ -104,20 +102,32 @@ impl CallEventsService {
         Some(members.people.iter().any(|identity| identity == person))
     }
 
+    /// Their hidden listener goes with them, unless they are back already (a reload reuses
+    /// the same identities, and a report may come late or twice).
     async fn left(&self, room: RoomId, identity: &str) {
-        if identity.starts_with(PERSON_PREFIX) {
-            // Their hidden listener goes with them (removing one that is not there is fine).
-            let listener = format!("{LISTENER_PREFIX}{identity}");
-            let _ = self.closer.remove(&room, &listener).await;
+        if !identity.starts_with(PERSON_PREFIX)
+            || !matches!(self.rooms.find_by_id(&room).await, Ok(Some(_)))
+        {
+            return;
+        }
+        if self.is_in_call(room, identity).await == Some(false) {
+            self.remove(room, &format!("{LISTENER_PREFIX}{identity}"))
+                .await;
         }
     }
 
     async fn finished(&self, room_id: RoomId) {
-        if let (Some(metering), Ok(Some(room))) =
+        let (Some(metering), Ok(Some(room))) =
             (&self.metering, self.rooms.find_by_id(&room_id).await)
-        {
-            metering.note_finished(room_id, &room.owner);
-        }
+        else {
+            return;
+        };
+        // A late report of an older call never stops the owner's new one from counting.
+        let newer = matches!(
+            self.rooms.find_live_by_owner(&room.owner).await,
+            Ok(Some(live)) if live.id != room_id
+        );
+        metering.note_finished(room_id, (!newer).then_some(&room.owner));
     }
 
     async fn remove(&self, room: RoomId, identity: &str) {
