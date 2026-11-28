@@ -204,6 +204,8 @@ impl VoiceService {
             self.register(room.id, account, &kept.voice).await?;
             return Ok(kept.voice);
         }
+        // Checked before the paid provider call; registering checks again afterwards.
+        room.ensure_open()?;
         if !room.has_voice_capacity() {
             return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
         }
@@ -215,8 +217,12 @@ impl VoiceService {
             .cloner
             .create(&self.account_name(account), sample)
             .await?;
+        // In the room first: a clone for a call that ended meanwhile is not kept.
+        if let Err(error) = self.register(room.id, account, &voice).await {
+            self.delete_at_provider(&voice).await;
+            return Err(error);
+        }
         self.keep(account, &voice).await;
-        self.register(room.id, account, &voice).await?;
         Ok(voice)
     }
 
