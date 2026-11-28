@@ -1,5 +1,4 @@
-use std::collections::HashMap;
-use std::sync::{Arc, PoisonError};
+use std::sync::Arc;
 
 use diceri_domain::{AccountId, Room, RoomCode, RoomId, RoomRuleError};
 
@@ -24,10 +23,6 @@ pub fn clone_name_prefix(deployment: &str) -> String {
 pub fn account_clone_prefix(deployment: &str) -> String {
     format!("diceri-account-{deployment}-")
 }
-
-/// Attempts at deleting a clone that could not join its call, and the pause between them.
-const DISCARD_ATTEMPTS: u32 = 3;
-const DISCARD_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 
 /// Bounds on an uploaded sample: 5–15 s of 16 kHz mono 16-bit WAV is 160–480 KiB.
 const MIN_SAMPLE_BYTES: usize = 8 * 1024;
@@ -82,22 +77,6 @@ pub struct VoiceService {
     /// One voice operation at a time per account: a recording finishing while "Delete my
     /// voice" runs (another tab) must not leave a clone nobody tracks.
     locks: Arc<AccountLocks>,
-}
-
-#[derive(Default)]
-struct AccountLocks(std::sync::Mutex<HashMap<AccountId, Arc<tokio::sync::Mutex<()>>>>);
-
-impl AccountLocks {
-    async fn lock(&self, account: &AccountId) -> tokio::sync::OwnedMutexGuard<()> {
-        let lock = self
-            .0
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .entry(*account)
-            .or_default()
-            .clone();
-        lock.lock_owned().await
-    }
 }
 
 impl std::fmt::Debug for VoiceService {
@@ -350,30 +329,13 @@ impl VoiceService {
     }
 }
 
-async fn discard_with_retries(cloner: &dyn VoiceCloner, voice: &VoiceId) {
-    for attempt in 1..=DISCARD_ATTEMPTS {
-        match cloner.delete(voice).await {
-            Ok(()) => return,
-            Err(error) if attempt < DISCARD_ATTEMPTS => {
-                warn_discard_retry(&error, attempt);
-                tokio::time::sleep(DISCARD_RETRY_DELAY * attempt).await;
-            }
-            Err(error) => warn_discard_failed(&error, voice),
-        }
-    }
-}
-
-fn warn_discard_retry(error: &VoiceCloneError, attempt: u32) {
-    tracing::warn!(%error, attempt, "unused voice clone not deleted, retrying");
-}
-
-fn warn_discard_failed(error: &VoiceCloneError, voice: &VoiceId) {
-    tracing::error!(%error, voice_id = %voice.0, "unused voice clone left at the provider");
-}
-
 fn warn_not_kept(error: &VoiceSampleStoreError, account: &AccountId) {
     tracing::warn!(%error, account_id = %account, "voice recording not kept");
 }
+
+mod lifecycle;
+
+use lifecycle::{AccountLocks, discard_with_retries};
 
 #[cfg(test)]
 mod failure_tests;
