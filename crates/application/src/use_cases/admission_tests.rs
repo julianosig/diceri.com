@@ -258,11 +258,10 @@ async fn a_voice_from_outside_the_room_is_forbidden() {
 async fn another_persons_voice_in_the_room_is_forbidden() {
     let f = fixture(true);
     let room = f.rooms.open(&owner(), private_room()).await.unwrap();
-    let mut stored = f.repo.find_by_code(&room.code).await.unwrap().unwrap();
-    stored
-        .register_voice(AccountId::from_parts(7, [7; 10]), "anas-voice".to_owned())
-        .unwrap();
-    f.repo.update(stored).await.unwrap();
+    let anas = |room: &mut diceri_domain::Room| {
+        room.register_voice(AccountId::from_parts(7, [7; 10]), "anas-voice".to_owned())
+    };
+    f.repo.modify(&room.id, Box::new(anas)).await.unwrap();
     let borrowed = ParticipantProfile {
         voice_id: Some("anas-voice".to_owned()),
         ..name("Eve")

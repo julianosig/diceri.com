@@ -294,3 +294,60 @@ async fn an_accounts_clone_is_made_once_and_reused_in_every_call() {
     assert_ne!(again, recorded);
     assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), again);
 }
+
+/// Ends every room while "cloning", like a host ending the call during the seconds a
+/// provider takes; records the clones it is asked to delete.
+struct EndingCloner {
+    rooms: Arc<InMemoryRooms>,
+    deleted: Mutex<Vec<String>>,
+}
+
+#[async_trait]
+impl VoiceCloner for EndingCloner {
+    fn provider(&self) -> &'static str {
+        "inworld"
+    }
+
+    async fn create(&self, _: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
+        for room in self.rooms.live_rooms().await.unwrap() {
+            let end = |room: &mut Room| {
+                room.end();
+                Ok(())
+            };
+            self.rooms.modify(&room.id, Box::new(end)).await.unwrap();
+        }
+        Ok(VoiceId("late".to_owned()))
+    }
+
+    async fn delete(&self, voice: &VoiceId) -> Result<(), VoiceCloneError> {
+        self.deleted.lock().unwrap().push(voice.0.clone());
+        Ok(())
+    }
+
+    async fn delete_all_named(&self, _: &str) -> Result<usize, VoiceCloneError> {
+        Ok(0)
+    }
+}
+
+#[tokio::test]
+async fn a_call_ended_while_cloning_stays_ended_and_the_clone_is_deleted() {
+    let (service, rooms, room_id) = setup().await;
+    let cloner = Arc::new(EndingCloner {
+        rooms: rooms.clone(),
+        deleted: Mutex::default(),
+    });
+    let service = VoiceService {
+        cloner: cloner.clone(),
+        ..service
+    };
+    let ana = AccountId::from_parts(1, [1; 10]);
+    let result = service.record_for(&room_id, &ana, recording(true)).await;
+    assert!(matches!(
+        result,
+        Err(VoiceError::Rule(RoomRuleError::Ended))
+    ));
+    // The stale copy read before cloning never reopens the call.
+    let room = rooms.find_by_code(&room_id).await.unwrap().unwrap();
+    assert!(room.is_ended());
+    assert_eq!(*cloner.deleted.lock().unwrap(), vec!["late".to_owned()]);
+}

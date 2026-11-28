@@ -12,8 +12,8 @@ use diceri_domain::{
 use crate::ports::{
     AccountRepository, AccountRepositoryError, Clock, DispatchError, IdGenerator, IdParts,
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, NewSession,
-    PasswordHash, PasswordHasher, PasswordHasherError, RandomSource, RoomRepository,
-    RoomRepositoryError, StoredAccount, TranslationDispatcher,
+    PasswordHash, PasswordHasher, PasswordHasherError, RandomSource, RoomChange, RoomChangeError,
+    RoomRepository, RoomRepositoryError, StoredAccount, TranslationDispatcher,
 };
 use crate::use_cases::RoomService;
 
@@ -223,9 +223,13 @@ impl RoomRepository for InMemoryRooms {
             .collect())
     }
 
-    async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {
-        self.0.lock().unwrap().insert(room.id, room);
-        Ok(())
+    async fn modify(&self, id: &RoomId, change: RoomChange<'_>) -> Result<Room, RoomChangeError> {
+        let mut rooms = self.0.lock().unwrap();
+        let slot = rooms.get_mut(id).ok_or(RoomRepositoryError::Missing(*id))?;
+        let mut changed = slot.clone();
+        change(&mut changed)?;
+        *slot = changed.clone();
+        Ok(changed)
     }
 }
 

@@ -207,27 +207,32 @@ impl MeteringService {
 
     /// One minute of `room`'s call, charged to its owner; ends it at a plan limit.
     async fn charge(&self, room: RoomId, closer: &dyn MediaRoomCloser) -> Result<(), LimitError> {
-        // Re-read just before updating, so changes made since the listing are kept.
-        let Some(mut room) = self.rooms.find_by_id(&room).await? else {
+        let Some(stored) = self.rooms.find_by_id(&room).await? else {
             return Ok(());
         };
-        room.call_minutes += 1;
-        let Some(owner) = self.accounts.find_by_username(&room.owner).await? else {
-            return Ok(self.rooms.update(room).await?);
-        };
-        self.usage
-            .add_minute(&owner.account.id, self.today())
-            .await?;
-        let allowance = self.allowance(&owner.account).await?;
-        let reached =
-            room.call_minutes >= allowance.limits.call_minutes || allowance.reached().is_some();
-        if reached {
-            room.end();
+        let owner = self.accounts.find_by_username(&stored.owner).await?;
+        let mut limit = None;
+        if let Some(owner) = &owner {
+            self.usage
+                .add_minute(&owner.account.id, self.today())
+                .await?;
+            let allowance = self.allowance(&owner.account).await?;
+            limit = Some((allowance.limits.call_minutes, allowance.reached().is_some()));
         }
-        let room_id = room.id;
-        self.rooms.update(room).await?;
-        if reached {
-            close_at_limit(closer, &room_id).await;
+        // Applied to the room as it is now: the account lookups above take time, and a copy
+        // read before them would undo a guest let in or a voice recorded meanwhile.
+        let charge = move |room: &mut Room| {
+            room.call_minutes += 1;
+            if let Some((call_minutes, plan_reached)) = limit
+                && (room.call_minutes >= call_minutes || plan_reached)
+            {
+                room.end();
+            }
+            Ok(())
+        };
+        let charged = self.rooms.modify(&room, Box::new(charge)).await?;
+        if charged.is_ended() && !stored.is_ended() {
+            close_at_limit(closer, &room).await;
         }
         Ok(())
     }

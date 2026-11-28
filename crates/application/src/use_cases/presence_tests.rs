@@ -99,9 +99,12 @@ async fn ranks_listed_rooms_by_size_and_counts_everyone() {
 #[tokio::test]
 async fn ignores_unknown_ended_and_empty_rooms() {
     let f = fixture(false);
-    let mut ended = f.live("Ended", true, 2, &["en"]).await;
-    ended.end();
-    f.repository.update(ended).await.unwrap();
+    let ended = f.live("Ended", true, 2, &["en"]).await;
+    let end = |room: &mut diceri_domain::Room| {
+        room.end();
+        Ok(())
+    };
+    f.repository.modify(&ended.id, Box::new(end)).await.unwrap();
     f.live("Empty", true, 0, &[]).await;
     f.media.rooms.lock().unwrap().push(LiveRoom {
         room: diceri_domain::RoomId::from_parts(99, [99; 10]),

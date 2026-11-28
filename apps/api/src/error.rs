@@ -128,6 +128,7 @@ impl From<LimitError> for ApiError {
             LimitError::Usage(source) => Self::Internal(source.into()),
             LimitError::Accounts(source) => Self::Internal(source.into()),
             LimitError::Rooms(source) => Self::Internal(source.into()),
+            LimitError::RoomRule(source) => Self::Internal(source.into()),
         }
     }
 }

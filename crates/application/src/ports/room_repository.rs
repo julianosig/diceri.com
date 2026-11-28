@@ -1,5 +1,5 @@
 use async_trait::async_trait;
-use diceri_domain::{Room, RoomCode, RoomId, Username};
+use diceri_domain::{Room, RoomCode, RoomId, RoomRuleError, Username};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RoomRepositoryError {
@@ -9,6 +9,18 @@ pub enum RoomRepositoryError {
     Missing(RoomId),
     #[error("room storage is unavailable: {0}")]
     Unavailable(String),
+}
+
+/// A change to one room, applied by `RoomRepository::modify` with no other write in between.
+pub type RoomChange<'a> = Box<dyn FnOnce(&mut Room) -> Result<(), RoomRuleError> + Send + 'a>;
+
+/// Why a `RoomChange` was not stored: the room's rules refused it, or storage failed.
+#[derive(Debug, thiserror::Error)]
+pub enum RoomChangeError {
+    #[error(transparent)]
+    Rule(#[from] RoomRuleError),
+    #[error(transparent)]
+    Repository(#[from] RoomRepositoryError),
 }
 
 /// Persistence for the room aggregate (including its join requests). Rooms are
@@ -23,7 +35,11 @@ pub trait RoomRepository: Send + Sync {
         &self,
         owner: &Username,
     ) -> Result<Option<Room>, RoomRepositoryError>;
-    async fn update(&self, room: Room) -> Result<(), RoomRepositoryError>;
+    /// Applies `change` to the stored room atomically and returns the room as stored after
+    /// it. Use it whenever a change depends on the room's current state: a copy read before a
+    /// slow call (a provider, the database) would otherwise overwrite writes made meanwhile.
+    /// Nothing is stored when `change` fails.
+    async fn modify(&self, id: &RoomId, change: RoomChange<'_>) -> Result<Room, RoomChangeError>;
     /// Every room that has not ended, for the per-minute usage meter.
     async fn live_rooms(&self) -> Result<Vec<Room>, RoomRepositoryError>;
 }

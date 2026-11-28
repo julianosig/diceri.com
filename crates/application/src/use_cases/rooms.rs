@@ -2,7 +2,9 @@ use std::sync::Arc;
 
 use diceri_domain::{AccessKey, Account, Room, RoomCode, RoomSettings, Username};
 
-use crate::ports::{IdGenerator, RandomSource, RoomRepository, RoomRepositoryError};
+use crate::ports::{
+    IdGenerator, RandomSource, RoomChangeError, RoomRepository, RoomRepositoryError,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum RoomError {
@@ -10,6 +12,18 @@ pub enum RoomError {
     NotFound,
     #[error(transparent)]
     Repository(#[from] RoomRepositoryError),
+}
+
+impl From<RoomChangeError> for RoomError {
+    fn from(error: RoomChangeError) -> Self {
+        match error {
+            RoomChangeError::Repository(repository) => Self::Repository(repository),
+            // Settings changes are not refused by the room's rules; report it as storage.
+            RoomChangeError::Rule(rule) => {
+                Self::Repository(RoomRepositoryError::Unavailable(rule.to_string()))
+            }
+        }
+    }
 }
 
 /// Personal rooms: every account has one room, named after it (`/@username`).
@@ -50,10 +64,12 @@ impl RoomService {
             mascot: owner.mascot,
             ..settings
         };
-        if let Some(mut room) = self.repository.find_live_by_owner(&owner.username).await? {
-            room.settings = settings;
-            self.repository.update(room.clone()).await?;
-            return Ok(room);
+        if let Some(room) = self.repository.find_live_by_owner(&owner.username).await? {
+            let apply = move |room: &mut Room| {
+                room.settings = settings;
+                Ok(())
+            };
+            return Ok(self.repository.modify(&room.id, Box::new(apply)).await?);
         }
         let code = RoomCode::from_random_bytes(self.random.random_128());
         let host_key = AccessKey::from_random_bytes(self.random.random_128());

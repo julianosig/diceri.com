@@ -2,7 +2,9 @@
 
 use diceri_domain::{Plan, PlanLimits, Room};
 
-use crate::ports::{AccountRepositoryError, RoomRepositoryError, UsageRepositoryError};
+use crate::ports::{
+    AccountRepositoryError, RoomChangeError, RoomRepositoryError, UsageRepositoryError,
+};
 
 /// What each plan allows. Free is everyone's default; the others are assigned by hand.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -77,6 +79,18 @@ pub enum LimitError {
     Accounts(#[from] AccountRepositoryError),
     #[error(transparent)]
     Rooms(#[from] RoomRepositoryError),
+    /// A room's rules refused a change made while metering.
+    #[error(transparent)]
+    RoomRule(#[from] diceri_domain::RoomRuleError),
+}
+
+impl From<RoomChangeError> for LimitError {
+    fn from(error: RoomChangeError) -> Self {
+        match error {
+            RoomChangeError::Rule(rule) => Self::RoomRule(rule),
+            RoomChangeError::Repository(repository) => Self::Rooms(repository),
+        }
+    }
 }
 
 /// An account's plan, its limits and what it has used today and this month.

@@ -7,7 +7,8 @@ use diceri_domain::{
 
 use crate::ports::{
     IdGenerator, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
-    MediaRoomCloser, RandomSource, RoomRepository, RoomRepositoryError, TranslationDispatcher,
+    MediaRoomCloser, RandomSource, RoomChangeError, RoomRepository, RoomRepositoryError,
+    TranslationDispatcher,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -24,6 +25,15 @@ pub enum AdmissionError {
     Repository(#[from] RoomRepositoryError),
     #[error(transparent)]
     MediaAccess(#[from] MediaAccessError),
+}
+
+impl From<RoomChangeError> for AdmissionError {
+    fn from(error: RoomChangeError) -> Self {
+        match error {
+            RoomChangeError::Rule(rule) => Self::Rule(rule),
+            RoomChangeError::Repository(repository) => Self::Repository(repository),
+        }
+    }
 }
 
 /// A participant's ticket into a room's media session.
@@ -100,10 +110,12 @@ impl AdmissionService {
         code: &RoomCode,
         host_key: &AccessKey,
     ) -> Result<(), AdmissionError> {
-        let mut room = self.load_as_host(code, host_key).await?;
-        room.end();
-        let room_id = room.id;
-        self.rooms.update(room).await?;
+        let room_id = self.load_as_host(code, host_key).await?.id;
+        let end = |room: &mut Room| {
+            room.end();
+            Ok(())
+        };
+        self.rooms.modify(&room_id, Box::new(end)).await?;
         if let Some(closer) = &self.closer
             && let Err(error) = closer.close(&room_id).await
         {
@@ -143,13 +155,17 @@ impl AdmissionService {
         account: &AccountId,
         profile: ParticipantProfile,
     ) -> Result<Knock, AdmissionError> {
-        let mut room = self.load(code).await?;
+        let room = self.load(code).await?;
         room.ensure_open()?;
         ensure_voice_belongs(&room, account, &profile)?;
         let request_id = self.ids.request_id();
         let key = AccessKey::from_random_bytes(self.random.random_128());
-        room.knock(JoinRequest::new(request_id, profile, key.clone()))?;
-        self.rooms.update(room).await?;
+        let request = JoinRequest::new(request_id, profile, key.clone());
+        let knock = move |room: &mut Room| {
+            room.ensure_open()?;
+            room.knock(request)
+        };
+        self.rooms.modify(&room.id, Box::new(knock)).await?;
         Ok(Knock { request_id, key })
     }
 
@@ -169,9 +185,10 @@ impl AdmissionService {
         request_id: &RequestId,
         admit: bool,
     ) -> Result<(), AdmissionError> {
-        let mut room = self.load_as_host(code, host_key).await?;
-        room.decide(request_id, admit)?;
-        self.rooms.update(room).await?;
+        let room_id = self.load_as_host(code, host_key).await?.id;
+        let request_id = *request_id;
+        let decide = move |room: &mut Room| room.decide(&request_id, admit);
+        self.rooms.modify(&room_id, Box::new(decide)).await?;
         Ok(())
     }
 

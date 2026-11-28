@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::sync::RwLock;
 
 use async_trait::async_trait;
-use diceri_application::ports::{RoomRepository, RoomRepositoryError};
+use diceri_application::ports::{RoomChange, RoomChangeError, RoomRepository, RoomRepositoryError};
 use diceri_domain::{Room, RoomCode, RoomId, Username};
 
 /// In-memory room storage for development and tests, indexed by id and link code.
@@ -60,13 +60,14 @@ impl RoomRepository for MemoryRoomRepository {
             .collect())
     }
 
-    async fn update(&self, room: Room) -> Result<(), RoomRepositoryError> {
+    async fn modify(&self, id: &RoomId, change: RoomChange<'_>) -> Result<Room, RoomChangeError> {
+        // The write lock is held for the whole change: no other write can interleave.
         let mut rooms = self.rooms.write().map_err(poisoned)?;
-        let slot = rooms
-            .get_mut(&room.id)
-            .ok_or(RoomRepositoryError::Missing(room.id))?;
-        *slot = room;
-        Ok(())
+        let slot = rooms.get_mut(id).ok_or(RoomRepositoryError::Missing(*id))?;
+        let mut changed = slot.clone();
+        change(&mut changed)?;
+        *slot = changed.clone();
+        Ok(changed)
     }
 }
 
@@ -87,14 +88,38 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn update_requires_existing_room() {
+    async fn modify_requires_existing_room_and_stores_nothing_when_refused() {
         let repository = MemoryRoomRepository::default();
+        let id = room().id;
+        let end = |room: &mut Room| {
+            room.end();
+            Ok(())
+        };
         assert!(matches!(
-            repository.update(room()).await,
-            Err(RoomRepositoryError::Missing(_))
+            repository.modify(&id, Box::new(end)).await,
+            Err(RoomChangeError::Repository(RoomRepositoryError::Missing(_)))
         ));
         repository.insert(room()).await.unwrap();
-        assert!(repository.update(room()).await.is_ok());
+        let refused = |room: &mut Room| {
+            room.end();
+            Err(diceri_domain::RoomRuleError::Ended)
+        };
+        assert!(repository.modify(&id, Box::new(refused)).await.is_err());
+        assert!(
+            !repository
+                .find_by_id(&id)
+                .await
+                .unwrap()
+                .unwrap()
+                .is_ended()
+        );
+        assert!(
+            repository
+                .modify(&id, Box::new(end))
+                .await
+                .unwrap()
+                .is_ended()
+        );
     }
 
     #[tokio::test]
