@@ -12,6 +12,7 @@ use super::dto::{
     JoinResponse, KnockResponse, OutcomeResponse, PendingRequestResponse, ProfileRequest,
 };
 use super::handlers::{parse_request_id, parse_room_code};
+use diceri_application::use_cases::KnockOutcome;
 use diceri_domain::RequestStatus;
 
 use crate::features::CurrentAccount;
@@ -93,12 +94,18 @@ pub(crate) async fn outcome(
         .admission
         .request_status(&code, &request_id, &key)
         .await?;
-    if status == RequestStatus::Admitted {
-        state
-            .metering
-            .admit_owner_of(&state.rooms.get(&code).await?)
-            .await?;
+    // Answered from that one look: a host deciding meanwhile is seen at the next poll, so
+    // credentials are never issued without the check above.
+    match status {
+        RequestStatus::Pending => return Ok(Json(KnockOutcome::Pending.into())),
+        RequestStatus::Denied => return Ok(Json(KnockOutcome::Denied.into())),
+        RequestStatus::Admitted => {}
     }
+    state
+        .metering
+        .admit_owner_of(&state.rooms.get(&code).await?)
+        .await?;
+    // A decision is final: the request is still admitted here.
     let outcome = state.admission.outcome(&code, &request_id, &key).await?;
     Ok(Json(outcome.into()))
 }
