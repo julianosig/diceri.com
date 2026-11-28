@@ -298,11 +298,15 @@ impl AdmissionService {
     }
 
     /// Best effort: a failure to start translation must not block joining.
+    /// With its own short deadline, so a slow agent never makes joining time out.
     async fn start_translation(&self, room_id: &RoomId) {
-        if let Some(dispatcher) = &self.translation
-            && let Err(error) = dispatcher.start(room_id).await
-        {
-            tracing::warn!(%error, %room_id, "translation not started");
+        let Some(dispatcher) = &self.translation else {
+            return;
+        };
+        match tokio::time::timeout(DISPATCH_TIMEOUT, dispatcher.start(room_id)).await {
+            Ok(Ok(())) => {}
+            Ok(Err(error)) => warn_not_started(room_id, &error.to_string()),
+            Err(_) => warn_not_started(room_id, "translation agent too slow"),
         }
     }
 
@@ -327,6 +331,13 @@ impl AdmissionService {
         )?;
         Ok(JoinTicket { identity, grant })
     }
+}
+
+/// How long joining waits for the translation agent to accept the call.
+const DISPATCH_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
+fn warn_not_started(room_id: &RoomId, reason: &str) {
+    tracing::warn!(%room_id, reason, "translation not started");
 }
 
 /// A participant may only speak in a voice clone they themselves recorded for this room.
