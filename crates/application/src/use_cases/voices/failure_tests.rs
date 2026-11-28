@@ -184,3 +184,32 @@ async fn deleting_while_another_tab_records_leaves_no_untracked_clone() {
         );
     }
 }
+
+#[tokio::test]
+async fn recording_again_in_a_call_that_ended_keeps_the_previous_voice() {
+    let (service, rooms, room_id) = setup().await;
+    let samples = Arc::new(Samples::default());
+    let clock = Arc::new(crate::test_support::FakeClock(
+        std::sync::atomic::AtomicU64::new(5),
+    ));
+    let service = service.with_samples(samples.clone(), clock);
+    let ana = AccountId::from_parts(1, [1; 10]);
+    let first = service
+        .record_for(&room_id, &ana, recording(true))
+        .await
+        .unwrap();
+    let ending = Arc::new(EndingCloner {
+        rooms: rooms.clone(),
+        deleted: Mutex::default(),
+    });
+    let service = VoiceService {
+        cloner: ending.clone(),
+        ..service
+    };
+    let again = service.record_for(&room_id, &ana, recording(true)).await;
+    assert!(matches!(again, Err(VoiceError::Rule(RoomRuleError::Ended))));
+    // The new clone is gone and the account still has the voice it had.
+    assert_eq!(*ending.deleted.lock().unwrap(), vec!["late".to_owned()]);
+    let kept = samples.kept_clone(&ana).await.unwrap().unwrap();
+    assert_eq!(kept.voice, first);
+}

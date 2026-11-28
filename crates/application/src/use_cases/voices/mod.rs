@@ -166,15 +166,19 @@ impl VoiceService {
             .cloner
             .create(&self.account_name(account), sample.clone())
             .await?;
+        // In the room first: if the call ended or filled up meanwhile, the new clone goes and
+        // the account keeps the voice it had.
+        if let Err(error) = self.register(room.id, account, &voice).await {
+            self.delete_at_provider(&voice).await;
+            return Err(error);
+        }
         if let Err(error) = samples.save(account, &sample, clock.now_ms()).await {
             warn_not_kept(&error, account);
         }
-        // Kept first: the account's clone is tracked even if the call ended meanwhile.
         self.keep(account, &voice).await;
         if let Some(old) = previous.filter(|old| self.is_ours(old) && old.voice != voice) {
             self.delete_at_provider(&old.voice).await;
         }
-        self.register(room.id, account, &voice).await?;
         Ok(voice)
     }
 
@@ -263,6 +267,7 @@ impl VoiceService {
             .await?
             .ok_or(VoiceError::NotFound)?;
         // Check before the paid provider call; registering re-checks afterwards.
+        room.ensure_open()?;
         if !room.has_voice_capacity() {
             return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
         }
