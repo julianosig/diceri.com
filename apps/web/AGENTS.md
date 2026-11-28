@@ -18,7 +18,9 @@ src/
   routes/                     thin pages: load data, compose features, no logic
     +layout.ts                ssr = false (media APIs are browser-only)
     layout.css                Tailwind entry + design tokens (@theme)
-    r/[room]/                 meeting page for a shared link
+    open/                     the owner opens their room (the address becomes /@username)
+    @[username]/              joining someone's room; the owner is sent to /open
+    signin/                   sign in or sign up, then back to ?next= (/open or /@user)
   lib/
     components/ui/            design-system primitives (Button, ...); no app logic,
                               never import from features/
