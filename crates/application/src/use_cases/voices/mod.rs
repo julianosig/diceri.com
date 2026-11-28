@@ -137,16 +137,21 @@ impl VoiceService {
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
         let (this, account) = (self.clone(), *account);
-        // Waiting for its turn and checking the recording can still be cut short; once the
-        // provider is asked for a clone, it always finishes (kept or deleted, never lost).
+        // Waiting for its turn, checking the recording and reading what the account has can
+        // still be cut short; once the provider is asked for a clone, it always finishes
+        // (kept or deleted, never lost).
         let turn = self.locks.lock(&account).await;
         let checked = self.checked_room(code, &sample).await?;
-        // Checking speech takes a moment: the call may have ended or filled up meanwhile, and
-        // then the recording never reaches the provider.
+        let previous = match &self.samples {
+            Some((samples, _)) => samples.kept_clone(&account).await?,
+            None => None,
+        };
+        // That took a moment: the call may have ended or filled up meanwhile, and then the
+        // recording never reaches the provider.
         let room = self.open_room_with_space(&checked.code).await?;
         to_completion(async move {
             let _turn = turn;
-            this.record_in(room, &account, sample).await
+            this.record_in(room, &account, sample, previous).await
         })
         .await
     }
@@ -156,6 +161,7 @@ impl VoiceService {
         room: Room,
         account: &AccountId,
         sample: VoiceSample,
+        previous: Option<KeptClone>,
     ) -> Result<VoiceId, VoiceError> {
         let Some((samples, clock)) = &self.samples else {
             let voice = self.cloner.create(&self.call_name(&room), sample).await?;
@@ -166,7 +172,6 @@ impl VoiceService {
             }
             return Ok(voice);
         };
-        let previous = samples.kept_clone(account).await?;
         let voice = self
             .cloner
             .create(&self.account_name(account), sample.clone())
@@ -194,43 +199,39 @@ impl VoiceService {
         code: &RoomCode,
         account: &AccountId,
     ) -> Result<VoiceId, VoiceError> {
-        let (this, code, account) = (self.clone(), code.clone(), *account);
+        let (samples, _) = self.samples.as_ref().ok_or(VoiceError::NoSavedVoice)?;
+        let (this, account) = (self.clone(), *account);
+        // Everything before the provider call can still be cut short.
         let turn = self.locks.lock(&account).await;
+        if let Some(kept) = samples
+            .kept_clone(&account)
+            .await?
+            .filter(|kept| self.is_ours(kept))
+        {
+            let room = self.find_room(code).await?;
+            self.register(room.id, &account, &kept.voice).await?;
+            return Ok(kept.voice);
+        }
+        let sample = samples
+            .find(&account)
+            .await?
+            .ok_or(VoiceError::NoSavedVoice)?;
+        // Looked at last, just before the provider is asked for a clone.
+        let room = self.open_room_with_space(code).await?;
         to_completion(async move {
             let _turn = turn;
-            this.reuse_saved(&code, &account).await
+            this.clone_kept(room, &account, sample).await
         })
         .await
     }
 
-    async fn reuse_saved(
+    /// Clones the kept recording, then registers and keeps the clone (deleted if it cannot).
+    async fn clone_kept(
         &self,
-        code: &RoomCode,
+        room: Room,
         account: &AccountId,
+        sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
-        let (samples, _) = self.samples.as_ref().ok_or(VoiceError::NoSavedVoice)?;
-        let room = self
-            .rooms
-            .find_by_code(code)
-            .await?
-            .ok_or(VoiceError::NotFound)?;
-        if let Some(kept) = samples
-            .kept_clone(account)
-            .await?
-            .filter(|kept| self.is_ours(kept))
-        {
-            self.register(room.id, account, &kept.voice).await?;
-            return Ok(kept.voice);
-        }
-        // Checked before the paid provider call; registering checks again afterwards.
-        room.ensure_open()?;
-        if !room.has_voice_capacity() {
-            return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
-        }
-        let sample = samples
-            .find(account)
-            .await?
-            .ok_or(VoiceError::NoSavedVoice)?;
         let voice = self
             .cloner
             .create(&self.account_name(account), sample)
@@ -242,6 +243,13 @@ impl VoiceService {
         }
         self.keep(account, &voice).await;
         Ok(voice)
+    }
+
+    async fn find_room(&self, code: &RoomCode) -> Result<Room, VoiceError> {
+        self.rooms
+            .find_by_code(code)
+            .await?
+            .ok_or(VoiceError::NotFound)
     }
 
     /// Whether `account` has a kept recording.
@@ -282,11 +290,7 @@ impl VoiceService {
 
     /// The room as it is now, if its call is open and has room for one more voice.
     async fn open_room_with_space(&self, code: &RoomCode) -> Result<Room, VoiceError> {
-        let room = self
-            .rooms
-            .find_by_code(code)
-            .await?
-            .ok_or(VoiceError::NotFound)?;
+        let room = self.find_room(code).await?;
         room.ensure_open()?;
         if !room.has_voice_capacity() {
             return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
