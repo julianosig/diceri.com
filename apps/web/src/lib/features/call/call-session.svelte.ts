@@ -220,10 +220,11 @@ export class CallSession {
 	}
 
 	async setMonitor(mode: MonitorMode): Promise<void> {
-		await this.#localMonitor?.close();
-		await this.#loopback?.stop();
+		// Detached first, so two callers never close the same monitor twice.
+		const [local, loopback] = [this.#localMonitor, this.#loopback];
 		this.#localMonitor = undefined;
 		this.#loopback = undefined;
+		await Promise.allSettled([local?.close(), loopback?.stop()]);
 		this.monitor = mode;
 		const track = this.#micTrack();
 		if (mode === 'local' && track) {
@@ -276,10 +277,10 @@ export class CallSession {
 			// Leaving the room never depends on the extras closing cleanly.
 			for (const element of this.#remoteElements.values()) element.remove();
 			this.#remoteElements.clear();
+			this.status = 'idle';
+			this.participants = [];
 			await this.#room.disconnect();
 		}
-		this.status = 'idle';
-		this.participants = [];
 	}
 
 	async #publishMicrophone(): Promise<void> {

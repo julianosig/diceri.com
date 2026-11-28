@@ -106,10 +106,14 @@ export class MeetingFlow {
 	async #close(phase: 'left' | 'ended'): Promise<void> {
 		this.hostRequests?.stop();
 		this.transcript = this.session?.transcript ?? this.transcript;
-		await this.session?.disconnect();
-		this.session = undefined;
-		this.phase = phase;
-		forgetInCall();
+		try {
+			await this.session?.disconnect();
+		} finally {
+			// The end screen shows whatever closing the call ran into.
+			this.session = undefined;
+			this.phase = phase;
+			forgetInCall();
+		}
 	}
 
 	/** The API meters once a minute, so a call ends within about a minute of the deadline. */
