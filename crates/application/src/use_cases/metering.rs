@@ -266,17 +266,21 @@ impl MeteringService {
         }
         // Applied to the room as it is now: the account lookups above take time, and a copy
         // read before them would undo a guest let in or a voice recorded meanwhile.
-        let charge = move |room: &mut Room| {
+        // Only a call this charge ends is closed here; one the host ended meanwhile is theirs.
+        let mut ended_here = false;
+        let charge = |room: &mut Room| {
             room.call_minutes += 1;
             if let Some((call_minutes, plan_reached)) = limit
+                && !room.is_ended()
                 && (room.call_minutes >= call_minutes || plan_reached)
             {
                 room.end();
+                ended_here = true;
             }
             Ok(())
         };
-        let charged = self.rooms.modify(&room, Box::new(charge)).await?;
-        if charged.is_ended() && !stored.is_ended() {
+        self.rooms.modify(&room, Box::new(charge)).await?;
+        if ended_here {
             close_at_limit(closer, &room).await;
         }
         Ok(())
@@ -326,9 +330,17 @@ async fn remove_orphan_listeners(
 /// Disconnects everyone from a call that reached its plan's limit.
 async fn close_at_limit(closer: &dyn MediaRoomCloser, room: &RoomId) {
     tracing::info!(room_id = %room, "call ended: plan limit reached");
-    if let Err(error) = closer.close(room).await {
-        warn_not_closed(&error, room);
+    // With a deadline: a stalled close must not hold up charging the other calls.
+    if tokio::time::timeout(CLOSE_TIMEOUT, close_ended(closer, room))
+        .await
+        .is_err()
+    {
+        warn_close_timed_out(room);
     }
+}
+
+fn warn_close_timed_out(room: &RoomId) {
+    tracing::warn!(room_id = %room, "media room close timed out");
 }
 
 fn warn_not_closed(error: &MediaAccessError, room: &RoomId) {
