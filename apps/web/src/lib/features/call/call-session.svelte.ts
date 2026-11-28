@@ -20,6 +20,8 @@ import type { CallProblem } from './call-problem.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
 	DEFAULT_AUDIO_SETTINGS,
+	settingKeys,
+	valuesOf,
 	toCaptureOptions,
 	type AudioSettings,
 	type EnhancedFilter
@@ -102,6 +104,14 @@ export class CallSession {
 	#loopback: LoopbackMonitor | undefined;
 	/** Set as soon as the call is being left: nothing may capture audio after it. */
 	#closing = false;
+	/** Read through a call: it changes while a change awaits, which narrowing cannot see. */
+	#isClosing(): boolean {
+		return this.#closing;
+	}
+
+	/** Numbers each settings change; `#owners` says which change last edited each setting. */
+	#revision = 0;
+	#owners: Partial<Record<keyof AudioSettings, number>> = {};
 	/** The settings the published microphone really runs with. */
 	#applied: AudioSettings = DEFAULT_AUDIO_SETTINGS;
 	/** The settings change in progress; the next one waits for it. */
@@ -154,7 +164,9 @@ export class CallSession {
 	async updateSettings(patch: Partial<AudioSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
-		const change = this.#settingsChange.then(() => this.#restartMicrophone(patch));
+		const revision = ++this.#revision;
+		for (const key of settingKeys(patch)) this.#owners[key] = revision;
+		const change = this.#settingsChange.then(() => this.#restartMicrophone(patch, revision));
 		this.#settingsChange = change.catch(() => undefined);
 		await change;
 	}
@@ -164,11 +176,13 @@ export class CallSession {
 	 * when the caller is (re-enabling it would only unmute it and ignore the new settings).
 	 * A device that fails puts this change's settings back.
 	 */
-	async #restartMicrophone(patch: Partial<AudioSettings>): Promise<void> {
+	async #restartMicrophone(patch: Partial<AudioSettings>, revision: number): Promise<void> {
 		const track = this.#micTrack();
 		if (!track) return;
 		const mode = this.monitor;
 		await this.setMonitor('off');
+		// Left the call while the monitor closed: never open a microphone again.
+		if (this.#isClosing()) return;
 		const target = { ...this.#applied, ...patch };
 		let problem: CallProblem | undefined;
 		try {
@@ -176,16 +190,17 @@ export class CallSession {
 			this.#applied = target;
 		} catch {
 			// Left the call meanwhile: never open a microphone again.
-			if (this.#closing) return;
-			// Only what still shows this change goes back; a newer choice stays.
-			this.settings = { ...this.settings, ...stillShowing(this.settings, patch, this.#applied) };
+			if (this.#isClosing()) return;
+			// Only settings this change is still the latest edit of go back; newer choices stay.
+			const owned = settingKeys(patch).filter((key) => this.#owners[key] === revision);
+			this.settings = { ...this.settings, ...valuesOf(this.#applied, owned) };
 			// Browsers that stop the old microphone first leave nothing if both fail.
 			problem = await track.restartTrack(toCaptureOptions(this.#applied)).then(
 				() => 'micChangeFailed' as const,
 				() => 'micLost' as const
 			);
 		}
-		if (this.#closing) {
+		if (this.#isClosing()) {
 			track.stop();
 			return;
 		}
@@ -456,19 +471,4 @@ function cameraOf(participant: RoomParticipant): VideoTrack | undefined {
 	const track = publication?.track;
 	const video = track instanceof LocalVideoTrack || track instanceof RemoteVideoTrack;
 	return video && !publication?.isMuted ? track : undefined;
-}
-
-/**
- * The `applied` values of the settings `patch` changed that still show the patch's value:
- * a setting changed again since keeps its newer choice.
- */
-function stillShowing(
-	shown: AudioSettings,
-	patch: Partial<AudioSettings>,
-	applied: AudioSettings
-): Partial<AudioSettings> {
-	const keys = (Object.keys(patch) as (keyof AudioSettings)[]).filter(
-		(key) => shown[key] === patch[key]
-	);
-	return Object.fromEntries(keys.map((key) => [key, applied[key]]));
 }

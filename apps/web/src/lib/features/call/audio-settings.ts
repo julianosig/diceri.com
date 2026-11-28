@@ -41,3 +41,16 @@ export function toCaptureOptions(settings: AudioSettings): AudioCaptureOptions {
 		voiceIsolation: enhanced ? false : settings.voiceIsolation
 	};
 }
+
+/** The settings a change touches. */
+export function settingKeys(patch: Partial<AudioSettings>): (keyof AudioSettings)[] {
+	return Object.keys(patch) as (keyof AudioSettings)[];
+}
+
+/** The values `from` has for `keys`. */
+export function valuesOf(
+	from: AudioSettings,
+	keys: (keyof AudioSettings)[]
+): Partial<AudioSettings> {
+	return Object.fromEntries(keys.map((key) => [key, from[key]]));
+}
