@@ -48,7 +48,8 @@ impl TextToSpeech for ElevenLabsTextToSpeech {
         &self,
         request: SpeechRequest<'_>,
     ) -> Result<SpeechAudio, TextToSpeechError> {
-        let failed = |error: &dyn std::fmt::Display| TextToSpeechError::Request(error.to_string());
+        let failed =
+            |error: &dyn std::fmt::Display| TextToSpeechError::Unavailable(error.to_string());
         let url = format!(
             "{BASE_URL}/{}/stream?output_format=pcm_{TTS_SAMPLE_RATE}",
             request.voice.0
@@ -75,10 +76,7 @@ impl TextToSpeech for ElevenLabsTextToSpeech {
             .map_err(|e| failed(&e))?;
         let status = response.status();
         if !status.is_success() {
-            let detail = response.text().await.unwrap_or_default();
-            return Err(TextToSpeechError::Request(format!(
-                "HTTP {status}: {detail}"
-            )));
+            return Err(TextToSpeechError::from_status(status.as_u16()));
         }
         let (tx, rx) = mpsc::channel(CHUNK_QUEUE);
         let mut bytes = response.bytes_stream();
@@ -87,7 +85,7 @@ impl TextToSpeech for ElevenLabsTextToSpeech {
             while let Some(chunk) = bytes.next().await {
                 let item = chunk
                     .map(|data| decoder.push(&data))
-                    .map_err(|error| TextToSpeechError::Request(error.to_string()));
+                    .map_err(|error| TextToSpeechError::Unavailable(error.to_string()));
                 let stop = item.is_err();
                 if tx.send(item).await.is_err() || stop {
                     break;

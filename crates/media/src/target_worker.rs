@@ -183,6 +183,11 @@ async fn synthesize(deps: &WorkerDeps, target: &LanguageCode, text: &str) -> Opt
     };
     match deps.tts.synthesize(request).await {
         Ok(audio) => Some(audio),
+        // Busy or unreachable: this phrase stays a caption, the next one tries again.
+        Err(error @ TextToSpeechError::Unavailable(_)) => {
+            tracing::warn!(%error, %target, "speech synthesis unavailable, phrase captioned only");
+            None
+        }
         Err(error) => {
             if deps.voice.refuse() {
                 warn_clone_refused(&error, target);

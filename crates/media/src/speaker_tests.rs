@@ -32,6 +32,8 @@ impl Translator for TaggingTranslator {
 #[derive(Default)]
 struct FakeTts {
     refused: Option<&'static str>,
+    /// Fails the first request as busy (HTTP 429), then works.
+    busy_once: std::sync::atomic::AtomicBool,
     voices_used: Mutex<Vec<String>>,
 }
 
@@ -45,6 +47,12 @@ impl TextToSpeech for FakeTts {
             .lock()
             .unwrap()
             .push(request.voice.0.clone());
+        if self
+            .busy_once
+            .swap(false, std::sync::atomic::Ordering::Relaxed)
+        {
+            return Err(TextToSpeechError::from_status(429));
+        }
         if self.refused == Some(request.voice.0.as_str()) {
             return Err(TextToSpeechError::Request(
                 "voice requires verification".to_owned(),
@@ -245,6 +253,19 @@ async fn a_refused_clone_leaves_the_speaker_captions_only() {
     assert!(harness.output.spoken.lock().unwrap().is_empty());
     let used = harness.tts.voices_used.lock().unwrap().clone();
     assert_eq!(used, vec!["clone"]);
+    assert_eq!(harness.texts(CaptionKind::Translation).len(), 2);
+}
+
+#[tokio::test]
+async fn a_busy_provider_loses_one_phrase_not_the_voice() {
+    let tts = FakeTts {
+        busy_once: std::sync::atomic::AtomicBool::new(true),
+        ..FakeTts::default()
+    };
+    let events = [phrase("um"), phrase("dois")].concat();
+    let harness = Harness::run_with(events, &["en"], tts).await;
+    // The first phrase is captioned only; the second is spoken in the clone again.
+    assert_eq!(harness.output.spoken.lock().unwrap().len(), 1);
     assert_eq!(harness.texts(CaptionKind::Translation).len(), 2);
 }
 

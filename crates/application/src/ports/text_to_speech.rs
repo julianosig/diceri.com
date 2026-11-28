@@ -18,8 +18,26 @@ pub struct SpeechRequest<'a> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum TextToSpeechError {
+    /// The provider rejected the request (e.g. the voice clone): retrying will not help.
     #[error("speech synthesis request failed: {0}")]
     Request(String),
+    /// Busy, rate-limited or unreachable for now (429, 5xx, network): only this phrase is lost.
+    #[error("speech synthesis unavailable: {0}")]
+    Unavailable(String),
+}
+
+impl TextToSpeechError {
+    /// The error for a non-success HTTP status. Only the status is kept: provider bodies can
+    /// echo the text being spoken, which must never reach the logs.
+    #[must_use]
+    pub fn from_status(status: u16) -> Self {
+        let detail = format!("HTTP {status}");
+        if status == 408 || status == 429 || status >= 500 {
+            Self::Unavailable(detail)
+        } else {
+            Self::Request(detail)
+        }
+    }
 }
 
 /// PCM chunks as they are synthesized; the channel closes when speech ends.

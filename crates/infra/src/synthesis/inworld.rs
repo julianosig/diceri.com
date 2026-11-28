@@ -86,7 +86,18 @@ fn samples_of(line: &[u8], decoder: &mut PcmDecoder) -> Result<Vec<i16>, TextToS
     }
     let parsed: StreamLine = serde_json::from_slice(line).map_err(|e| failed(&e))?;
     if let Some(error) = parsed.error {
-        return Err(TextToSpeechError::Request(error.to_string()));
+        // Only the provider's numeric code: its message can quote the text being spoken.
+        let code = error
+            .get("code")
+            .and_then(serde_json::Value::as_i64)
+            .unwrap_or(0);
+        let detail = format!("stream error code {code}");
+        // gRPC codes: deadline exceeded, resource exhausted (rate limit), unavailable.
+        return Err(if matches!(code, 4 | 8 | 14) {
+            TextToSpeechError::Unavailable(detail)
+        } else {
+            TextToSpeechError::Request(detail)
+        });
     }
     let Some(audio) = parsed.result.and_then(|result| result.audio_content) else {
         return Ok(Vec::new());
@@ -103,7 +114,8 @@ impl TextToSpeech for InworldTextToSpeech {
         &self,
         request: SpeechRequest<'_>,
     ) -> Result<SpeechAudio, TextToSpeechError> {
-        let failed = |error: &dyn std::fmt::Display| TextToSpeechError::Request(error.to_string());
+        let failed =
+            |error: &dyn std::fmt::Display| TextToSpeechError::Unavailable(error.to_string());
         let body = json!({
             "text": request.text,
             "voiceId": request.voice.0,
@@ -125,10 +137,7 @@ impl TextToSpeech for InworldTextToSpeech {
             .map_err(|e| failed(&e))?;
         let status = response.status();
         if !status.is_success() {
-            let detail = response.text().await.unwrap_or_default();
-            return Err(TextToSpeechError::Request(format!(
-                "HTTP {status}: {detail}"
-            )));
+            return Err(TextToSpeechError::from_status(status.as_u16()));
         }
         let (tx, rx) = mpsc::channel(CHUNK_QUEUE);
         let mut bytes = response.bytes_stream();
@@ -137,7 +146,7 @@ impl TextToSpeech for InworldTextToSpeech {
             let mut decoder = PcmDecoder::default();
             while let Some(chunk) = bytes.next().await {
                 let Ok(chunk) = chunk.inspect_err(|error| {
-                    let _ = tx.try_send(Err(TextToSpeechError::Request(error.to_string())));
+                    let _ = tx.try_send(Err(TextToSpeechError::Unavailable(error.to_string())));
                 }) else {
                     break;
                 };
