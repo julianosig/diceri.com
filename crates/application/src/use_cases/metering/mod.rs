@@ -28,8 +28,7 @@ pub struct MeteringService {
 }
 
 /// Calls counted against the service's capacity, by owner: those someone was in at the last
-/// tick, and owners let in whose join credentials are still usable (reserved until then, or
-/// until their call shows up as live).
+/// tick, and owners let in whose join credentials are still usable (reserved until then).
 #[derive(Debug, Default)]
 struct LiveCalls {
     in_call: HashSet<RoomId>,
@@ -203,10 +202,8 @@ impl MeteringService {
         .await;
         let live_owners = self.owners_of(&in_call).await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
-        // A reservation ends once its call shows up live (or when its credentials expire).
-        calls
-            .admitted
-            .retain(|owner, _| !live_owners.contains(owner));
+        // Reservations last until their credentials expire (see `admit`), even once the call
+        // shows up live: a fresh token stays usable if that connection drops.
         calls.in_call = in_call;
         calls.live_owners = live_owners;
     }
