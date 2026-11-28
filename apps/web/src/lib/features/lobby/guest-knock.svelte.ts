@@ -12,6 +12,8 @@ export class GuestKnock {
 	credentials = $state<MediaCredentials | undefined>();
 	request: Knock | undefined;
 	#timer: ReturnType<typeof setTimeout> | undefined;
+	/** Bumped on every ask and cancel: an answer to an older one is ignored. */
+	#attempt = 0;
 
 	constructor(
 		private readonly roomId: string,
@@ -21,31 +23,38 @@ export class GuestKnock {
 	) {}
 
 	async ask(profile: Profile): Promise<void> {
+		const attempt = ++this.#attempt;
 		this.status = 'waiting';
 		this.error = undefined;
 		try {
-			this.request = await knock(this.roomId, profile);
-			this.#schedule();
+			const request = await knock(this.roomId, profile);
+			if (attempt !== this.#attempt) return;
+			this.request = request;
+			this.#schedule(attempt);
 		} catch (cause) {
-			this.#fail(cause);
+			if (attempt === this.#attempt) this.#fail(cause);
 		}
 	}
 
+	/** Stops waiting: an answer still on its way (even "let in") is ignored. */
 	cancel(): void {
+		this.#attempt += 1;
 		clearTimeout(this.#timer);
 		this.status = 'idle';
 	}
 
-	#schedule(): void {
+	#schedule(attempt: number): void {
 		this.#timer = setTimeout(() => {
-			void this.#poll();
+			void this.#poll(attempt);
 		}, POLL_MS);
 	}
 
-	async #poll(): Promise<void> {
-		if (!this.request || this.status !== 'waiting') return;
+	async #poll(attempt: number): Promise<void> {
+		if (!this.request || this.status !== 'waiting' || attempt !== this.#attempt) return;
 		try {
 			const outcome = await knockOutcome(this.roomId, this.request);
+			// Cancelled (or asked again) while the answer was on its way: never join.
+			if (attempt !== this.#attempt) return;
 			if (outcome.status === 'admitted') {
 				this.credentials = outcome.credentials;
 				this.status = 'admitted';
@@ -53,10 +62,10 @@ export class GuestKnock {
 			} else if (outcome.status === 'denied') {
 				this.status = 'denied';
 			} else {
-				this.#schedule();
+				this.#schedule(attempt);
 			}
 		} catch (cause) {
-			this.#fail(cause);
+			if (attempt === this.#attempt) this.#fail(cause);
 		}
 	}
 

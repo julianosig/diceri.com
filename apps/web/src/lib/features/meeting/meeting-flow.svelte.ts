@@ -104,6 +104,8 @@ export class MeetingFlow {
 	}
 
 	async #close(phase: 'left' | 'ended'): Promise<void> {
+		// A join request still waiting (leaving the page) must never connect afterwards.
+		this.knock.cancel();
 		this.hostRequests?.stop();
 		this.transcript = this.session?.transcript ?? this.transcript;
 		try {
