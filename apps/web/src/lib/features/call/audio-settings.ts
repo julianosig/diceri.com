@@ -72,6 +72,14 @@ export function captureConstraints(settings: AudioSettings): CaptureConstraints 
 	};
 }
 
+/** The settings in `now` that differ from `before`. */
+export function changedSince(before: AudioSettings, now: AudioSettings): Partial<AudioSettings> {
+	const keys = (Object.keys(now) as (keyof AudioSettings)[]).filter(
+		(key) => now[key] !== before[key]
+	);
+	return valuesOf(now, keys);
+}
+
 /** Reopens the microphone with `settings`; LiveKit opens the default device with no other
  * constraints, so they are applied to it after it opens. */
 export async function restartWith(track: LocalAudioTrack, settings: AudioSettings): Promise<void> {

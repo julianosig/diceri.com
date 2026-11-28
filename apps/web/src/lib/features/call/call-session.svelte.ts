@@ -15,6 +15,7 @@ import type { CallProblem } from './call-problem.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
 	restartWith,
+	changedSince,
 	DEFAULT_AUDIO_SETTINGS,
 	settingKeys,
 	valuesOf,
@@ -146,6 +147,9 @@ export class CallSession {
 				(metrics) => (this.metrics = metrics)
 			);
 			this.status = 'connected';
+			// Settings changed while the call was set up are applied now.
+			const missed = changedSince(this.#applied, this.settings);
+			if (settingKeys(missed).length > 0) void this.updateSettings(missed);
 			this.#refreshParticipants();
 		} catch (cause) {
 			if (this.#isClosing()) return;
@@ -229,8 +233,8 @@ export class CallSession {
 	}
 
 	/** A microphone track with the current settings, muted when the caller is. */
-	async #capture(): Promise<LocalAudioTrack> {
-		const captured = await createLocalAudioTrack(toCaptureOptions(this.settings));
+	async #capture(settings: AudioSettings): Promise<LocalAudioTrack> {
+		const captured = await createLocalAudioTrack(toCaptureOptions(settings));
 		// Muted before it is published, so a muted caller never sends a single frame.
 		if (this.muted) await captured.mute();
 		return captured;
@@ -308,7 +312,14 @@ export class CallSession {
 	}
 
 	async #publishMicrophone(): Promise<void> {
-		const captured = await this.#capture();
+		// The settings captured with: a change made meanwhile is applied once connected.
+		const used = this.settings;
+		const captured = await this.#capture(used);
+		// Left during the browser's microphone prompt: the microphone stops at once.
+		if (this.#isClosing()) {
+			captured.stop();
+			return;
+		}
 		try {
 			await this.#room.localParticipant.publishTrack(captured, {
 				source: Track.Source.Microphone
@@ -318,11 +329,11 @@ export class CallSession {
 			captured.stop();
 			throw cause;
 		}
-		this.#applied = this.settings;
+		this.#applied = used;
 		const track = this.#micTrack();
 		// The message is a problem key; CallScreen words it in the visitor's language.
 		if (!track) throw new Error('micUnpublished' satisfies CallProblem);
-		const result = await applyEnhancedFilter(track, this.settings.enhancedFilter);
+		const result = await applyEnhancedFilter(track, used.enhancedFilter);
 		this.activeFilter = result.active;
 		this.error = result.error;
 		if (this.muted) await track.mute();
