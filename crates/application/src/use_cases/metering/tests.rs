@@ -350,3 +350,21 @@ async fn a_listener_whose_person_left_is_disconnected() {
     f.metering.tick().await;
     assert_eq!(*f.closer.1.lock().unwrap(), vec!["monitor-p-9".to_owned()]);
 }
+
+#[tokio::test]
+async fn an_owner_still_connecting_keeps_their_place_through_a_tick() {
+    let f = fixture();
+    let ana = f.account(1, "ana").await;
+    let bob = f.account(2, "bob").await;
+    // Ana is let in; the minute's tick runs before she connects.
+    f.call(&ana, 0).await;
+    f.metering.admit(&ana).await.unwrap();
+    f.metering.tick().await;
+    // The service holds one call: her place is still taken.
+    assert!(matches!(
+        f.metering.admit(&bob).await,
+        Err(LimitError::Busy)
+    ));
+    // Coming back while her place is held is not a second call.
+    assert!(f.metering.admit(&ana).await.is_ok());
+}

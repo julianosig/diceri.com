@@ -2,7 +2,7 @@
 //! a call, charged to the room's owner, and calls end when a plan limit is reached, so no
 //! single account can use everyone's minutes.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, PoisonError};
 
 use diceri_domain::{Account, Room, RoomId, Username};
@@ -27,12 +27,32 @@ pub struct MeteringService {
     calls: Arc<Mutex<LiveCalls>>,
 }
 
-/// Rooms someone was in at the last tick, and owners admitted since (not counted yet).
+/// Calls counted against the service's capacity, by owner: those someone was in at the last
+/// tick, and owners let in whose join credentials are still usable (reserved until then, or
+/// until their call shows up as live).
 #[derive(Debug, Default)]
 struct LiveCalls {
     in_call: HashSet<RoomId>,
-    admitted: HashSet<Username>,
+    live_owners: HashSet<Username>,
+    /// When each owner was let in (Unix ms).
+    admitted: HashMap<Username, u64>,
 }
+
+impl LiveCalls {
+    /// Distinct owners with a call live or about to be: one call never counts twice.
+    fn live_count(&self) -> usize {
+        let reserved = self
+            .admitted
+            .keys()
+            .filter(|owner| !self.live_owners.contains(*owner))
+            .count();
+        self.live_owners.len() + reserved
+    }
+}
+
+/// An owner's place in the service's capacity is held while their join credentials (2-minute
+/// media tokens) can still be used, with a margin.
+const RESERVATION_MS: u64 = 150_000;
 
 impl std::fmt::Debug for MeteringService {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -131,16 +151,17 @@ impl MeteringService {
         if month >= self.capacity.monthly_minutes {
             return Err(LimitError::MonthlyCapacity);
         }
-        let own_call = self.rooms.find_live_by_owner(&account.username).await?;
+        let now_ms = self.clock.now_ms();
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
-        let already_live = own_call.is_some_and(|room| calls.in_call.contains(&room.id))
-            || calls.admitted.contains(&account.username);
-        if !already_live
-            && calls.in_call.len() + calls.admitted.len() >= self.capacity.max_live_calls
-        {
+        calls
+            .admitted
+            .retain(|_, at| now_ms.saturating_sub(*at) < RESERVATION_MS);
+        let owner = &account.username;
+        let already_live = calls.live_owners.contains(owner) || calls.admitted.contains_key(owner);
+        if !already_live && calls.live_count() >= self.capacity.max_live_calls {
             return Err(LimitError::Busy);
         }
-        calls.admitted.insert(account.username.clone());
+        calls.admitted.insert(owner.clone(), now_ms);
         Ok(allowance)
     }
 
@@ -171,13 +192,6 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
-        // Owners let in from here on are still connecting when this tick ends: they stay.
-        let admitted_before = self
-            .calls
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner)
-            .admitted
-            .clone();
         // Charging first: tidying up never delays a call's charge or its limit.
         let (in_call, ended_now) = self.charge_live_calls(presence, closer).await;
         // Calls ended just now are already being closed; within a budget, so a slow media
@@ -187,11 +201,24 @@ impl MeteringService {
             "tidying media rooms",
         )
         .await;
+        let live_owners = self.owners_of(&in_call).await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
-        calls.in_call = in_call;
+        // A reservation ends once its call shows up live (or when its credentials expire).
         calls
             .admitted
-            .retain(|owner| !admitted_before.contains(owner));
+            .retain(|owner, _| !live_owners.contains(owner));
+        calls.in_call = in_call;
+        calls.live_owners = live_owners;
+    }
+
+    async fn owners_of(&self, rooms: &HashSet<RoomId>) -> HashSet<Username> {
+        let mut owners = HashSet::new();
+        for room in rooms {
+            if let Ok(Some(stored)) = self.rooms.find_by_id(room).await {
+                owners.insert(stored.owner);
+            }
+        }
+        owners
     }
 
     /// Charges every call someone is in and returns those rooms. Who is in each call is asked
