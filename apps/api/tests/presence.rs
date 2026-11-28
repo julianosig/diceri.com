@@ -32,6 +32,10 @@ impl MediaPresence for FakePresence {
     ) -> Result<Vec<String>, MediaAccessError> {
         Ok(Vec::new())
     }
+
+    async fn open_rooms(&self) -> Result<Vec<diceri_domain::RoomId>, MediaAccessError> {
+        Ok(Vec::new())
+    }
 }
 
 fn app() -> (Router, Arc<FakePresence>) {

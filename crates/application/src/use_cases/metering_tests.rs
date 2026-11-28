@@ -37,6 +37,15 @@ impl MediaPresence for People {
         Ok(self.0.lock().unwrap().get(room).copied().unwrap_or(0))
     }
 
+    async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
+        Ok(self
+            .live_rooms()
+            .await?
+            .into_iter()
+            .map(|live| live.room)
+            .collect())
+    }
+
     async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
         let people = self.people_in(room).await?;
         Ok((0..people).map(|n| format!("p-{n}")).collect())

@@ -16,6 +16,10 @@ pub struct LiveRoom {
 pub trait MediaPresence: Send + Sync {
     async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError>;
 
+    /// Every media room open now, by room id (one cheap listing, no participants and no cap),
+    /// so calls that ended can be closed.
+    async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError>;
+
     /// Media identities of the people in one room's call right now (empty when it does not
     /// exist), so a call can be kept to its size.
     async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError>;

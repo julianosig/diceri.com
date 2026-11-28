@@ -25,6 +25,10 @@ impl MediaPresence for People {
         Ok(Vec::new())
     }
 
+    async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
+        Ok(Vec::new())
+    }
+
     async fn identities_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
         self.0
             .lock()
@@ -143,4 +147,40 @@ async fn an_unreachable_media_server_does_not_lock_people_out() {
         .await
         .unwrap();
     assert!(matches!(outcome, KnockOutcome::Admitted(_)));
+}
+
+/// Ends the call while "starting translation", like a host ending it during a slow dispatch.
+struct EndingDispatcher(Arc<crate::test_support::InMemoryRooms>);
+
+#[async_trait]
+impl crate::ports::TranslationDispatcher for EndingDispatcher {
+    async fn start(&self, room: &RoomId) -> Result<(), crate::ports::DispatchError> {
+        let end = |room: &mut diceri_domain::Room| {
+            room.end();
+            Ok(())
+        };
+        crate::ports::RoomRepository::modify(self.0.as_ref(), room, Box::new(end))
+            .await
+            .unwrap();
+        Ok(())
+    }
+}
+
+#[tokio::test]
+async fn a_call_ended_while_translation_starts_hands_out_no_credentials() {
+    let (mut f, _) = with_people(Some(&[]));
+    f.admission = f
+        .admission
+        .clone()
+        .with_translation(Arc::new(EndingDispatcher(f.repo.clone())));
+    let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
+    let host = AccountId::from_parts(1, [1; 10]);
+    let joined = f
+        .admission
+        .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
+        .await;
+    assert!(matches!(
+        joined,
+        Err(AdmissionError::Rule(RoomRuleError::Ended))
+    ));
 }

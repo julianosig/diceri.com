@@ -29,6 +29,10 @@ impl MediaPresence for FakePresence {
     async fn identities_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
         Ok(Vec::new())
     }
+
+    async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
+        Ok(Vec::new())
+    }
 }
 
 struct Fixture {

@@ -161,6 +161,7 @@ impl AdmissionService {
         let identity = self.seat(&room, account).await?;
         let ticket = self.grant(&room.id, identity, Some(profile), MediaRole::Speaker)?;
         self.start_translation(&room.id).await;
+        self.ensure_still_open(&room.id).await?;
         Ok(ticket)
     }
 
@@ -234,6 +235,7 @@ impl AdmissionService {
                     MediaRole::Speaker,
                 )?;
                 self.start_translation(&room.id).await;
+                self.ensure_still_open(&room.id).await?;
                 KnockOutcome::Admitted(ticket)
             }
         })
@@ -268,6 +270,16 @@ impl AdmissionService {
         } else {
             Err(AdmissionError::Forbidden)
         }
+    }
+
+    /// Starting translation can take seconds: a call ended meanwhile hands out no credentials.
+    async fn ensure_still_open(&self, room: &RoomId) -> Result<(), AdmissionError> {
+        let room = self
+            .rooms
+            .find_by_id(room)
+            .await?
+            .ok_or(AdmissionError::NotFound)?;
+        Ok(room.ensure_open()?)
     }
 
     /// Best effort: a failure to start translation must not block joining.

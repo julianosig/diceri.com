@@ -37,18 +37,19 @@ impl LiveKitPresence {
         }
     }
 
-    async fn room_names(&self) -> Result<Vec<String>, MediaAccessError> {
+    async fn all_room_names(&self) -> Result<Vec<String>, MediaAccessError> {
         let grants = VideoGrants {
             room_list: true,
             ..VideoGrants::default()
         };
         let listed: RoomList = self.twirp.call("ListRooms", grants, &json!({})).await?;
-        Ok(listed
-            .rooms
-            .into_iter()
-            .take(MAX_ROOMS)
-            .map(|room| room.name)
-            .collect())
+        Ok(listed.rooms.into_iter().map(|room| room.name).collect())
+    }
+
+    async fn room_names(&self) -> Result<Vec<String>, MediaAccessError> {
+        let mut names = self.all_room_names().await?;
+        names.truncate(MAX_ROOMS);
+        Ok(names)
     }
 
     /// Whether the media room exists (asking for its participants otherwise is an error).
@@ -99,6 +100,12 @@ impl MediaPresence for LiveKitPresence {
 
     async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {
         Ok(self.identities_in(room).await?.len())
+    }
+
+    async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
+        // Media rooms are named after the room id; anything else is not ours.
+        let names = self.all_room_names().await?;
+        Ok(names.iter().filter_map(|name| name.parse().ok()).collect())
     }
 
     async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {

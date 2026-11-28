@@ -213,16 +213,17 @@ impl MeteringService {
     /// room). Only rooms this service knows are touched, never another deployment's.
     async fn close_ended_calls(&self, presence: &dyn MediaPresence, closer: &dyn MediaRoomCloser) {
         let Ok(media) = presence
-            .live_rooms()
+            .open_rooms()
             .await
             .inspect_err(|error| tracing::warn!(%error, "usage meter could not list media rooms"))
         else {
             return;
         };
-        for live in media {
-            let ended = matches!(self.rooms.find_by_id(&live.room).await, Ok(Some(room)) if room.is_ended());
-            if ended && let Err(error) = closer.close(&live.room).await {
-                warn_not_closed(&error, &live.room);
+        for room in media {
+            let ended =
+                matches!(self.rooms.find_by_id(&room).await, Ok(Some(stored)) if stored.is_ended());
+            if ended && let Err(error) = closer.close(&room).await {
+                warn_not_closed(&error, &room);
             }
         }
     }
