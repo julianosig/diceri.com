@@ -203,6 +203,8 @@ export class CallSession {
 			return;
 		}
 		const result = await applyEnhancedFilter(track, this.#applied.enhancedFilter);
+		// Left while the filter started: no meter or monitor comes back.
+		if (this.#isClosing()) return;
 		this.activeFilter = result.active;
 		this.error = problem ?? result.error;
 		await this.#startMeter(outgoingMediaTrack(track));
@@ -228,8 +230,11 @@ export class CallSession {
 			this.#localMonitor = new LocalMonitor(outgoingMediaTrack(track));
 		}
 		if (mode === 'loopback') {
+			const credentials = await this.options.monitorCredentials();
+			// Left while the credentials came: no hidden listener joins after the call.
+			if (this.#isClosing()) return;
 			this.#loopback = new LoopbackMonitor(this.options.credentials.identity);
-			await this.#loopback.start(await this.options.monitorCredentials());
+			await this.#loopback.start(credentials);
 		}
 	}
 
