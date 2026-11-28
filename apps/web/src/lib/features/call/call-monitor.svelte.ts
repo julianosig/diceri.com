@@ -69,7 +69,13 @@ export class CallMonitor {
 		try {
 			const credentials = await this.options.credentials();
 			if (!current()) return;
-			loopback = new LoopbackMonitor(this.options.identity);
+			const ended = () => {
+				// Removed by the server: the control shows it off instead of playing nothing.
+				if (this.#loopback !== loopback) return;
+				this.#loopback = undefined;
+				this.mode = 'off';
+			};
+			loopback = new LoopbackMonitor(this.options.identity, ended);
 			this.#loopback = loopback;
 			await loopback.start(credentials);
 			if (!current()) await loopback.stop();
