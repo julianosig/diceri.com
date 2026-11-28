@@ -198,9 +198,19 @@ impl MeteringService {
             .await
             .inspect_err(|error| tracing::warn!(%error, "usage meter could not list rooms"))
             .unwrap_or_default();
-        let in_call = occupied(presence, rooms.iter().map(|room| room.id)).await;
-        for room in &in_call {
-            self.charge_or_close(*room, closer).await;
+        let candidates = with_media_room(presence.as_ref(), rooms.iter().map(|room| room.id)).await;
+        let mut checks = tokio::task::JoinSet::new();
+        for room in candidates {
+            let presence = presence.clone();
+            checks.spawn(async move { (room, someone_in(presence.as_ref(), &room).await) });
+        }
+        // Each call is charged as soon as its answer comes, not after the slowest one.
+        let mut in_call = HashSet::new();
+        while let Some(Ok((room, someone))) = checks.join_next().await {
+            if someone {
+                in_call.insert(room);
+                self.charge_or_close(room, closer).await;
+            }
         }
         in_call
     }
@@ -318,8 +328,8 @@ fn month_start(day: u32) -> u32 {
 mod media;
 
 use media::{
-    CLOSE_TIMEOUT, close_ended, close_within_deadline, occupied, remove_orphan_listeners,
-    within_budget,
+    CLOSE_TIMEOUT, close_ended, close_within_deadline, remove_orphan_listeners, someone_in,
+    with_media_room, within_budget,
 };
 
 #[cfg(test)]

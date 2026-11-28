@@ -1,30 +1,23 @@
 //! The meter's work with the media server: who is in each call, and closing or tidying
 //! media rooms, each with a deadline so a slow server never stalls the meter.
 
-use std::collections::HashSet;
 use std::sync::Arc;
 
 use diceri_domain::RoomId;
 
 use crate::ports::{CallMembers, MediaAccessError, MediaPresence, MediaRoomCloser};
 
-/// The rooms with someone in their call, asked all at once.
-pub(super) async fn occupied(
-    presence: &Arc<dyn MediaPresence>,
+/// The `rooms` that have a media room open now, from one listing: only those can have anyone
+/// in their call, so rooms opened but never joined cost no request each. If the listing
+/// fails, every room is a candidate.
+pub(super) async fn with_media_room(
+    presence: &dyn MediaPresence,
     rooms: impl Iterator<Item = RoomId>,
-) -> HashSet<RoomId> {
-    let mut checks = tokio::task::JoinSet::new();
-    for room in rooms {
-        let presence = presence.clone();
-        checks.spawn(async move { (room, someone_in(presence.as_ref(), &room).await) });
+) -> Vec<RoomId> {
+    match tokio::time::timeout(CLOSE_TIMEOUT, presence.open_rooms()).await {
+        Ok(Ok(open)) => rooms.filter(|room| open.contains(room)).collect(),
+        _ => rooms.collect(),
     }
-    let mut busy = HashSet::new();
-    while let Some(Ok((room, someone))) = checks.join_next().await {
-        if someone {
-            busy.insert(room);
-        }
-    }
-    busy
 }
 
 /// Whether anyone is in `room`'s call (a provider error counts as nobody).
