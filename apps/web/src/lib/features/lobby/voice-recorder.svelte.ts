@@ -65,6 +65,16 @@ export class VoiceRecorder {
 		if (this.#recorder?.state === 'recording') this.#recorder.stop();
 	}
 
+	/** Abandons a recording in progress (leaving the page): nothing is uploaded or kept. */
+	discard(): void {
+		if (this.#recorder) this.#recorder.onstop = null;
+		this.stop();
+		if (this.step === 'recording') {
+			this.#cleanup();
+			this.step = 'idle';
+		}
+	}
+
 	reset(): void {
 		this.#cleanup();
 		this.step = 'idle';

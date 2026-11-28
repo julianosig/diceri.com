@@ -38,7 +38,7 @@
 	}
 
 	onDestroy(() => {
-		recorder.stop();
+		recorder.discard();
 	});
 </script>
 
