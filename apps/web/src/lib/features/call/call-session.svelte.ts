@@ -158,20 +158,21 @@ export class CallSession {
 	async updateSettings(patch: Partial<AudioSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
-		// Restarting a muted microphone briefly sends the new one live: it waits for unmute.
-		if (this.muted) {
-			this.#deferred = { ...this.#deferred, ...patch };
-			return;
-		}
-		await this.#queueRestart(patch);
-	}
-
-	async #queueRestart(patch: Partial<AudioSettings>): Promise<void> {
 		const revision = ++this.#revision;
 		for (const key of settingKeys(patch)) this.#owners[key] = revision;
-		const change = this.#settingsChange.then(() => this.#restartMicrophone(patch, revision));
-		this.#settingsChange = change.catch(() => undefined);
-		await change;
+		// Decided when its turn comes: restarting a muted microphone briefly sends the new
+		// one live, so while muted the change waits for unmute.
+		await this.#inTurn(async () => {
+			if (this.muted) this.#deferred = { ...this.#deferred, ...patch };
+			else await this.#restartMicrophone(patch, revision);
+		});
+	}
+
+	/** Microphone changes and mute switches run one at a time, in the order asked. */
+	async #inTurn(work: () => Promise<void>): Promise<void> {
+		const turn = this.#settingsChange.then(work);
+		this.#settingsChange = turn.catch(() => undefined);
+		await turn;
 	}
 
 	/**
@@ -236,16 +237,21 @@ export class CallSession {
 	}
 
 	async toggleMute(): Promise<void> {
-		const track = this.#micTrack();
-		if (!track) return;
-		if (this.muted) {
-			const deferred = this.#deferred;
-			this.#deferred = {};
-			if (settingKeys(deferred).length > 0) await this.#queueRestart(deferred);
-			await track.unmute();
-		} else await track.mute();
-		this.muted = !this.muted;
-		this.#refreshParticipants();
+		await this.#inTurn(async () => {
+			const track = this.#micTrack();
+			if (!track) return;
+			if (this.muted) {
+				// Changes made while muted, applied before the microphone goes live.
+				const deferred = this.#deferred;
+				this.#deferred = {};
+				if (settingKeys(deferred).length > 0) {
+					await this.#restartMicrophone(deferred, this.#revision);
+				}
+				await track.unmute();
+			} else await track.mute();
+			this.muted = !this.muted;
+			this.#refreshParticipants();
+		});
 	}
 
 	/** Turns the camera on or off; a camera that cannot start stays off. */
