@@ -235,7 +235,8 @@ export const fr: Messages = {
 		copied: 'Transcription copiée'
 	},
 	plans: {
-		betaCaption: (total: number) => `places restantes dans la bêta publique, sur ${String(total)}`,
+		betaLeft: 'places restantes',
+		betaDetail: (total: number) => `Bêta publique · ${String(total)} au total`,
 		betaFull: 'Toutes les places sont prises pour le moment',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} sur ${String(total)} min utilisées ce mois-ci`,

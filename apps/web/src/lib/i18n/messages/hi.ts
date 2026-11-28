@@ -228,7 +228,8 @@ export const hi: Messages = {
 		copied: 'ट्रांसक्रिप्ट कॉपी हो गया'
 	},
 	plans: {
-		betaCaption: (total: number) => `सार्वजनिक बीटा में बची जगहें, ${String(total)} में से`,
+		betaLeft: 'जगहें बाकी',
+		betaDetail: (total: number) => `सार्वजनिक बीटा · कुल ${String(total)}`,
 		betaFull: 'फ़िलहाल सभी जगहें भर चुकी हैं',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} में से ${String(total)} मिनट इस महीने इस्तेमाल हुए`,

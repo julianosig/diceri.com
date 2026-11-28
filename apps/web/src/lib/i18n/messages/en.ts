@@ -234,7 +234,8 @@ export const en = {
 		copied: 'Transcript copied'
 	},
 	plans: {
-		betaCaption: (total: number) => `spots left in the public beta, of ${String(total)}`,
+		betaLeft: 'spots left',
+		betaDetail: (total: number) => `Public beta · ${String(total)} in total`,
 		betaFull: 'All spots are taken for now',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} of ${String(total)} min used this month`,

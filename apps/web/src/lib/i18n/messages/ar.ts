@@ -232,7 +232,8 @@ export const ar: Messages = {
 		copied: 'تم نسخ النص'
 	},
 	plans: {
-		betaCaption: (total: number) => `مكانًا متبقيًا في النسخة التجريبية العامة، من ${String(total)}`,
+		betaLeft: 'مكانًا متبقيًا',
+		betaDetail: (total: number) => `نسخة تجريبية عامة · ${String(total)} إجمالًا`,
 		betaFull: 'جميع الأماكن مشغولة حاليًا',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} من ${String(total)} د مستخدمة هذا الشهر`,

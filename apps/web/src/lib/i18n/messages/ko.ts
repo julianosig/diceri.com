@@ -228,7 +228,8 @@ export const ko: Messages = {
 		copied: '스크립트가 복사되었습니다'
 	},
 	plans: {
-		betaCaption: (total: number) => `공개 베타 남은 자리 (총 ${String(total)}자리)`,
+		betaLeft: '남은 자리',
+		betaDetail: (total: number) => `공개 베타 · 총 ${String(total)}자리`,
 		betaFull: '지금은 모든 자리가 찼어요',
 		usedThisMonth: (used: number, total: number) =>
 			`이번 달 ${String(total)}분 중 ${String(used)}분 사용`,

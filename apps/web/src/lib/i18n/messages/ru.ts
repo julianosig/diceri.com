@@ -233,7 +233,8 @@ export const ru: Messages = {
 		copied: 'Расшифровка скопирована'
 	},
 	plans: {
-		betaCaption: (total: number) => `мест осталось в открытой бете, из ${String(total)}`,
+		betaLeft: 'мест осталось',
+		betaDetail: (total: number) => `Открытая бета · всего ${String(total)}`,
 		betaFull: 'Пока все места заняты',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} из ${String(total)} мин использовано в этом месяце`,

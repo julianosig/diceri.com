@@ -227,7 +227,8 @@ export const zh: Messages = {
 		copied: '文字记录已复制'
 	},
 	plans: {
-		betaCaption: (total: number) => `公开测试剩余名额（共 ${String(total)} 个）`,
+		betaLeft: '剩余名额',
+		betaDetail: (total: number) => `公开测试 · 共 ${String(total)} 个`,
 		betaFull: '目前名额已满',
 		usedThisMonth: (used: number, total: number) =>
 			`本月已用 ${String(used)}/${String(total)} 分钟`,
