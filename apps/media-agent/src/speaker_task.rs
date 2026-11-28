@@ -104,7 +104,12 @@ async fn transcribe(speaker: &Speaker, providers: &Providers, events: &Transcrip
     let mut quick_drops = 0;
     while let Some(stream) = open_speech_to_text(providers, speaker).await {
         let started = tokio::time::Instant::now();
-        pump_audio(&speaker.track, stream.audio, track_ended.clone());
+        // Stopped with this stream, a reconnect, or the whole speaker (it is dropped then).
+        let _pump = AbortOnDrop(pump_audio(
+            &speaker.track,
+            stream.audio,
+            track_ended.clone(),
+        ));
         if !forward(stream.events, events).await {
             return;
         }
@@ -158,7 +163,7 @@ fn pump_audio(
     track: &RemoteAudioTrack,
     audio: mpsc::Sender<Vec<i16>>,
     track_ended: Arc<AtomicBool>,
-) {
+) -> tokio::task::JoinHandle<()> {
     let sample_rate = i32::try_from(STT_SAMPLE_RATE).unwrap_or(16_000);
     let mut frames = NativeAudioStream::new(track.rtc_track(), sample_rate, 1);
     tokio::spawn(async move {
@@ -177,7 +182,16 @@ fn pump_audio(
                 break;
             }
         }
-    });
+    })
+}
+
+/// Aborts a task when dropped, so it never outlives what started it.
+struct AbortOnDrop(tokio::task::JoinHandle<()>);
+
+impl Drop for AbortOnDrop {
+    fn drop(&mut self) {
+        self.0.abort();
+    }
 }
 
 /// Phrases of one track are numbered from here, counting up by one. Seeded from the current
