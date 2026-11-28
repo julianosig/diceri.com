@@ -170,6 +170,12 @@ impl Room {
         Ok(())
     }
 
+    /// Takes back a voice registered for `account` (its clone could not be kept), freeing its slot.
+    pub fn unregister_voice(&mut self, account: &AccountId, voice_id: &str) {
+        self.voices
+            .retain(|(owner, voice)| !(owner == account && voice == voice_id));
+    }
+
     /// A participant may only speak in a voice they recorded themselves: another person's
     /// clone id (visible to everyone in the call) is never accepted.
     #[must_use]

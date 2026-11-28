@@ -239,14 +239,21 @@ impl VoiceService {
         account: &AccountId,
         voice: &VoiceId,
     ) -> Result<(), VoiceError> {
-        let adopted = match self.register(room, account, voice).await {
-            Ok(()) => self.keep(account, voice).await,
-            Err(error) => Err(error),
-        };
-        if adopted.is_err() {
+        self.register(room, account, voice)
+            .await
+            .inspect_err(|_| self.discard(voice))?;
+        if let Err(error) = self.keep(account, voice).await {
+            // Not kept: it leaves the room too, so its slot is free and it is never used.
+            let (account, voice_id) = (*account, voice.0.clone());
+            let take_back = move |room: &mut Room| {
+                room.unregister_voice(&account, &voice_id);
+                Ok(())
+            };
+            let _ = self.rooms.modify(&room, Box::new(take_back)).await;
             self.discard(voice);
+            return Err(error);
         }
-        adopted
+        Ok(())
     }
 
     /// Whether `account` has a kept recording.
