@@ -4,11 +4,11 @@ use std::collections::{HashMap, HashSet};
 
 use diceri_domain::{RoomId, Username};
 
+use crate::ports::RoomRepository;
+
 /// An owner's place in the service's capacity is held at least this long after they are
 /// let in: their join credentials (2-minute media tokens) can be used until then.
 pub(super) const RESERVATION_MS: u64 = 150_000;
-/// How long the join credentials themselves last.
-const TOKEN_LIFETIME_MS: u64 = 120_000;
 
 /// Calls counted against the service's capacity, by owner: those someone was in at the last
 /// look, and owners let in whose place is still held.
@@ -50,9 +50,14 @@ impl LiveCalls {
             let expired = now_ms.saturating_sub(*at) >= RESERVATION_MS;
             let answered_since = observed
                 .get(owner)
-                .is_some_and(|seen| *seen >= at.saturating_add(TOKEN_LIFETIME_MS));
+                .is_some_and(|seen| *seen >= at.saturating_add(RESERVATION_MS));
             !(expired && answered_since)
         });
+    }
+
+    /// Owners holding a reservation.
+    pub(super) fn reserved(&self) -> Vec<Username> {
+        self.admitted.keys().cloned().collect()
     }
 
     /// Distinct owners with a call live or about to be: one call never counts twice.
@@ -64,6 +69,34 @@ impl LiveCalls {
             .count();
         self.live_owners.len() + reserved
     }
+}
+
+/// The owners of `rooms`.
+pub(super) async fn owners_of(
+    repository: &dyn RoomRepository,
+    rooms: &HashSet<RoomId>,
+) -> HashSet<Username> {
+    let mut owners = HashSet::new();
+    for room in rooms {
+        if let Ok(Some(stored)) = repository.find_by_id(room).await {
+            owners.insert(stored.owner);
+        }
+    }
+    owners
+}
+
+/// Those of `owners` with no room open any more.
+pub(super) async fn without_live_room(
+    repository: &dyn RoomRepository,
+    owners: Vec<Username>,
+) -> Vec<Username> {
+    let mut gone = Vec::new();
+    for owner in owners {
+        if matches!(repository.find_live_by_owner(&owner).await, Ok(None)) {
+            gone.push(owner);
+        }
+    }
+    gone
 }
 
 #[cfg(test)]
@@ -95,7 +128,7 @@ mod tests {
             HashSet::new(),
             HashSet::new(),
             &HashSet::from([ana()]),
-            130_000,
+            RESERVATION_MS,
         );
         calls.release_expired(RESERVATION_MS + 1);
         assert_eq!(calls.live_count(), 0);

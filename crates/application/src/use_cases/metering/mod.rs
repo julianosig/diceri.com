@@ -5,7 +5,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, Mutex, PoisonError};
 
-use diceri_domain::{Account, Room, RoomId, Username};
+use diceri_domain::{Account, Room, RoomId};
 
 use super::plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 use crate::ports::{
@@ -176,6 +176,8 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
+        // What the looks below show is true from now on (the time is read before asking).
+        let looked_at = self.clock.now_ms();
         // One listing and one look at each call serve both charging and tidying up.
         let open = open_media_rooms(presence.as_ref()).await;
         // Charging first: tidying up never delays a call's charge or its limit.
@@ -199,23 +201,20 @@ impl MeteringService {
             .in_call
             .clone();
         in_call.extend(checked.unseen.intersection(&previous).copied());
-        let live_owners = self.owners_of(&in_call).await;
-        let seen_owners = self.owners_of(&checked.seen).await;
-        let now_ms = self.clock.now_ms();
+        let repository = self.rooms.as_ref();
+        let live_owners = owners_of(repository, &in_call).await;
+        let mut seen_owners = owners_of(repository, &checked.seen).await;
+        // An owner with no room open any more (a call ended) is known to have no call.
+        let reserved = self
+            .calls
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .reserved();
+        seen_owners.extend(without_live_room(repository, reserved).await);
         self.calls
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .update(in_call, live_owners, &seen_owners, now_ms);
-    }
-
-    async fn owners_of(&self, rooms: &HashSet<RoomId>) -> HashSet<Username> {
-        let mut owners = HashSet::new();
-        for room in rooms {
-            if let Ok(Some(stored)) = self.rooms.find_by_id(room).await {
-                owners.insert(stored.owner);
-            }
-        }
-        owners
+            .update(in_call, live_owners, &seen_owners, looked_at);
     }
 
     /// Charges every call someone is in. Each call is looked at once, all at once with a
@@ -387,7 +386,7 @@ fn month_start(day: u32) -> u32 {
 mod capacity;
 mod media;
 
-use capacity::LiveCalls;
+use capacity::{LiveCalls, owners_of, without_live_room};
 
 use media::{
     close_ended, close_within_deadline, has_orphan_listeners, members_of, open_media_rooms,
