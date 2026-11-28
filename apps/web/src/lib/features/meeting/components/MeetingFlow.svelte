@@ -2,7 +2,8 @@
 	import { i18n } from '#lib/i18n/index.ts';
 	import { onMount, type Snippet } from 'svelte';
 	import { resolve } from '$app/paths';
-	import { Button } from '#lib/components/ui/index.ts';
+	import { House } from '@lucide/svelte';
+	import { Button, buttonVariants } from '#lib/components/ui/index.ts';
 	import { CallScreen, MeetingInfoCard, TimeLeft } from '#lib/features/call/index.ts';
 	import { TranscriptView } from '#lib/features/translation/index.ts';
 	import {
@@ -108,10 +109,8 @@
 							{i18n.t.meeting.rejoin}
 						</Button>
 					{/if}
-					<a
-						class="rounded-full px-6 py-2.5 text-brand-600 hover:bg-surface-raised"
-						href={resolve('/')}
-					>
+					<a class={buttonVariants()} href={resolve('/')}>
+						<House class="size-4" aria-hidden="true" />
 						{i18n.t.meeting.home}
 					</a>
 				</div>
