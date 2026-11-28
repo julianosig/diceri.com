@@ -12,6 +12,7 @@ use livekit::prelude::{
 };
 use livekit::track::TrackSource;
 use tokio::sync::{mpsc, watch};
+use tokio::task::AbortHandle;
 
 use crate::output::LiveKitOutput;
 use crate::providers::Providers;
@@ -82,14 +83,18 @@ async fn serve(
             }
         }
     }
+    speakers.stop_all();
     speakers.delete_all_clones(providers);
 }
 
-/// Target-language channels of the speakers currently being translated, and
+/// Target-language channels of the speakers currently being translated, their tasks, and
 /// the voice clones to delete when their owners leave.
 #[derive(Default)]
 struct Speakers {
     targets: HashMap<String, watch::Sender<Vec<LanguageCode>>>,
+    /// One task per speaker: stopped when their microphone or they leave, or replaced when
+    /// they publish another one, so nothing transcribes a microphone that is gone.
+    tasks: HashMap<String, AbortHandle>,
     clones: HashMap<String, VoiceId>,
 }
 
@@ -103,9 +108,21 @@ impl Speakers {
         conversation: &Arc<Conversation>,
     ) {
         if let RoomEvent::ParticipantDisconnected(participant) = &event {
-            if let Some(voice) = self.clones.remove(participant.identity().as_str()) {
+            let identity = participant.identity();
+            self.stop(identity.as_str());
+            if let Some(voice) = self.clones.remove(identity.as_str()) {
                 delete_clone(providers, voice);
             }
+            return;
+        }
+        if let RoomEvent::TrackUnsubscribed {
+            publication,
+            participant,
+            ..
+        } = &event
+            && publication.source() == TrackSource::Microphone
+        {
+            self.stop(participant.identity().as_str());
             return;
         }
         let RoomEvent::TrackSubscribed {
@@ -126,13 +143,31 @@ impl Speakers {
         if let Some(voice) = &speaker.voice {
             self.clones.insert(speaker.identity.clone(), voice.clone());
         }
-        tokio::spawn(speaker_task::run(
+        let identity = speaker.identity.clone();
+        let task = tokio::spawn(speaker_task::run(
             speaker,
             providers.clone(),
             output.clone(),
             conversation.clone(),
             receiver,
         ));
+        // A new microphone from the same person replaces the old one's work.
+        if let Some(old) = self.tasks.insert(identity, task.abort_handle()) {
+            old.abort();
+        }
+    }
+
+    /// Stops transcribing `identity`: what they already said still finishes translating.
+    fn stop(&mut self, identity: &str) {
+        if let Some(task) = self.tasks.remove(identity) {
+            task.abort();
+        }
+    }
+
+    fn stop_all(&mut self) {
+        for (_, task) in self.tasks.drain() {
+            task.abort();
+        }
     }
 
     /// Deletes every remaining clone when the session ends.

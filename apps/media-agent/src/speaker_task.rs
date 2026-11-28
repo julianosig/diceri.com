@@ -163,7 +163,12 @@ fn pump_audio(
     let mut frames = NativeAudioStream::new(track.rtc_track(), sample_rate, 1);
     tokio::spawn(async move {
         loop {
-            let Some(frame) = frames.next().await else {
+            // Ends with its stream too, even while the microphone sends nothing.
+            let frame = tokio::select! {
+                frame = frames.next() => frame,
+                () = audio.closed() => break,
+            };
+            let Some(frame) = frame else {
                 track_ended.store(true, Ordering::Relaxed);
                 break;
             };
