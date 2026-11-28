@@ -17,6 +17,8 @@ use crate::providers::Providers;
 /// Attempts at opening speech-to-text, and the pause between them (about a minute).
 const OPEN_ATTEMPTS: u32 = 20;
 const OPEN_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(3);
+/// How long one attempt at opening speech-to-text may take.
+const OPEN_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
 /// Pause before reopening a stream that closed mid-call.
 const REOPEN_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 /// A stream that lived this long was working; closing after it is a drop, not a fault.
@@ -45,7 +47,14 @@ pub(crate) struct Speaker {
 /// speaker is given up on.
 async fn open_speech_to_text(providers: &Providers, speaker: &Speaker) -> Option<SpeechStream> {
     for attempt in 1..=OPEN_ATTEMPTS {
-        match providers.stt.open(&speaker.hints).await {
+        // A provider that accepts the connection and then stalls is just another failed try.
+        let tried = tokio::time::timeout(OPEN_TIMEOUT, providers.stt.open(&speaker.hints)).await;
+        let opened = tried.unwrap_or_else(|_| {
+            Err(SpeechToTextError::Connection(
+                "opening timed out".to_owned(),
+            ))
+        });
+        match opened {
             Ok(stream) => return Some(stream),
             Err(error) if attempt < OPEN_ATTEMPTS => {
                 warn_retrying(&error, &speaker.identity, attempt);
