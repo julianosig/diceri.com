@@ -44,11 +44,13 @@ fn grants_for(room: &RoomId, role: MediaRole) -> VideoGrants {
     match role {
         MediaRole::Speaker => VideoGrants {
             can_publish: Some(true),
-            can_publish_data: Some(true),
+            // Captions come only from the translator: a person sending data could forge them.
+            can_publish_data: Some(false),
             // Voice and camera; never screen share, which nothing in the app offers.
             can_publish_sources: vec!["microphone".to_owned(), "camera".to_owned()],
-            // Lets the browser set its translation preview language attribute.
-            can_update_own_metadata: Some(true),
+            // Name, language and voice are set by the server in the token: a person who could
+            // edit them could point `voice_id` at someone else's clone (visible in the room).
+            can_update_own_metadata: Some(false),
             ..base
         },
         MediaRole::Monitor => VideoGrants {
@@ -117,7 +119,8 @@ mod tests {
             grants.can_publish_sources,
             vec!["microphone".to_owned(), "camera".to_owned()]
         );
-        assert_eq!(grants.can_update_own_metadata, Some(true));
+        assert_eq!(grants.can_update_own_metadata, Some(false));
+        assert_eq!(grants.can_publish_data, Some(false));
         assert!(!grants.hidden);
     }
 
