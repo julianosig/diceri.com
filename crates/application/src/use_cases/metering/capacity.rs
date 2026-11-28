@@ -54,6 +54,10 @@ impl LiveCalls {
                 .is_some_and(|seen| *seen >= at.saturating_add(RESERVATION_MS));
             !(expired && answered_since)
         });
+        // Answers only matter for places still held.
+        let admitted = &self.admitted;
+        self.observed
+            .retain(|owner, _| admitted.contains_key(owner));
     }
 
     /// Owners holding a reservation.
@@ -102,18 +106,22 @@ pub(super) async fn owners_of(
     owners
 }
 
-/// Those of `owners` with no room open any more.
+/// Those of `owners` with no room open any more, from one look at the rooms.
 pub(super) async fn without_live_room(
     repository: &dyn RoomRepository,
     owners: Vec<Username>,
 ) -> Vec<Username> {
-    let mut gone = Vec::new();
-    for owner in owners {
-        if matches!(repository.find_live_by_owner(&owner).await, Ok(None)) {
-            gone.push(owner);
-        }
+    if owners.is_empty() {
+        return Vec::new();
     }
-    gone
+    let Ok(live) = repository.live_rooms().await else {
+        return Vec::new();
+    };
+    let open: HashSet<Username> = live.into_iter().map(|room| room.owner).collect();
+    owners
+        .into_iter()
+        .filter(|owner| !open.contains(owner))
+        .collect()
 }
 
 #[cfg(test)]
