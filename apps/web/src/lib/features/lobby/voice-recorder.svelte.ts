@@ -35,6 +35,8 @@ export class VoiceRecorder {
 	#timer: ReturnType<typeof setInterval> | undefined;
 	#frame = 0;
 	#voicedMs = 0;
+	/** Bumped when a recording starts or is discarded: late results of an older one are dropped. */
+	#attempt = 0;
 
 	constructor(private readonly roomId: string) {}
 
@@ -45,8 +47,10 @@ export class VoiceRecorder {
 	async start(deviceId: string | undefined): Promise<void> {
 		this.error = undefined;
 		this.voiceId = undefined;
+		const attempt = ++this.#attempt;
+		let stream: MediaStream;
 		try {
-			this.#stream = await navigator.mediaDevices.getUserMedia({
+			stream = await navigator.mediaDevices.getUserMedia({
 				audio: {
 					deviceId: deviceId ? { exact: deviceId } : undefined,
 					echoCancellation: true,
@@ -55,10 +59,16 @@ export class VoiceRecorder {
 				}
 			});
 		} catch {
-			this.#fail('micNeeded');
+			if (attempt === this.#attempt) this.#fail('micNeeded');
 			return;
 		}
-		this.#record(this.#stream);
+		// Left (or restarted) while the browser was asking for the microphone: never record.
+		if (attempt !== this.#attempt) {
+			for (const track of stream.getTracks()) track.stop();
+			return;
+		}
+		this.#stream = stream;
+		this.#record(stream);
 	}
 
 	stop(): void {
@@ -67,6 +77,7 @@ export class VoiceRecorder {
 
 	/** Abandons a recording in progress (leaving the page): nothing is uploaded or kept. */
 	discard(): void {
+		this.#attempt += 1;
 		if (this.#recorder) this.#recorder.onstop = null;
 		this.stop();
 		if (this.step === 'recording') {
@@ -142,9 +153,13 @@ export class VoiceRecorder {
 
 	async #upload(sample: Blob): Promise<void> {
 		this.#cleanup();
+		const attempt = this.#attempt;
 		this.step = 'creating';
 		try {
-			const { voiceId } = await recordVoice(this.roomId, await toSpeechWav(sample));
+			const wav = await toSpeechWav(sample);
+			// Left the page while the recording was being converted: nothing is sent.
+			if (attempt !== this.#attempt) return;
+			const { voiceId } = await recordVoice(this.roomId, wav);
 			this.voiceId = voiceId;
 			this.kept = false;
 			this.step = 'ready';
