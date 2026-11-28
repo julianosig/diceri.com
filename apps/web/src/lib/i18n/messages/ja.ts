@@ -215,6 +215,7 @@ export const ja: Messages = {
 	},
 	meeting: {
 		left: '会議から退出しました',
+		disconnected: '接続が切れました',
 		endedByMe: '全員の通話を終了しました',
 		endedByHost: 'ホストが通話を終了しました',
 		rejoin: '再参加',

@@ -30,6 +30,8 @@ export class MeetingFlow {
 	transcript = $state<TranscriptLog | undefined>();
 	/** Who ended the call, for the end screen; `limit` when the plan's time ran out. */
 	endedBy = $state<'host' | 'me' | 'limit' | undefined>();
+	/** The call dropped on its own (network): the end screen offers to rejoin. */
+	lostConnection = $state(false);
 	/** When the owner's plan ends this call (ms since epoch), once it has started. */
 	deadline = $state<number | undefined>();
 	readonly knock: GuestKnock;
@@ -122,8 +124,13 @@ export class MeetingFlow {
 			onEndedByHost: () => {
 				this.endedBy ??= this.#reachedDeadline() ? 'limit' : 'host';
 				void this.#close('ended');
+			},
+			onDisconnected: () => {
+				this.lostConnection = true;
+				void this.#close('left');
 			}
 		});
+		this.lostConnection = false;
 		this.phase = 'call';
 		markInCall(this.roomId);
 		// Minutes count only while someone is in the call, so the clock starts now.

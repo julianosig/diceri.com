@@ -219,6 +219,7 @@ export const pt: Messages = {
 	},
 	meeting: {
 		left: 'Você saiu da reunião',
+		disconnected: 'Você foi desconectado',
 		endedByMe: 'Você encerrou a chamada para todos',
 		endedByHost: 'A chamada foi encerrada por quem a criou',
 		rejoin: 'Participar de novo',

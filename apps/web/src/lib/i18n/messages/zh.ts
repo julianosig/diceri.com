@@ -214,6 +214,7 @@ export const zh: Messages = {
 	},
 	meeting: {
 		left: '你已离开会议',
+		disconnected: '连接已断开',
 		endedByMe: '你已为所有人结束通话',
 		endedByHost: '主持人已结束通话',
 		rejoin: '重新加入',

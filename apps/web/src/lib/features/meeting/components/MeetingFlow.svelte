@@ -96,9 +96,11 @@
 		{:else if flow.phase === 'left' || flow.phase === 'ended'}
 			<section class="flex w-full flex-col items-center gap-6 px-4 text-center">
 				<h1 class="text-3xl">
-					{#if flow.phase === 'left'}{i18n.t.meeting.left}{:else if flow.endedBy === 'limit'}{i18n.t
-							.limits.timeUp}{:else if flow.endedBy === 'me'}{i18n.t.meeting.endedByMe}{:else}{i18n
-							.t.meeting.endedByHost}{/if}
+					{#if flow.lostConnection}{i18n.t.meeting
+							.disconnected}{:else if flow.phase === 'left'}{i18n.t.meeting
+							.left}{:else if flow.endedBy === 'limit'}{i18n.t.limits
+							.timeUp}{:else if flow.endedBy === 'me'}{i18n.t.meeting.endedByMe}{:else}{i18n.t
+							.meeting.endedByHost}{/if}
 				</h1>
 				{#if flow.endedBy === 'limit'}
 					<p class="max-w-md text-ink-muted">{i18n.t.limits.timeUpHint}</p>

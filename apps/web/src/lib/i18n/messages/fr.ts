@@ -222,6 +222,7 @@ export const fr: Messages = {
 	},
 	meeting: {
 		left: 'Vous avez quitté la réunion',
+		disconnected: 'Vous avez été déconnecté',
 		endedByMe: 'Vous avez mis fin à l’appel pour tous',
 		endedByHost: 'L’organisateur a mis fin à l’appel',
 		rejoin: 'Revenir',

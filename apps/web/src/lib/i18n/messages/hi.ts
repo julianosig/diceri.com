@@ -215,6 +215,7 @@ export const hi: Messages = {
 	},
 	meeting: {
 		left: 'आपने मीटिंग छोड़ दी',
+		disconnected: 'आपका कनेक्शन टूट गया',
 		endedByMe: 'आपने सबके लिए कॉल ख़त्म कर दी',
 		endedByHost: 'होस्ट ने कॉल ख़त्म कर दी',
 		rejoin: 'फिर से जुड़ें',

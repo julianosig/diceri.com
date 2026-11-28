@@ -223,6 +223,7 @@ export const de: Messages = {
 	},
 	meeting: {
 		left: 'Du hast das Meeting verlassen',
+		disconnected: 'Die Verbindung wurde getrennt',
 		endedByMe: 'Du hast den Anruf für alle beendet',
 		endedByHost: 'Der Host hat den Anruf beendet',
 		rejoin: 'Erneut beitreten',

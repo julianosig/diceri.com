@@ -220,6 +220,7 @@ export const ru: Messages = {
 	},
 	meeting: {
 		left: 'Вы покинули встречу',
+		disconnected: 'Соединение прервано',
 		endedByMe: 'Вы завершили звонок для всех',
 		endedByHost: 'Организатор завершил звонок',
 		rejoin: 'Вернуться',

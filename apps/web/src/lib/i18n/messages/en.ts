@@ -221,6 +221,7 @@ export const en = {
 	},
 	meeting: {
 		left: 'You left the meeting',
+		disconnected: 'You were disconnected',
 		endedByMe: 'You ended the call for everyone',
 		endedByHost: 'The host ended the call',
 		rejoin: 'Rejoin',

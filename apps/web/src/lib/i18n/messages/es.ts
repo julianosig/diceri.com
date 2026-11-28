@@ -220,6 +220,7 @@ export const es: Messages = {
 	},
 	meeting: {
 		left: 'Saliste de la reunión',
+		disconnected: 'Se perdió la conexión',
 		endedByMe: 'Finalizaste la llamada para todos',
 		endedByHost: 'El anfitrión finalizó la llamada',
 		rejoin: 'Volver a unirse',

@@ -215,6 +215,7 @@ export const ko: Messages = {
 	},
 	meeting: {
 		left: '회의에서 나왔습니다',
+		disconnected: '연결이 끊어졌어요',
 		endedByMe: '모두의 통화를 종료했습니다',
 		endedByHost: '호스트가 통화를 종료했습니다',
 		rejoin: '다시 참여',

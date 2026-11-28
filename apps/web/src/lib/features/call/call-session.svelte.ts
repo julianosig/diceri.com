@@ -70,6 +70,8 @@ export interface CallSessionOptions {
 	monitorCredentials: () => Promise<MediaCredentials>;
 	/** Called once when the host ends the meeting for everyone. */
 	onEndedByHost?: () => void;
+	/** The connection was lost for good (reconnecting gave up). */
+	onDisconnected?: () => void;
 }
 
 /** One participant's live media session in a room. Create per call screen. */
@@ -320,6 +322,8 @@ export class CallSession {
 			})
 			.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
 				if (reason === DisconnectReason.ROOM_DELETED) this.options.onEndedByHost?.();
+				// Reconnecting gave up (or the server removed us): never leave a dead call on screen.
+				else if (reason !== DisconnectReason.CLIENT_INITIATED) this.options.onDisconnected?.();
 			})
 			.on(RoomEvent.AudioPlaybackStatusChanged, () => {
 				this.audioBlocked = !this.#room.canPlaybackAudio;

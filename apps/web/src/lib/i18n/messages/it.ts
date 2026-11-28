@@ -222,6 +222,7 @@ export const it: Messages = {
 	},
 	meeting: {
 		left: 'Hai abbandonato la riunione',
+		disconnected: 'Sei stato disconnesso',
 		endedByMe: 'Hai terminato la chiamata per tutti',
 		endedByHost: 'L’organizzatore ha terminato la chiamata',
 		rejoin: 'Partecipa di nuovo',

@@ -219,6 +219,7 @@ export const ar: Messages = {
 	},
 	meeting: {
 		left: 'غادرت الاجتماع',
+		disconnected: 'انقطع الاتصال',
 		endedByMe: 'أنهيت المكالمة للجميع',
 		endedByHost: 'أنهى المضيف المكالمة',
 		rejoin: 'إعادة الانضمام',
