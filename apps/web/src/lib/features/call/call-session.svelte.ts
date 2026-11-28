@@ -269,11 +269,15 @@ export class CallSession {
 	async disconnect(): Promise<void> {
 		this.#closing = true;
 		this.#stats.stop();
-		await this.setMonitor('off');
-		await this.#stopMeter();
-		for (const element of this.#remoteElements.values()) element.remove();
-		this.#remoteElements.clear();
-		await this.#room.disconnect();
+		try {
+			await this.setMonitor('off');
+			await this.#stopMeter();
+		} finally {
+			// Leaving the room never depends on the extras closing cleanly.
+			for (const element of this.#remoteElements.values()) element.remove();
+			this.#remoteElements.clear();
+			await this.#room.disconnect();
+		}
 		this.status = 'idle';
 		this.participants = [];
 	}
@@ -302,6 +306,7 @@ export class CallSession {
 
 	async #startMeter(track: MediaStreamTrack): Promise<void> {
 		await this.#stopMeter();
+		if (this.#isClosing()) return;
 		const meter = new LevelMeter(track);
 		this.#meter = meter;
 		const tick = () => {
@@ -313,9 +318,11 @@ export class CallSession {
 
 	async #stopMeter(): Promise<void> {
 		cancelAnimationFrame(this.#meterFrame);
-		await this.#meter?.close();
+		// Detached first, so two stops never close the same meter twice.
+		const meter = this.#meter;
 		this.#meter = undefined;
 		this.level = 0;
+		await meter?.close();
 	}
 
 	#micTrack(): LocalAudioTrack | undefined {
