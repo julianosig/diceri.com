@@ -136,23 +136,24 @@ impl VoiceService {
         account: &AccountId,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
-        let (this, code, account) = (self.clone(), code.clone(), *account);
-        // Waiting for its turn can still be cut short; once started, it always finishes.
+        let (this, account) = (self.clone(), *account);
+        // Waiting for its turn and checking the recording can still be cut short; once the
+        // provider is asked for a clone, it always finishes (kept or deleted, never lost).
         let turn = self.locks.lock(&account).await;
+        let room = self.checked_room(code, &sample).await?;
         to_completion(async move {
             let _turn = turn;
-            this.record(&code, &account, sample).await
+            this.record_in(room, &account, sample).await
         })
         .await
     }
 
-    async fn record(
+    async fn record_in(
         &self,
-        code: &RoomCode,
+        room: Room,
         account: &AccountId,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
-        let room = self.checked_room(code, &sample).await?;
         let Some((samples, clock)) = &self.samples else {
             let voice = self.cloner.create(&self.call_name(&room), sample).await?;
             // A call's clone that cannot join the room (it ended meanwhile) would be orphaned.
