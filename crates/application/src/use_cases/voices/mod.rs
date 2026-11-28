@@ -137,7 +137,13 @@ impl VoiceService {
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
         let (this, code, account) = (self.clone(), code.clone(), *account);
-        to_completion(async move { this.record(&code, &account, sample).await }).await
+        // Waiting for its turn can still be cut short; once started, it always finishes.
+        let turn = self.locks.lock(&account).await;
+        to_completion(async move {
+            let _turn = turn;
+            this.record(&code, &account, sample).await
+        })
+        .await
     }
 
     async fn record(
@@ -146,7 +152,6 @@ impl VoiceService {
         account: &AccountId,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
-        let _one_at_a_time = self.locks.lock(account).await;
         let room = self.checked_room(code, &sample).await?;
         let Some((samples, clock)) = &self.samples else {
             let voice = self.cloner.create(&self.call_name(&room), sample).await?;
@@ -186,7 +191,12 @@ impl VoiceService {
         account: &AccountId,
     ) -> Result<VoiceId, VoiceError> {
         let (this, code, account) = (self.clone(), code.clone(), *account);
-        to_completion(async move { this.reuse_saved(&code, &account).await }).await
+        let turn = self.locks.lock(&account).await;
+        to_completion(async move {
+            let _turn = turn;
+            this.reuse_saved(&code, &account).await
+        })
+        .await
     }
 
     async fn reuse_saved(
@@ -195,7 +205,6 @@ impl VoiceService {
         account: &AccountId,
     ) -> Result<VoiceId, VoiceError> {
         let (samples, _) = self.samples.as_ref().ok_or(VoiceError::NoSavedVoice)?;
-        let _one_at_a_time = self.locks.lock(account).await;
         let room = self
             .rooms
             .find_by_code(code)
@@ -243,14 +252,18 @@ impl VoiceService {
     /// `false` when there was no recording.
     pub async fn delete_saved(&self, account: &AccountId) -> Result<bool, VoiceError> {
         let (this, account) = (self.clone(), *account);
-        to_completion(async move { this.forget_saved(&account).await }).await
+        let turn = self.locks.lock(&account).await;
+        to_completion(async move {
+            let _turn = turn;
+            this.forget_saved(&account).await
+        })
+        .await
     }
 
     async fn forget_saved(&self, account: &AccountId) -> Result<bool, VoiceError> {
         let Some((samples, _)) = &self.samples else {
             return Ok(false);
         };
-        let _one_at_a_time = self.locks.lock(account).await;
         // The provider first: if it fails, nothing is deleted and the person can try again,
         // instead of losing the only reference to a clone that still exists.
         if let Some(kept) = samples
