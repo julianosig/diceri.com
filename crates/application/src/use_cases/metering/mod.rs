@@ -171,14 +171,15 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
-        // First, so a call ended below at its limit is only swept if still open next minute;
-        // with a time budget, so a slow media server never holds up charging live calls.
+        // Charging first: tidying up never delays a call's charge or its limit.
+        let (in_call, ended_now) = self.charge_live_calls(presence, closer).await;
+        // Calls ended just now are already being closed; within a budget, so a slow media
+        // server never runs into the next minute.
         within_budget(
-            self.tidy_media_rooms(presence, closer),
+            self.tidy_media_rooms(presence, closer, &ended_now),
             "tidying media rooms",
         )
         .await;
-        let in_call = self.charge_live_calls(presence, closer).await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         calls.in_call = in_call;
         calls.admitted.clear();
@@ -191,7 +192,7 @@ impl MeteringService {
         &self,
         presence: &Arc<dyn MediaPresence>,
         closer: &Arc<dyn MediaRoomCloser>,
-    ) -> HashSet<RoomId> {
+    ) -> (HashSet<RoomId>, HashSet<RoomId>) {
         let rooms = self
             .rooms
             .live_rooms()
@@ -205,23 +206,31 @@ impl MeteringService {
             checks.spawn(async move { (room, someone_in(presence.as_ref(), &room).await) });
         }
         // Each call is charged as soon as its answer comes, not after the slowest one.
-        let mut in_call = HashSet::new();
+        let (mut in_call, mut ended_now) = (HashSet::new(), HashSet::new());
         while let Some(Ok((room, someone))) = checks.join_next().await {
-            if someone {
-                in_call.insert(room);
-                self.charge_or_close(room, closer).await;
+            if !someone {
+                continue;
+            }
+            in_call.insert(room);
+            if self.charge_or_close(room, closer).await {
+                ended_now.insert(room);
             }
         }
-        in_call
+        (in_call, ended_now)
     }
 
-    async fn charge_or_close(&self, room: RoomId, closer: &Arc<dyn MediaRoomCloser>) {
+    /// `true` when this charge ended the call (it is then closed on its own task).
+    async fn charge_or_close(&self, room: RoomId, closer: &Arc<dyn MediaRoomCloser>) -> bool {
         match self.charge(room).await {
             Ok(true) => {
                 tokio::spawn(close_within_deadline(closer.clone(), room));
+                true
             }
-            Ok(false) => {}
-            Err(error) => warn_not_charged(&error, &room),
+            Ok(false) => false,
+            Err(error) => {
+                warn_not_charged(&error, &room);
+                false
+            }
         }
     }
 
@@ -233,6 +242,7 @@ impl MeteringService {
         &self,
         presence: &Arc<dyn MediaPresence>,
         closer: &Arc<dyn MediaRoomCloser>,
+        ended_now: &HashSet<RoomId>,
     ) {
         let Ok(media) = presence
             .open_rooms()
@@ -242,7 +252,7 @@ impl MeteringService {
             return;
         };
         let mut work = tokio::task::JoinSet::new();
-        for room in media {
+        for room in media.into_iter().filter(|room| !ended_now.contains(room)) {
             let Ok(Some(stored)) = self.rooms.find_by_id(&room).await else {
                 continue;
             };
