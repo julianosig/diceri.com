@@ -65,11 +65,7 @@ impl RoomService {
             ..settings
         };
         if let Some(room) = self.repository.find_live_by_owner(&owner.username).await? {
-            let apply = move |room: &mut Room| {
-                room.settings = settings;
-                Ok(())
-            };
-            return Ok(self.repository.modify(&room.id, Box::new(apply)).await?);
+            return self.reuse(&room, settings).await;
         }
         let code = RoomCode::from_random_bytes(self.random.random_128());
         let host_key = AccessKey::from_random_bytes(self.random.random_128());
@@ -80,8 +76,28 @@ impl RoomService {
             owner.username.clone(),
             settings,
         );
-        self.repository.insert(room.clone()).await?;
-        Ok(room)
+        match self.repository.insert(room.clone()).await {
+            Ok(()) => Ok(room),
+            // Another request (a second tab) opened it first: use that room.
+            Err(RoomRepositoryError::OwnerHasLiveRoom) => {
+                let live = self
+                    .repository
+                    .find_live_by_owner(&owner.username)
+                    .await?
+                    .ok_or(RoomError::NotFound)?;
+                self.reuse(&live, room.settings).await
+            }
+            Err(error) => Err(error.into()),
+        }
+    }
+
+    /// The owner's live room with `settings` applied; its link and host key stay valid.
+    async fn reuse(&self, room: &Room, settings: RoomSettings) -> Result<Room, RoomError> {
+        let apply = move |room: &mut Room| {
+            room.settings = settings;
+            Ok(())
+        };
+        Ok(self.repository.modify(&room.id, Box::new(apply)).await?)
     }
 
     /// The live room at `/@username`.
@@ -132,6 +148,66 @@ mod tests {
         let again = service.open(&owner(), open).await.unwrap();
         assert_eq!(again.code, first.code);
         assert_eq!(again.settings.entry, EntryPolicy::Open);
+    }
+
+    /// Misses the owner's live room on its first lookup, like a second tab that checked just
+    /// before the first one stored its room.
+    #[derive(Default)]
+    struct LateLookup {
+        inner: InMemoryRooms,
+        looked: std::sync::atomic::AtomicBool,
+    }
+
+    #[async_trait::async_trait]
+    impl RoomRepository for LateLookup {
+        async fn insert(&self, room: Room) -> Result<(), RoomRepositoryError> {
+            self.inner.insert(room).await
+        }
+        async fn find_by_code(&self, code: &RoomCode) -> Result<Option<Room>, RoomRepositoryError> {
+            self.inner.find_by_code(code).await
+        }
+        async fn find_by_id(
+            &self,
+            id: &diceri_domain::RoomId,
+        ) -> Result<Option<Room>, RoomRepositoryError> {
+            self.inner.find_by_id(id).await
+        }
+        async fn find_live_by_owner(
+            &self,
+            owner: &Username,
+        ) -> Result<Option<Room>, RoomRepositoryError> {
+            if !self.looked.swap(true, std::sync::atomic::Ordering::Relaxed) {
+                return Ok(None);
+            }
+            self.inner.find_live_by_owner(owner).await
+        }
+        async fn modify(
+            &self,
+            id: &diceri_domain::RoomId,
+            change: crate::ports::RoomChange<'_>,
+        ) -> Result<Room, RoomChangeError> {
+            self.inner.modify(id, change).await
+        }
+        async fn live_rooms(&self) -> Result<Vec<Room>, RoomRepositoryError> {
+            self.inner.live_rooms().await
+        }
+    }
+
+    #[tokio::test]
+    async fn two_tabs_opening_at_once_share_one_room() {
+        let repository = Arc::new(LateLookup::default());
+        let service = room_service(repository.clone());
+        // The first tab's room is already stored, but the second tab's lookup misses it.
+        repository
+            .looked
+            .store(true, std::sync::atomic::Ordering::Relaxed);
+        let stored = service.open(&owner(), private_room()).await.unwrap();
+        repository
+            .looked
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+        let second = service.open(&owner(), private_room()).await.unwrap();
+        assert_eq!(second.code, stored.code);
+        assert_eq!(repository.live_rooms().await.unwrap().len(), 1);
     }
 
     #[tokio::test]

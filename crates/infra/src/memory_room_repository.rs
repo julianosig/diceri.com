@@ -25,6 +25,12 @@ impl RoomRepository for MemoryRoomRepository {
         if rooms.contains_key(&room.id) || codes.contains_key(&room.code) {
             return Err(RoomRepositoryError::AlreadyExists(room.id));
         }
+        if rooms
+            .values()
+            .any(|live| live.owner == room.owner && !live.is_ended())
+        {
+            return Err(RoomRepositoryError::OwnerHasLiveRoom);
+        }
         codes.insert(room.code.clone(), room.id);
         rooms.insert(room.id, room);
         Ok(())

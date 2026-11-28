@@ -190,7 +190,14 @@ pub(crate) struct InMemoryRooms(Mutex<HashMap<RoomId, Room>>);
 #[async_trait]
 impl RoomRepository for InMemoryRooms {
     async fn insert(&self, room: Room) -> Result<(), RoomRepositoryError> {
-        self.0.lock().unwrap().insert(room.id, room);
+        let mut rooms = self.0.lock().unwrap();
+        if rooms
+            .values()
+            .any(|live| live.owner == room.owner && !live.is_ended())
+        {
+            return Err(RoomRepositoryError::OwnerHasLiveRoom);
+        }
+        rooms.insert(room.id, room);
         Ok(())
     }
 

@@ -7,6 +7,9 @@ pub enum RoomRepositoryError {
     AlreadyExists(RoomId),
     #[error("room `{0}` does not exist")]
     Missing(RoomId),
+    /// The owner already has a room that has not ended (one live room per account).
+    #[error("the owner already has a live room")]
+    OwnerHasLiveRoom,
     #[error("room storage is unavailable: {0}")]
     Unavailable(String),
 }
@@ -27,6 +30,8 @@ pub enum RoomChangeError {
 /// reached by their link code from the API and by id from the media side.
 #[async_trait]
 pub trait RoomRepository: Send + Sync {
+    /// Stores a new room; refused with `OwnerHasLiveRoom` when its owner already has a live one,
+    /// checked atomically so two concurrent opens cannot both create a room.
     async fn insert(&self, room: Room) -> Result<(), RoomRepositoryError>;
     async fn find_by_code(&self, code: &RoomCode) -> Result<Option<Room>, RoomRepositoryError>;
     async fn find_by_id(&self, id: &RoomId) -> Result<Option<Room>, RoomRepositoryError>;
