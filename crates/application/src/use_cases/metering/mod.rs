@@ -9,7 +9,8 @@ use diceri_domain::{Account, Room, RoomId, Username};
 
 use super::plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 use crate::ports::{
-    AccountRepository, Clock, MediaPresence, MediaRoomCloser, RoomRepository, UsageRepository,
+    AccountRepository, CallMembers, Clock, MediaPresence, MediaRoomCloser, RoomRepository,
+    UsageRepository,
 };
 
 const DAY_MS: u64 = 86_400_000;
@@ -35,6 +36,14 @@ struct LiveCalls {
     live_owners: HashSet<Username>,
     /// When each owner was let in (Unix ms).
     admitted: HashMap<Username, u64>,
+}
+
+/// What one tick saw: calls someone is in, calls it ended, and who is in each call it looked at.
+#[derive(Default)]
+struct Checked {
+    in_call: HashSet<RoomId>,
+    ended_now: HashSet<RoomId>,
+    members: HashMap<RoomId, CallMembers>,
 }
 
 impl LiveCalls {
@@ -191,15 +200,20 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
+        // One listing and one look at each call serve both charging and tidying up.
+        let open = open_media_rooms(presence.as_ref()).await;
         // Charging first: tidying up never delays a call's charge or its limit.
-        let (in_call, ended_now) = self.charge_live_calls(presence, closer).await;
+        let checked = self
+            .charge_live_calls(presence, closer, open.as_deref())
+            .await;
         // Calls ended just now are already being closed; within a budget, so a slow media
         // server never runs into the next minute.
         within_budget(
-            self.tidy_media_rooms(presence, closer, &ended_now),
+            self.tidy_media_rooms(closer, open, &checked),
             "tidying media rooms",
         )
         .await;
+        let in_call = checked.in_call;
         let live_owners = self.owners_of(&in_call).await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         // Reservations last until their credentials expire (see `admit`), even once the call
@@ -218,38 +232,42 @@ impl MeteringService {
         owners
     }
 
-    /// Charges every call someone is in and returns those rooms. Who is in each call is asked
-    /// all at once, each with a deadline; a call this ends is closed on its own task at once,
-    /// so neither a slow media server nor a slow close holds up another call.
+    /// Charges every call someone is in. Each call is looked at once, all at once with a
+    /// deadline each, and charged as soon as its answer comes; a call this ends is closed on
+    /// its own task, so neither a slow media server nor a slow close holds up another call.
     async fn charge_live_calls(
         &self,
         presence: &Arc<dyn MediaPresence>,
         closer: &Arc<dyn MediaRoomCloser>,
-    ) -> (HashSet<RoomId>, HashSet<RoomId>) {
+        open: Option<&[RoomId]>,
+    ) -> Checked {
         let rooms = self
             .rooms
             .live_rooms()
             .await
             .inspect_err(|error| tracing::warn!(%error, "usage meter could not list rooms"))
             .unwrap_or_default();
-        let candidates = with_media_room(presence.as_ref(), rooms.iter().map(|room| room.id)).await;
-        let mut checks = tokio::task::JoinSet::new();
-        for room in candidates {
-            let presence = presence.clone();
-            checks.spawn(async move { (room, someone_in(presence.as_ref(), &room).await) });
-        }
-        // Each call is charged as soon as its answer comes, not after the slowest one.
-        let (mut in_call, mut ended_now) = (HashSet::new(), HashSet::new());
-        while let Some(Ok((room, someone))) = checks.join_next().await {
-            if !someone {
+        // Only rooms with a media room open can have anyone in them.
+        let mut looks = tokio::task::JoinSet::new();
+        for room in rooms.iter().map(|room| room.id) {
+            if open.is_some_and(|open| !open.contains(&room)) {
                 continue;
             }
-            in_call.insert(room);
-            if self.charge_or_close(room, closer).await {
-                ended_now.insert(room);
+            let presence = presence.clone();
+            looks.spawn(async move { (room, members_of(presence.as_ref(), &room).await) });
+        }
+        let mut checked = Checked::default();
+        while let Some(Ok((room, Some(members)))) = looks.join_next().await {
+            let someone = !members.people.is_empty();
+            checked.members.insert(room, members);
+            if someone {
+                checked.in_call.insert(room);
+                if self.charge_or_close(room, closer).await {
+                    checked.ended_now.insert(room);
+                }
             }
         }
-        (in_call, ended_now)
+        checked
     }
 
     /// `true` when this charge ended the call (it is then closed on its own task).
@@ -269,40 +287,34 @@ impl MeteringService {
 
     /// Closes media rooms still open for calls that ended (a close that failed, or someone
     /// connecting with credentials issued just before the end), and disconnects hidden
-    /// listeners whose person left the call. Only rooms this service knows are touched,
-    /// never another deployment's; all at once, each with its own deadline.
+    /// listeners whose person left the call, from what charging already looked at. Only rooms
+    /// this service knows are touched, never another deployment's; each with its own deadline.
     async fn tidy_media_rooms(
         &self,
-        presence: &Arc<dyn MediaPresence>,
         closer: &Arc<dyn MediaRoomCloser>,
-        ended_now: &HashSet<RoomId>,
+        open: Option<Vec<RoomId>>,
+        checked: &Checked,
     ) {
-        let Ok(media) = presence
-            .open_rooms()
-            .await
-            .inspect_err(|error| tracing::warn!(%error, "usage meter could not list media rooms"))
-        else {
-            return;
-        };
         let mut work = tokio::task::JoinSet::new();
-        for room in media.into_iter().filter(|room| !ended_now.contains(room)) {
+        for room in open.unwrap_or_default() {
+            if checked.ended_now.contains(&room) {
+                continue;
+            }
             let Ok(Some(stored)) = self.rooms.find_by_id(&room).await else {
                 continue;
             };
-            let (presence, closer) = (presence.clone(), closer.clone());
-            let ended = stored.is_ended();
-            work.spawn(async move {
-                let tidy = async {
-                    if ended {
-                        close_ended(closer.as_ref(), &room).await;
-                    } else {
-                        remove_orphan_listeners(presence.as_ref(), closer.as_ref(), &room).await;
-                    }
-                };
-                if tokio::time::timeout(CLOSE_TIMEOUT, tidy).await.is_err() {
-                    tracing::warn!(room_id = %room, "media room tidy-up timed out");
-                }
-            });
+            let closer = closer.clone();
+            if stored.is_ended() {
+                work.spawn(within_deadline(
+                    async move { close_ended(closer.as_ref(), &room).await },
+                    room,
+                ));
+            } else if let Some(members) = checked.members.get(&room).cloned() {
+                work.spawn(within_deadline(
+                    async move { remove_orphan_listeners(closer.as_ref(), &room, members).await },
+                    room,
+                ));
+            }
         }
         while work.join_next().await.is_some() {}
     }
@@ -371,8 +383,8 @@ fn month_start(day: u32) -> u32 {
 mod media;
 
 use media::{
-    CLOSE_TIMEOUT, close_ended, close_within_deadline, remove_orphan_listeners, someone_in,
-    with_media_room, within_budget,
+    close_ended, close_within_deadline, members_of, open_media_rooms, remove_orphan_listeners,
+    within_budget, within_deadline,
 };
 
 #[cfg(test)]
