@@ -25,8 +25,7 @@ import {
 } from './audio-settings.ts';
 import { cameraOf } from './camera-track.ts';
 import { LevelMeter } from './level-meter.ts';
-import { LocalMonitor } from './local-monitor.ts';
-import { LoopbackMonitor } from './loopback-monitor.ts';
+import { CallMonitor, type MonitorMode } from './call-monitor.svelte.ts';
 import { applyEnhancedFilter, outgoingMediaTrack } from './noise-filter.ts';
 import {
 	AGENT_IDENTITY,
@@ -44,7 +43,7 @@ import { StatsPoller, type CallMetrics } from './stats/stats-poller.ts';
 
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
 /** Hear yourself: off, local mic, through the server, or translated by the agent. */
-export type MonitorMode = 'off' | 'local' | 'loopback';
+export type { MonitorMode } from './call-monitor.svelte.ts';
 
 export interface Participant {
 	identity: string;
@@ -84,7 +83,6 @@ export class CallSession {
 	muted = $state(false);
 	cameraOn = $state(false);
 	level = $state(0);
-	monitor = $state<MonitorMode>('off');
 	participants = $state<Participant[]>([]);
 	audioBlocked = $state(false);
 	metrics = $state<CallMetrics>({});
@@ -98,8 +96,7 @@ export class CallSession {
 	#remoteElements = new Map<RemoteTrack, HTMLMediaElement>();
 	#meter: LevelMeter | undefined;
 	#meterFrame = 0;
-	#localMonitor: LocalMonitor | undefined;
-	#loopback: LoopbackMonitor | undefined;
+	readonly #monitor: CallMonitor;
 	/** Set as soon as the call is being left: nothing may capture audio after it. */
 	#closing = false;
 	/** Read through a call: it changes while a change awaits, which narrowing cannot see. */
@@ -118,6 +115,11 @@ export class CallSession {
 
 	constructor(private readonly options: CallSessionOptions) {
 		this.settings.deviceId = options.deviceId;
+		this.#monitor = new CallMonitor({
+			identity: options.credentials.identity,
+			credentials: options.monitorCredentials,
+			isClosing: () => this.#closing
+		});
 		this.captions = new CaptionFeed(
 			() => this.#listener(),
 			(speaker) => {
@@ -219,24 +221,14 @@ export class CallSession {
 		return captured;
 	}
 
+	/** How the caller hears themselves (off, locally, or round-trip through the server). */
+	get monitor(): MonitorMode {
+		return this.#monitor.mode;
+	}
+
 	async setMonitor(mode: MonitorMode): Promise<void> {
-		// Detached first, so two callers never close the same monitor twice.
-		const [local, loopback] = [this.#localMonitor, this.#loopback];
-		this.#localMonitor = undefined;
-		this.#loopback = undefined;
-		await Promise.allSettled([local?.close(), loopback?.stop()]);
-		this.monitor = mode;
 		const track = this.#micTrack();
-		if (mode === 'local' && track) {
-			this.#localMonitor = new LocalMonitor(outgoingMediaTrack(track));
-		}
-		if (mode === 'loopback') {
-			const credentials = await this.options.monitorCredentials();
-			// Left while the credentials came: no hidden listener joins after the call.
-			if (this.#isClosing()) return;
-			this.#loopback = new LoopbackMonitor(this.options.credentials.identity);
-			await this.#loopback.start(credentials);
-		}
+		await this.#monitor.set(mode, track && outgoingMediaTrack(track));
 	}
 
 	async toggleMute(): Promise<void> {
