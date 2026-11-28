@@ -1,4 +1,5 @@
 import {
+	createLocalAudioTrack,
 	DisconnectReason,
 	type ConnectionQuality,
 	LocalAudioTrack,
@@ -143,7 +144,10 @@ export class CallSession {
 		if (this.status !== 'connected') return;
 		const mode = this.monitor;
 		await this.setMonitor('off');
-		await this.#room.localParticipant.setMicrophoneEnabled(false);
+		// A new track: re-enabling the old one would only unmute it, ignoring the new device
+		// and settings and briefly sending audio from a muted microphone.
+		const old = this.#micTrack();
+		if (old) await this.#room.localParticipant.unpublishTrack(old, true);
 		await this.#publishMicrophone();
 		await this.setMonitor(mode);
 	}
@@ -204,7 +208,10 @@ export class CallSession {
 	}
 
 	async #publishMicrophone(): Promise<void> {
-		await this.#room.localParticipant.setMicrophoneEnabled(true, toCaptureOptions(this.settings));
+		const captured = await createLocalAudioTrack(toCaptureOptions(this.settings));
+		// Muted before it is published, so a muted caller never sends a single frame.
+		if (this.muted) await captured.mute();
+		await this.#room.localParticipant.publishTrack(captured, { source: Track.Source.Microphone });
 		const track = this.#micTrack();
 		// The message is a problem key; CallScreen words it in the visitor's language.
 		if (!track) throw new Error('micUnpublished' satisfies CallProblem);
