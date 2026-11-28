@@ -32,12 +32,17 @@
 
 	const t = $derived(i18n.t.voice);
 
+	/** Set when the pre-join closes: a recording must not start after the person left. */
+	let left = false;
+
 	async function record() {
 		await onbeforerecord();
+		if (left) return;
 		await recorder.start(deviceId);
 	}
 
 	onDestroy(() => {
+		left = true;
 		recorder.discard();
 	});
 </script>
