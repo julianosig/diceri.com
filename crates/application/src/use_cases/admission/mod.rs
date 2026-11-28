@@ -227,6 +227,21 @@ impl AdmissionService {
     }
 
     /// Polled by the waiting guest; issues media credentials once admitted.
+    /// Where `request_id` stands, for its holder only; changes nothing.
+    pub async fn request_status(
+        &self,
+        code: &RoomCode,
+        request_id: &RequestId,
+        key: &AccessKey,
+    ) -> Result<RequestStatus, AdmissionError> {
+        let room = self.load(code).await?;
+        let request = room.request(request_id).ok_or(AdmissionError::NotFound)?;
+        if &request.key != key {
+            return Err(AdmissionError::Forbidden);
+        }
+        Ok(request.status)
+    }
+
     pub async fn outcome(
         &self,
         code: &RoomCode,

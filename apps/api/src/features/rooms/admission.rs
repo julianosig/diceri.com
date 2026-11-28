@@ -12,7 +12,7 @@ use super::dto::{
     JoinResponse, KnockResponse, OutcomeResponse, PendingRequestResponse, ProfileRequest,
 };
 use super::handlers::{parse_request_id, parse_room_code};
-use diceri_application::use_cases::KnockOutcome;
+use diceri_domain::RequestStatus;
 
 use crate::features::CurrentAccount;
 use crate::{ApiError, AppState};
@@ -86,19 +86,20 @@ pub(crate) async fn outcome(
     Path((code, request_id)): Path<(String, String)>,
     CallerKey(key): CallerKey,
 ) -> Result<Json<OutcomeResponse>, ApiError> {
-    let code = parse_room_code(&code)?;
-    let outcome = state
-        .admission
-        .outcome(&code, &parse_request_id(&request_id)?, &key)
-        .await?;
+    let (code, request_id) = (parse_room_code(&code)?, parse_request_id(&request_id)?);
     // Credentials for the call hold (or renew) its place in the service's capacity, as for
-    // its host: a guest's token never brings a call in over it.
-    if matches!(outcome, KnockOutcome::Admitted(_)) {
+    // its host, checked before the guest takes a seat: a guest refused here holds nothing.
+    let status = state
+        .admission
+        .request_status(&code, &request_id, &key)
+        .await?;
+    if status == RequestStatus::Admitted {
         state
             .metering
             .admit_owner_of(&state.rooms.get(&code).await?)
             .await?;
     }
+    let outcome = state.admission.outcome(&code, &request_id, &key).await?;
     Ok(Json(outcome.into()))
 }
 
