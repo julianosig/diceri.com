@@ -227,15 +227,15 @@ export const zh: Messages = {
 		copied: '文字记录已复制'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`封闭测试：${String(total)} 个名额，还剩 ${String(left)} 个`,
-		betaFull: '封闭测试：目前名额已满。',
+		betaLabel: '公开测试',
+		betaSpots: (left: number, total: number) => `${String(total)} 个名额，还剩 ${String(left)} 个`,
+		betaFull: '目前名额已满',
 		usedThisMonth: (used: number, total: number) =>
 			`本月已用 ${String(used)}/${String(total)} 分钟`,
 		freeLine: (minutes: number) => `免费：每月 ${String(minutes)} 分钟通话。`
 	},
 	limits: {
-		beta: 'Diceri 正在进行封闭测试，目前名额已满。请稍后再试。',
+		beta: 'Diceri 正在进行公开测试，目前名额已满。请稍后再试。',
 		network: '这个网络领取的房间用户名已达上限。请用其中一个登录。',
 		quota: '你本月套餐的通话分钟数已用完，将在每月 1 日（UTC）重置。',
 		daily: '你今天的免费通话分钟数已用完，将在午夜（UTC）重置。',

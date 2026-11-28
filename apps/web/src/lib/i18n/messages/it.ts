@@ -235,15 +235,15 @@ export const it: Messages = {
 		copied: 'Trascrizione copiata'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`Beta privata: restano ${String(left)} posti su ${String(total)}.`,
-		betaFull: 'Beta privata: per ora i posti sono esauriti.',
+		betaLabel: 'Beta pubblica',
+		betaSpots: (left: number, total: number) => `Restano ${String(left)} posti su ${String(total)}`,
+		betaFull: 'Per ora i posti sono esauriti',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} su ${String(total)} min usati questo mese`,
 		freeLine: (minutes: number) => `Gratis: ${String(minutes)} min di chiamate ogni mese.`
 	},
 	limits: {
-		beta: 'Diceri è in beta privata e per ora tutti i posti sono occupati. Riprova più tardi.',
+		beta: 'Diceri è in beta pubblica e per ora tutti i posti sono occupati. Riprova più tardi.',
 		network:
 			'Questa rete ha già prenotato il numero massimo di nomi di stanza. Accedi con uno di quelli.',
 		quota:

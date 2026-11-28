@@ -3,6 +3,7 @@
 	import { i18n } from '#lib/i18n/index.ts';
 	import { getPlanOffer } from '../plans-api.ts';
 	import type { BetaSpots, PlanInfo, Usage } from '../types.ts';
+	import BetaSpotsBadge from './BetaSpots.svelte';
 
 	interface Props {
 		/** The signed-in account's use; without it, the free plan's allowance is shown. */
@@ -36,7 +37,5 @@
 	{/if}
 </p>
 {#if beta && !usage}
-	<p class="text-center text-sm font-medium text-brand-600 dark:text-brand-400">
-		{beta.spotsLeft > 0 ? t.betaSpots(beta.spotsLeft, beta.spots) : t.betaFull}
-	</p>
+	<div class="mt-4"><BetaSpotsBadge {beta} /></div>
 {/if}

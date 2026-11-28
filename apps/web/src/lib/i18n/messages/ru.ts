@@ -233,15 +233,15 @@ export const ru: Messages = {
 		copied: 'Расшифровка скопирована'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`Закрытая бета: осталось ${String(left)} из ${String(total)} мест.`,
-		betaFull: 'Закрытая бета: пока все места заняты.',
+		betaLabel: 'Открытая бета',
+		betaSpots: (left: number, total: number) => `Осталось ${String(left)} из ${String(total)} мест`,
+		betaFull: 'Пока все места заняты',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} из ${String(total)} мин использовано в этом месяце`,
 		freeLine: (minutes: number) => `Бесплатно: ${String(minutes)} мин звонков каждый месяц.`
 	},
 	limits: {
-		beta: 'Diceri в закрытой бете, и сейчас все места заняты. Попробуйте позже.',
+		beta: 'Diceri в открытой бете, и сейчас все места заняты. Попробуйте позже.',
 		network: 'С этой сети уже занято максимальное число имён комнат. Войдите в одно из них.',
 		quota:
 			'Вы израсходовали минуты звонков по тарифу за этот месяц. Они обновятся 1-го числа (UTC).',

@@ -236,15 +236,16 @@ export const de: Messages = {
 		copied: 'Transkript kopiert'
 	},
 	plans: {
+		betaLabel: 'Öffentliche Beta',
 		betaSpots: (left: number, total: number) =>
-			`Private Beta: noch ${String(left)} von ${String(total)} Plätzen frei.`,
-		betaFull: 'Private Beta: vorerst sind alle Plätze vergeben.',
+			`Noch ${String(left)} von ${String(total)} Plätzen frei`,
+		betaFull: 'Vorerst sind alle Plätze vergeben',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} von ${String(total)} Min. diesen Monat genutzt`,
 		freeLine: (minutes: number) => `Kostenlos: ${String(minutes)} Min. Anrufe jeden Monat.`
 	},
 	limits: {
-		beta: 'Diceri ist in einer privaten Beta und alle Plätze sind vorerst vergeben. Versuch es später noch einmal.',
+		beta: 'Diceri ist in einer öffentlichen Beta und alle Plätze sind vorerst vergeben. Versuch es später noch einmal.',
 		network:
 			'Dieses Netzwerk hat schon die erlaubte Höchstzahl an Raumnamen gesichert. Melde dich mit einem davon an.',
 		quota:

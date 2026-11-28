@@ -228,15 +228,15 @@ export const hi: Messages = {
 		copied: 'ट्रांसक्रिप्ट कॉपी हो गया'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`निजी बीटा: ${String(total)} में से ${String(left)} जगहें बाकी`,
-		betaFull: 'निजी बीटा: फ़िलहाल सभी जगहें भर चुकी हैं।',
+		betaLabel: 'सार्वजनिक बीटा',
+		betaSpots: (left: number, total: number) => `${String(total)} में से ${String(left)} जगहें बाकी`,
+		betaFull: 'फ़िलहाल सभी जगहें भर चुकी हैं',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} में से ${String(total)} मिनट इस महीने इस्तेमाल हुए`,
 		freeLine: (minutes: number) => `मुफ़्त: हर महीने ${String(minutes)} मिनट कॉल।`
 	},
 	limits: {
-		beta: 'Diceri अभी निजी बीटा में है और फ़िलहाल सभी जगहें भर चुकी हैं। कृपया बाद में फिर कोशिश करें।',
+		beta: 'Diceri अभी सार्वजनिक बीटा में है और फ़िलहाल सभी जगहें भर चुकी हैं। कृपया बाद में फिर कोशिश करें।',
 		network: 'इस नेटवर्क से अधिकतम अनुमत रूम यूज़रनेम पहले ही लिए जा चुके हैं। उनमें से किसी एक से लॉग इन करें।',
 		quota:
 			'आपने इस महीने अपने प्लान के कॉल मिनट इस्तेमाल कर लिए हैं। ये हर महीने की 1 तारीख (UTC) को फिर से मिलते हैं।',

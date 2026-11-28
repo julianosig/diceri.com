@@ -228,15 +228,15 @@ export const ko: Messages = {
 		copied: '스크립트가 복사되었습니다'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`비공개 베타: ${String(total)}자리 중 ${String(left)}자리 남음`,
-		betaFull: '비공개 베타: 지금은 모든 자리가 찼어요.',
+		betaLabel: '공개 베타',
+		betaSpots: (left: number, total: number) => `${String(total)}자리 중 ${String(left)}자리 남음`,
+		betaFull: '지금은 모든 자리가 찼어요',
 		usedThisMonth: (used: number, total: number) =>
 			`이번 달 ${String(total)}분 중 ${String(used)}분 사용`,
 		freeLine: (minutes: number) => `무료: 매월 ${String(minutes)}분 통화.`
 	},
 	limits: {
-		beta: 'Diceri는 비공개 베타 중이며 지금은 모든 자리가 찼어요. 나중에 다시 시도해 주세요.',
+		beta: 'Diceri는 공개 베타 중이며 지금은 모든 자리가 찼어요. 나중에 다시 시도해 주세요.',
 		network:
 			'이 네트워크에서 만들 수 있는 방 이름의 최대 개수에 도달했어요. 기존 방 이름으로 로그인하세요.',
 		quota: '이번 달 요금제의 통화 시간을 모두 사용했어요. 매월 1일(UTC)에 초기화돼요.',

@@ -232,15 +232,15 @@ export const ar: Messages = {
 		copied: 'تم نسخ النص'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`نسخة تجريبية خاصة: تبقّى ${String(left)} من ${String(total)} مكانًا`,
-		betaFull: 'نسخة تجريبية خاصة: جميع الأماكن مشغولة حاليًا.',
+		betaLabel: 'نسخة تجريبية عامة',
+		betaSpots: (left: number, total: number) => `تبقّى ${String(left)} من ${String(total)} مكانًا`,
+		betaFull: 'جميع الأماكن مشغولة حاليًا',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} من ${String(total)} د مستخدمة هذا الشهر`,
 		freeLine: (minutes: number) => `مجاني: ${String(minutes)} د من المكالمات كل شهر.`
 	},
 	limits: {
-		beta: 'Diceri في نسخة تجريبية خاصة وجميع الأماكن مشغولة حاليًا. حاول مرة أخرى لاحقًا.',
+		beta: 'Diceri في نسخة تجريبية عامة وجميع الأماكن مشغولة حاليًا. حاول مرة أخرى لاحقًا.',
 		network: 'حجزت هذه الشبكة الحد الأقصى المسموح من أسماء الغرف. سجّل الدخول بأحدها بدلًا من ذلك.',
 		quota: 'استخدمت دقائق المكالمات في خطتك لهذا الشهر. تتجدد في اليوم الأول من كل شهر (UTC).',
 		daily: 'استخدمت دقائق المكالمات المجانية لهذا اليوم. تتجدد عند منتصف الليل (UTC).',

@@ -232,15 +232,15 @@ export const pt: Messages = {
 		copied: 'Transcrição copiada'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`Beta fechado: restam ${String(left)} de ${String(total)} vagas.`,
-		betaFull: 'Beta fechado: todas as vagas foram preenchidas por enquanto.',
+		betaLabel: 'Beta público',
+		betaSpots: (left: number, total: number) => `Restam ${String(left)} de ${String(total)} vagas`,
+		betaFull: 'Todas as vagas foram preenchidas por enquanto',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} de ${String(total)} min usados este mês`,
 		freeLine: (minutes: number) => `Grátis: ${String(minutes)} min de chamadas todo mês.`
 	},
 	limits: {
-		beta: 'O Diceri está em beta fechado e todas as vagas foram preenchidas por enquanto. Tente de novo mais tarde.',
+		beta: 'O Diceri está em beta público e todas as vagas foram preenchidas por enquanto. Tente de novo mais tarde.',
 		network: 'Esta rede já garantiu o máximo de nomes de sala permitido. Entre com um deles.',
 		quota: 'Você usou os minutos de chamada do seu plano neste mês. Eles renovam no dia 1º (UTC).',
 		daily: 'Você já usou os minutos grátis de chamada de hoje. Eles renovam à meia-noite (UTC).',

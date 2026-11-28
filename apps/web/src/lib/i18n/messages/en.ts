@@ -234,15 +234,15 @@ export const en = {
 		copied: 'Transcript copied'
 	},
 	plans: {
-		betaSpots: (left: number, total: number) =>
-			`Private beta: ${String(left)} of ${String(total)} spots left.`,
-		betaFull: 'Private beta: all spots are taken for now.',
+		betaLabel: 'Public beta',
+		betaSpots: (left: number, total: number) => `${String(left)} of ${String(total)} spots left`,
+		betaFull: 'All spots are taken for now',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} of ${String(total)} min used this month`,
 		freeLine: (minutes: number) => `Free: ${String(minutes)} min of calls every month.`
 	},
 	limits: {
-		beta: 'Diceri is in a private beta and all spots are taken for now. Please try again later.',
+		beta: 'Diceri is in a public beta and all spots are taken for now. Please try again later.',
 		network:
 			'This network has already claimed the most room usernames allowed. Sign in to one of them instead.',
 		quota: "You've used this month's call minutes on your plan. They renew on the 1st (UTC).",
