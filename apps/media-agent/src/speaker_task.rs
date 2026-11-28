@@ -91,11 +91,17 @@ pub(crate) async fn run(
         output,
         conversation,
     );
-    let translating = tokio::spawn(pipeline.run(transcript, targets, first_phrase()));
+    // Stopped with this task: a replaced or departed microphone's queued speech never plays
+    // over the new one's on the shared track.
+    let mut translating = AbortOnDrop(tokio::spawn(pipeline.run(
+        transcript,
+        targets,
+        first_phrase(),
+    )));
     transcribe(&speaker, &providers, &events).await;
-    // The pipeline finishes the phrases already queued, then ends.
+    // The track ended on its own: the pipeline finishes the phrases already queued.
     drop(events);
-    let _ = translating.await;
+    let _ = (&mut translating.0).await;
 }
 
 /// Feeds `events` from speech-to-text until the track ends, reopening a stream that closes.

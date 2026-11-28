@@ -170,7 +170,7 @@ impl Speakers {
         }
     }
 
-    /// Stops transcribing `identity`: what they already said still finishes translating.
+    /// Stops transcribing and translating `identity` (their microphone is gone).
     fn stop(&mut self, identity: &str) {
         if let Some((_, task)) = self.tasks.remove(identity) {
             task.abort();
