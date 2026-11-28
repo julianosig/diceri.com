@@ -75,7 +75,10 @@ fn cors_layer(origins: &[String]) -> CorsLayer {
 
 /// Answers 408 when a request runs past its time limit (dropping it cancels the work).
 async fn limit_time(request: Request, next: Next) -> Response {
-    let limit = if request.method() == Method::POST && request.uri().path().ends_with("/voices") {
+    // Recording or reusing a voice waits for the cloning provider.
+    let path = request.uri().path();
+    let is_voice = path.ends_with("/voices") || path.ends_with("/voices/kept");
+    let limit = if request.method() == Method::POST && is_voice {
         VOICE_TIMEOUT
     } else {
         REQUEST_TIMEOUT

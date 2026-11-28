@@ -62,6 +62,8 @@ async fn a_call_ended_while_cloning_stays_ended_and_the_clone_is_deleted() {
     // The stale copy read before cloning never reopens the call.
     let room = rooms.find_by_code(&room_id).await.unwrap().unwrap();
     assert!(room.is_ended());
+    // The unused clone is deleted on its own task.
+    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     assert_eq!(*cloner.deleted.lock().unwrap(), vec!["late".to_owned()]);
 }
 
@@ -208,6 +210,8 @@ async fn recording_again_in_a_call_that_ended_keeps_the_previous_voice() {
     };
     let again = service.record_for(&room_id, &ana, recording(true)).await;
     assert!(matches!(again, Err(VoiceError::Rule(RoomRuleError::Ended))));
+    // The unused clone is deleted on its own task.
+    tokio::time::sleep(std::time::Duration::from_millis(20)).await;
     // The new clone is gone and the account still has the voice it had.
     assert_eq!(*ending.deleted.lock().unwrap(), vec!["late".to_owned()]);
     let kept = samples.kept_clone(&ana).await.unwrap().unwrap();
