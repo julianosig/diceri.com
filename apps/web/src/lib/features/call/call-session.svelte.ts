@@ -100,6 +100,8 @@ export class CallSession {
 	#meterFrame = 0;
 	#localMonitor: LocalMonitor | undefined;
 	#loopback: LoopbackMonitor | undefined;
+	/** Set as soon as the call is being left: nothing may capture audio after it. */
+	#closing = false;
 	/** The settings the published microphone really runs with. */
 	#applied: AudioSettings = DEFAULT_AUDIO_SETTINGS;
 	/** The settings change in progress; the next one waits for it. */
@@ -173,12 +175,19 @@ export class CallSession {
 			await track.restartTrack(toCaptureOptions(target));
 			this.#applied = target;
 		} catch {
-			this.settings = { ...this.settings, ...pick(this.#applied, patch) };
+			// Left the call meanwhile: never open a microphone again.
+			if (this.#closing) return;
+			// Only what still shows this change goes back; a newer choice stays.
+			this.settings = { ...this.settings, ...stillShowing(this.settings, patch, this.#applied) };
 			// Browsers that stop the old microphone first leave nothing if both fail.
 			problem = await track.restartTrack(toCaptureOptions(this.#applied)).then(
 				() => 'micChangeFailed' as const,
 				() => 'micLost' as const
 			);
+		}
+		if (this.#closing) {
+			track.stop();
+			return;
 		}
 		const result = await applyEnhancedFilter(track, this.#applied.enhancedFilter);
 		this.activeFilter = result.active;
@@ -240,6 +249,7 @@ export class CallSession {
 	}
 
 	async disconnect(): Promise<void> {
+		this.#closing = true;
 		this.#stats.stop();
 		await this.setMonitor('off');
 		await this.#stopMeter();
@@ -448,9 +458,17 @@ function cameraOf(participant: RoomParticipant): VideoTrack | undefined {
 	return video && !publication?.isMuted ? track : undefined;
 }
 
-/** The values `from` has for the settings `patch` changes. */
-function pick(from: AudioSettings, patch: Partial<AudioSettings>): Partial<AudioSettings> {
-	return Object.fromEntries(
-		Object.keys(patch).map((key) => [key, from[key as keyof AudioSettings]])
+/**
+ * The `applied` values of the settings `patch` changed that still show the patch's value:
+ * a setting changed again since keeps its newer choice.
+ */
+function stillShowing(
+	shown: AudioSettings,
+	patch: Partial<AudioSettings>,
+	applied: AudioSettings
+): Partial<AudioSettings> {
+	const keys = (Object.keys(patch) as (keyof AudioSettings)[]).filter(
+		(key) => shown[key] === patch[key]
 	);
+	return Object.fromEntries(keys.map((key) => [key, applied[key]]));
 }
