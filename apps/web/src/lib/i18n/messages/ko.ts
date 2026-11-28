@@ -7,6 +7,8 @@ export const ko: Messages = {
 		deleteVoice: '내 목소리 삭제',
 		deleteVoiceConfirm: '저장된 목소리 녹음을 삭제할까요? 다음 통화에서 새로 녹음하게 돼요.',
 		voiceDeleted: '목소리 녹음이 삭제되었어요.',
+		voiceDeleteFailed:
+			'지금은 목소리를 삭제할 수 없어요. 아무것도 삭제되지 않았어요. 다시 시도해 주세요.',
 		language: '언어',
 		toDark: '다크 테마로 전환',
 		toLight: '라이트 테마로 전환'

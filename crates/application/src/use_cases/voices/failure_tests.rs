@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use async_trait::async_trait;
 
-use super::tests::{recording, setup};
+use super::tests::{FakeCloner, Samples, recording, setup};
 use super::*;
 use crate::test_support::InMemoryRooms;
 
@@ -63,4 +63,51 @@ async fn a_call_ended_while_cloning_stays_ended_and_the_clone_is_deleted() {
     let room = rooms.find_by_code(&room_id).await.unwrap().unwrap();
     assert!(room.is_ended());
     assert_eq!(*cloner.deleted.lock().unwrap(), vec!["late".to_owned()]);
+}
+
+/// Clones like `FakeCloner` but cannot delete (the provider is down).
+#[derive(Default)]
+struct UndeletableCloner(FakeCloner);
+
+#[async_trait]
+impl VoiceCloner for UndeletableCloner {
+    fn provider(&self) -> &'static str {
+        "inworld"
+    }
+
+    async fn create(&self, name: &str, sample: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
+        self.0.create(name, sample).await
+    }
+
+    async fn delete(&self, _: &VoiceId) -> Result<(), VoiceCloneError> {
+        Err(VoiceCloneError::Request("HTTP 503".to_owned()))
+    }
+
+    async fn delete_all_named(&self, _: &str) -> Result<usize, VoiceCloneError> {
+        Ok(0)
+    }
+}
+
+#[tokio::test]
+async fn deleting_a_voice_the_provider_cannot_delete_keeps_everything_for_a_retry() {
+    let (service, _, room_id) = setup().await;
+    let service = VoiceService {
+        cloner: Arc::new(UndeletableCloner::default()),
+        ..service
+    }
+    .with_samples(
+        Arc::new(Samples::default()),
+        Arc::new(crate::test_support::FakeClock(
+            std::sync::atomic::AtomicU64::new(5),
+        )),
+    );
+    let ana = AccountId::from_parts(1, [1; 10]);
+    let voice = service
+        .record_for(&room_id, &ana, recording(true))
+        .await
+        .unwrap();
+    assert!(service.delete_saved(&ana).await.is_err());
+    // Nothing was lost: the recording and the clone are still there to delete later.
+    assert!(service.has_saved(&ana).await.unwrap());
+    assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), voice);
 }

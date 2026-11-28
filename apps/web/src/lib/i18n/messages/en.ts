@@ -11,6 +11,8 @@ export const en = {
 		deleteVoiceConfirm:
 			'Delete your saved voice recording? You will record a new one at your next call.',
 		voiceDeleted: 'Your voice recording was deleted.',
+		voiceDeleteFailed:
+			'Your voice could not be deleted right now. Nothing was deleted; please try again.',
 		language: 'Language',
 		toDark: 'Switch to dark theme',
 		toLight: 'Switch to light theme'

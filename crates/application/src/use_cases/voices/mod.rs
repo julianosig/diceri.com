@@ -201,18 +201,22 @@ impl VoiceService {
         }
     }
 
-    /// "Delete my voice": the kept recording and the account's clone at the provider go;
+    /// "Delete my voice": the account's clone at the provider, then the kept recording;
     /// `false` when there was no recording.
     pub async fn delete_saved(&self, account: &AccountId) -> Result<bool, VoiceError> {
         let Some((samples, _)) = &self.samples else {
             return Ok(false);
         };
-        let kept = samples.kept_clone(account).await?;
-        let deleted = samples.delete(account).await?;
-        if let Some(kept) = kept.filter(|kept| self.is_ours(kept)) {
-            self.delete_at_provider(&kept.voice).await;
+        // The provider first: if it fails, nothing is deleted and the person can try again,
+        // instead of losing the only reference to a clone that still exists.
+        if let Some(kept) = samples
+            .kept_clone(account)
+            .await?
+            .filter(|kept| self.is_ours(kept))
+        {
+            self.cloner.delete(&kept.voice).await?;
         }
-        Ok(deleted)
+        Ok(samples.delete(account).await?)
     }
 
     /// The room, once `sample` is known to be clear speech and the room has room for a voice.

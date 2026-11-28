@@ -8,6 +8,7 @@ export const pt: Messages = {
 		deleteVoiceConfirm:
 			'Apagar a gravação salva da sua voz? Você vai gravar uma nova na sua próxima chamada.',
 		voiceDeleted: 'A gravação da sua voz foi apagada.',
+		voiceDeleteFailed: 'Não foi possível apagar sua voz agora. Nada foi apagado; tente de novo.',
 		language: 'Idioma',
 		toDark: 'Mudar para o tema escuro',
 		toLight: 'Mudar para o tema claro'

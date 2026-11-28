@@ -7,6 +7,8 @@ export const ja: Messages = {
 		deleteVoice: '自分の声を削除',
 		deleteVoiceConfirm: '保存された声の録音を削除しますか？次の通話で新しく録音します。',
 		voiceDeleted: '声の録音を削除しました。',
+		voiceDeleteFailed:
+			'今は声を削除できませんでした。何も削除されていません。もう一度お試しください。',
 		language: '言語',
 		toDark: 'ダークテーマに切り替え',
 		toLight: 'ライトテーマに切り替え'

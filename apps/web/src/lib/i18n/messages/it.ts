@@ -8,6 +8,8 @@ export const it: Messages = {
 		deleteVoiceConfirm:
 			'Eliminare la registrazione salvata della tua voce? Ne registrerai una nuova alla prossima chiamata.',
 		voiceDeleted: 'La registrazione della tua voce è stata eliminata.',
+		voiceDeleteFailed:
+			'Non è stato possibile eliminare la tua voce ora. Non è stato eliminato nulla; riprova.',
 		language: 'Lingua',
 		toDark: 'Passa al tema scuro',
 		toLight: 'Passa al tema chiaro'

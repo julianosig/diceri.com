@@ -8,6 +8,7 @@ export const es: Messages = {
 		deleteVoiceConfirm:
 			'¿Borrar la grabación guardada de tu voz? Grabarás una nueva en tu próxima llamada.',
 		voiceDeleted: 'Se borró la grabación de tu voz.',
+		voiceDeleteFailed: 'No se pudo borrar tu voz ahora. No se borró nada; inténtalo de nuevo.',
 		language: 'Idioma',
 		toDark: 'Cambiar al tema oscuro',
 		toLight: 'Cambiar al tema claro'

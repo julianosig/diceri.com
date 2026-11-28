@@ -107,7 +107,8 @@ impl VoiceCloner for InworldVoiceCloner {
             .send()
             .await
             .map_err(|error| VoiceCloneError::Request(error.to_string()))?;
-        if response.status().is_success() {
+        // Already gone counts as deleted: retrying "Delete my voice" must be able to finish.
+        if response.status().is_success() || response.status() == reqwest::StatusCode::NOT_FOUND {
             Ok(())
         } else {
             Err(VoiceCloneError::Request(format!(

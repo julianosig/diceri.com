@@ -8,6 +8,8 @@ export const de: Messages = {
 		deleteVoiceConfirm:
 			'Deine gespeicherte Sprachaufnahme löschen? Beim nächsten Anruf nimmst du eine neue auf.',
 		voiceDeleted: 'Deine Sprachaufnahme wurde gelöscht.',
+		voiceDeleteFailed:
+			'Deine Stimme konnte gerade nicht gelöscht werden. Es wurde nichts gelöscht; versuch es erneut.',
 		language: 'Sprache',
 		toDark: 'Zum dunklen Design wechseln',
 		toLight: 'Zum hellen Design wechseln'

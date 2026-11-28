@@ -8,6 +8,8 @@ export const fr: Messages = {
 		deleteVoiceConfirm:
 			'Supprimer l’enregistrement de votre voix ? Vous en enregistrerez un nouveau lors de votre prochain appel.',
 		voiceDeleted: 'L’enregistrement de votre voix a été supprimé.',
+		voiceDeleteFailed:
+			'Impossible de supprimer votre voix pour le moment. Rien n’a été supprimé ; réessayez.',
 		language: 'Langue',
 		toDark: 'Passer au thème sombre',
 		toLight: 'Passer au thème clair'

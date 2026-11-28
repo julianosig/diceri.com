@@ -8,6 +8,7 @@ export const zh: Messages = {
 		deleteVoice: '删除我的声音',
 		deleteVoiceConfirm: '删除已保存的声音录音？你将在下次通话时重新录制。',
 		voiceDeleted: '你的声音录音已删除。',
+		voiceDeleteFailed: '暂时无法删除你的声音。没有删除任何内容，请重试。',
 		language: '语言',
 		toDark: '切换到深色主题',
 		toLight: '切换到浅色主题'

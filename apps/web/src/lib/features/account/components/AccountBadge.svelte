@@ -15,10 +15,18 @@
 	/** Shown in the menu once the kept voice recording is deleted. */
 	let voiceDeleted = $state(false);
 
+	/** The voice provider could not delete the copy: nothing was deleted, try again. */
+	let voiceDeleteFailed = $state(false);
+
 	async function removeVoice(): Promise<void> {
 		if (!window.confirm(i18n.t.header.deleteVoiceConfirm)) return;
-		await session.deleteVoice();
-		voiceDeleted = true;
+		try {
+			await session.deleteVoice();
+			voiceDeleteFailed = false;
+			voiceDeleted = true;
+		} catch {
+			voiceDeleteFailed = true;
+		}
 	}
 	let root = $state<HTMLElement>();
 
@@ -67,6 +75,11 @@
 						<MicOff class="size-4 text-ink-muted" aria-hidden="true" />
 						{i18n.t.header.deleteVoice}
 					</button>
+					{#if voiceDeleteFailed}
+						<p role="alert" class="px-3 py-2 text-sm text-danger">
+							{i18n.t.header.voiceDeleteFailed}
+						</p>
+					{/if}
 				{:else if voiceDeleted}
 					<p role="status" class="px-3 py-2 text-sm text-ink-muted">{i18n.t.header.voiceDeleted}</p>
 				{/if}

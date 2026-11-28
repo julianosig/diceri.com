@@ -13,6 +13,7 @@ export const ar: Messages = {
 		deleteVoice: 'احذف صوتي',
 		deleteVoiceConfirm: 'هل تريد حذف تسجيل صوتك المحفوظ؟ ستسجّل تسجيلًا جديدًا في مكالمتك القادمة.',
 		voiceDeleted: 'تم حذف تسجيل صوتك.',
+		voiceDeleteFailed: 'تعذّر حذف صوتك الآن. لم يُحذف أي شيء؛ حاول مرة أخرى.',
 		language: 'اللغة',
 		toDark: 'التبديل إلى السمة الداكنة',
 		toLight: 'التبديل إلى السمة الفاتحة'
