@@ -164,26 +164,19 @@ impl VoiceService {
         let Some((samples, clock)) = &self.samples else {
             let voice = self.cloner.create(&self.call_name(&room), sample).await?;
             // A call's clone that cannot join the room (it ended meanwhile) would be orphaned.
-            if let Err(error) = self.register(room.id, account, &voice).await {
-                self.discard(&voice);
-                return Err(error);
-            }
+            self.adopt(room.id, account, &voice).await?;
             return Ok(voice);
         };
         let voice = self
             .cloner
             .create(&self.account_name(account), sample.clone())
             .await?;
-        // In the room first: if the call ended or filled up meanwhile, the new clone goes and
-        // the account keeps the voice it had.
-        if let Err(error) = self.register(room.id, account, &voice).await {
-            self.discard(&voice);
-            return Err(error);
-        }
+        // If the call ended or filled up meanwhile, or the clone cannot be stored, the new
+        // clone goes and the account keeps the voice it had: the old one goes only after.
+        self.adopt(room.id, account, &voice).await?;
         if let Err(error) = samples.save(account, &sample, clock.now_ms()).await {
             warn_not_kept(&error, account);
         }
-        self.keep(account, &voice).await;
         if let Some(old) = previous.filter(|old| self.is_ours(old) && old.voice != voice) {
             self.discard(&old.voice);
         }
@@ -234,13 +227,26 @@ impl VoiceService {
             .cloner
             .create(&self.account_name(account), sample)
             .await?;
-        // In the room first: a clone for a call that ended meanwhile is not kept.
-        if let Err(error) = self.register(room.id, account, &voice).await {
-            self.discard(&voice);
-            return Err(error);
-        }
-        self.keep(account, &voice).await;
+        self.adopt(room.id, account, &voice).await?;
         Ok(voice)
+    }
+
+    /// Registers a new clone in the room and stores it as the account's (with kept
+    /// recordings); if either fails it is deleted, never left untracked at the provider.
+    async fn adopt(
+        &self,
+        room: RoomId,
+        account: &AccountId,
+        voice: &VoiceId,
+    ) -> Result<(), VoiceError> {
+        let adopted = match self.register(room, account, voice).await {
+            Ok(()) => self.keep(account, voice).await,
+            Err(error) => Err(error),
+        };
+        if adopted.is_err() {
+            self.discard(voice);
+        }
+        adopted
     }
 
     /// Whether `account` has a kept recording.
@@ -314,17 +320,16 @@ impl VoiceService {
         kept.provider == self.cloner.provider()
     }
 
-    async fn keep(&self, account: &AccountId, voice: &VoiceId) {
+    /// Stores `voice` as the account's clone (ADR 0017).
+    async fn keep(&self, account: &AccountId, voice: &VoiceId) -> Result<(), VoiceError> {
         let Some((samples, clock)) = &self.samples else {
-            return;
+            return Ok(());
         };
         let kept = KeptClone {
             provider: self.cloner.provider().to_owned(),
             voice: voice.clone(),
         };
-        if let Err(error) = samples.keep_clone(account, &kept, clock.now_ms()).await {
-            tracing::warn!(%error, account_id = %account, "account voice clone not kept");
-        }
+        Ok(samples.keep_clone(account, &kept, clock.now_ms()).await?)
     }
 
     /// Deletes a clone nobody will track (its call ended meanwhile, or a newer recording
