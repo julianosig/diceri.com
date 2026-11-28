@@ -232,8 +232,7 @@ export const pt: Messages = {
 		copied: 'Transcrição copiada'
 	},
 	plans: {
-		betaLabel: 'Beta público',
-		betaSpots: (left: number, total: number) => `Restam ${String(left)} de ${String(total)} vagas`,
+		betaCaption: (total: number) => `vagas restantes no beta público, de ${String(total)}`,
 		betaFull: 'Todas as vagas foram preenchidas por enquanto',
 		usedThisMonth: (used: number, total: number) =>
 			`${String(used)} de ${String(total)} min usados este mês`,

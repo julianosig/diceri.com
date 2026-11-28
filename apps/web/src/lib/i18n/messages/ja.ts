@@ -228,8 +228,7 @@ export const ja: Messages = {
 		copied: '文字起こしをコピーしました'
 	},
 	plans: {
-		betaLabel: 'パブリックベータ',
-		betaSpots: (left: number, total: number) => `残り ${String(left)} / ${String(total)} 枠`,
+		betaCaption: (total: number) => `パブリックベータの残り枠（全 ${String(total)} 枠）`,
 		betaFull: '現在すべての枠が埋まっています',
 		usedThisMonth: (used: number, total: number) =>
 			`今月${String(total)}分中${String(used)}分を使用`,
