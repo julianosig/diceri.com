@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use diceri_domain::{AccessKey, Account, Room, RoomCode, RoomSettings, Username};
+use diceri_domain::{AccessKey, Account, Room, RoomCode, RoomRuleError, RoomSettings, Username};
+
+/// Looks at the owner's live room again this many times when it changes underneath.
+const OPEN_ATTEMPTS: usize = 3;
 
 use crate::ports::{
     IdGenerator, RandomSource, RoomChangeError, RoomRepository, RoomRepositoryError,
@@ -70,9 +73,27 @@ impl RoomService {
             mascot: owner.mascot,
             ..settings
         };
-        if let Some(room) = self.repository.find_live_by_owner(&owner.username).await? {
-            return self.reuse(&room, settings, participants).await;
+        // A live room can end between finding it and reusing it (another tab, the plan
+        // limit): then look again, and create a new one if none is live.
+        for _ in 0..OPEN_ATTEMPTS {
+            if let Some(room) = self.repository.find_live_by_owner(&owner.username).await? {
+                if let Some(room) = self.reuse(&room, settings, participants).await? {
+                    return Ok(room);
+                }
+                continue;
+            }
+            let room = self.new_room(owner, settings, participants);
+            match self.repository.insert(room.clone()).await {
+                Ok(()) => return Ok(room),
+                // Another request (a second tab) opened it first: use that room.
+                Err(RoomRepositoryError::OwnerHasLiveRoom) => {}
+                Err(error) => return Err(error.into()),
+            }
         }
+        Err(RoomError::NotFound)
+    }
+
+    fn new_room(&self, owner: &Account, settings: RoomSettings, participants: u8) -> Room {
         let code = RoomCode::from_random_bytes(self.random.random_128());
         let host_key = AccessKey::from_random_bytes(self.random.random_128());
         let mut room = Room::new(
@@ -83,34 +104,28 @@ impl RoomService {
             settings,
         );
         room.max_participants = participants;
-        match self.repository.insert(room.clone()).await {
-            Ok(()) => Ok(room),
-            // Another request (a second tab) opened it first: use that room.
-            Err(RoomRepositoryError::OwnerHasLiveRoom) => {
-                let live = self
-                    .repository
-                    .find_live_by_owner(&owner.username)
-                    .await?
-                    .ok_or(RoomError::NotFound)?;
-                self.reuse(&live, room.settings, participants).await
-            }
-            Err(error) => Err(error.into()),
-        }
+        room
     }
 
-    /// The owner's live room with `settings` applied; its link and host key stay valid.
+    /// The owner's live room with `settings` applied (its link and host key stay valid), or
+    /// `None` when it ended meanwhile.
     async fn reuse(
         &self,
         room: &Room,
         settings: RoomSettings,
         participants: u8,
-    ) -> Result<Room, RoomError> {
+    ) -> Result<Option<Room>, RoomError> {
         let apply = move |room: &mut Room| {
+            room.ensure_open()?;
             room.settings = settings;
             room.max_participants = participants;
             Ok(())
         };
-        Ok(self.repository.modify(&room.id, Box::new(apply)).await?)
+        match self.repository.modify(&room.id, Box::new(apply)).await {
+            Ok(room) => Ok(Some(room)),
+            Err(RoomChangeError::Rule(RoomRuleError::Ended)) => Ok(None),
+            Err(error) => Err(error.into()),
+        }
     }
 
     /// The live room at `/@username`.
@@ -163,12 +178,19 @@ mod tests {
         assert_eq!(again.settings.entry, EntryPolicy::Open);
     }
 
-    /// Misses the owner's live room on its first lookup, like a second tab that checked just
-    /// before the first one stored its room.
+    /// Answers the next owner lookup with a scripted, outdated result: what another tab saw
+    /// just before the room changed underneath it.
     #[derive(Default)]
     struct LateLookup {
         inner: InMemoryRooms,
-        looked: std::sync::atomic::AtomicBool,
+        next: std::sync::Mutex<Option<Outdated>>,
+    }
+
+    enum Outdated {
+        /// The live room was not stored yet.
+        Missed,
+        /// The room was live, and has ended since.
+        Found(Room),
     }
 
     #[async_trait::async_trait]
@@ -189,8 +211,10 @@ mod tests {
             &self,
             owner: &Username,
         ) -> Result<Option<Room>, RoomRepositoryError> {
-            if !self.looked.swap(true, std::sync::atomic::Ordering::Relaxed) {
-                return Ok(None);
+            match self.next.lock().unwrap().take() {
+                Some(Outdated::Missed) => return Ok(None),
+                Some(Outdated::Found(room)) => return Ok(Some(room)),
+                None => {}
             }
             self.inner.find_live_by_owner(owner).await
         }
@@ -210,17 +234,29 @@ mod tests {
     async fn two_tabs_opening_at_once_share_one_room() {
         let repository = Arc::new(LateLookup::default());
         let service = room_service(repository.clone());
-        // The first tab's room is already stored, but the second tab's lookup misses it.
-        repository
-            .looked
-            .store(true, std::sync::atomic::Ordering::Relaxed);
         let stored = service.open(&owner(), private_room(), 2).await.unwrap();
-        repository
-            .looked
-            .store(false, std::sync::atomic::Ordering::Relaxed);
+        // The first tab's room is stored, but the second tab's lookup missed it.
+        *repository.next.lock().unwrap() = Some(Outdated::Missed);
         let second = service.open(&owner(), private_room(), 2).await.unwrap();
         assert_eq!(second.code, stored.code);
         assert_eq!(repository.live_rooms().await.unwrap().len(), 1);
+    }
+
+    #[tokio::test]
+    async fn a_room_ended_while_reopening_is_replaced_by_a_new_one() {
+        let repository = Arc::new(LateLookup::default());
+        let service = room_service(repository.clone());
+        let first = service.open(&owner(), private_room(), 2).await.unwrap();
+        let end = |room: &mut Room| {
+            room.end();
+            Ok(())
+        };
+        repository.modify(&first.id, Box::new(end)).await.unwrap();
+        // Another tab found it live a moment before it ended.
+        *repository.next.lock().unwrap() = Some(Outdated::Found(first.clone()));
+        let reopened = service.open(&owner(), private_room(), 2).await.unwrap();
+        assert_ne!(reopened.code, first.code);
+        assert!(!reopened.is_ended());
     }
 
     #[tokio::test]
