@@ -25,6 +25,10 @@ pub fn account_clone_prefix(deployment: &str) -> String {
     format!("diceri-account-{deployment}-")
 }
 
+/// Attempts at deleting a clone that could not join its call, and the pause between them.
+const DISCARD_ATTEMPTS: u32 = 3;
+const DISCARD_RETRY_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
+
 /// Bounds on an uploaded sample: 5–15 s of 16 kHz mono 16-bit WAV is 160–480 KiB.
 const MIN_SAMPLE_BYTES: usize = 8 * 1024;
 const MAX_SAMPLE_BYTES: usize = 5 * 1024 * 1024;
@@ -156,7 +160,7 @@ impl VoiceService {
             let voice = self.cloner.create(&self.call_name(&room), sample).await?;
             // A call's clone that cannot join the room (it ended meanwhile) would be orphaned.
             if let Err(error) = self.register(room.id, account, &voice).await {
-                self.delete_at_provider(&voice).await;
+                self.discard(&voice).await;
                 return Err(error);
             }
             return Ok(voice);
@@ -169,7 +173,7 @@ impl VoiceService {
         // In the room first: if the call ended or filled up meanwhile, the new clone goes and
         // the account keeps the voice it had.
         if let Err(error) = self.register(room.id, account, &voice).await {
-            self.delete_at_provider(&voice).await;
+            self.discard(&voice).await;
             return Err(error);
         }
         if let Err(error) = samples.save(account, &sample, clock.now_ms()).await {
@@ -219,7 +223,7 @@ impl VoiceService {
             .await?;
         // In the room first: a clone for a call that ended meanwhile is not kept.
         if let Err(error) = self.register(room.id, account, &voice).await {
-            self.delete_at_provider(&voice).await;
+            self.discard(&voice).await;
             return Err(error);
         }
         self.keep(account, &voice).await;
@@ -337,11 +341,34 @@ impl VoiceService {
         }
     }
 
+    /// Deletes a clone nobody will track (its call ended meanwhile), trying a few times: once
+    /// this gives up, only the logged id can find it at the provider.
+    async fn discard(&self, voice: &VoiceId) {
+        for attempt in 1..=DISCARD_ATTEMPTS {
+            match self.cloner.delete(voice).await {
+                Ok(()) => return,
+                Err(error) if attempt < DISCARD_ATTEMPTS => {
+                    warn_discard_retry(&error, attempt);
+                    tokio::time::sleep(DISCARD_RETRY_DELAY * attempt).await;
+                }
+                Err(error) => warn_discard_failed(&error, voice),
+            }
+        }
+    }
+
     async fn delete_at_provider(&self, voice: &VoiceId) {
         if let Err(error) = self.cloner.delete(voice).await {
             tracing::warn!(%error, "account voice clone not deleted at the provider");
         }
     }
+}
+
+fn warn_discard_retry(error: &VoiceCloneError, attempt: u32) {
+    tracing::warn!(%error, attempt, "unused voice clone not deleted, retrying");
+}
+
+fn warn_discard_failed(error: &VoiceCloneError, voice: &VoiceId) {
+    tracing::error!(%error, voice_id = %voice.0, "unused voice clone left at the provider");
 }
 
 fn warn_not_kept(error: &VoiceSampleStoreError, account: &AccountId) {
