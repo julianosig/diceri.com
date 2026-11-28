@@ -239,6 +239,8 @@ impl AdmissionService {
         if &request.key != key {
             return Err(AdmissionError::Forbidden);
         }
+        // An ended call is said so first: nothing is reserved for it.
+        room.ensure_open()?;
         Ok(request.status)
     }
 
