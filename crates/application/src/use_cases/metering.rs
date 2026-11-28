@@ -174,41 +174,47 @@ impl MeteringService {
         };
         // First, so a call ended below at its limit is only swept if still open next minute;
         // with a time budget, so a slow media server never holds up charging live calls.
-        let sweep = self.tidy_media_rooms(presence, closer);
-        if tokio::time::timeout(SWEEP_BUDGET, sweep).await.is_err() {
-            tracing::warn!("closing ended calls took too long; the rest wait for the next minute");
-        }
-        let in_call = self
-            .charge_live_calls(presence.as_ref(), closer.as_ref())
-            .await;
+        within_budget(
+            self.tidy_media_rooms(presence, closer),
+            "tidying media rooms",
+        )
+        .await;
+        let (in_call, reached) = self.charge_live_calls(presence.as_ref()).await;
+        // Charged first, closed after, all at once: slow closes never delay a charge.
+        within_budget(
+            close_at_limit(closer, reached),
+            "closing calls at their limit",
+        )
+        .await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         calls.in_call = in_call;
         calls.admitted.clear();
     }
 
-    /// Charges every call someone is in; returns those rooms.
+    /// Charges every call someone is in; returns those rooms and the ones this ended.
     async fn charge_live_calls(
         &self,
         presence: &dyn MediaPresence,
-        closer: &dyn MediaRoomCloser,
-    ) -> HashSet<RoomId> {
+    ) -> (HashSet<RoomId>, Vec<RoomId>) {
         let rooms = self
             .rooms
             .live_rooms()
             .await
             .inspect_err(|error| tracing::warn!(%error, "usage meter could not list rooms"))
             .unwrap_or_default();
-        let mut in_call = HashSet::new();
+        let (mut in_call, mut reached) = (HashSet::new(), Vec::new());
         for room in rooms {
             if !someone_in(presence, &room.id).await {
                 continue;
             }
             in_call.insert(room.id);
-            if let Err(error) = self.charge(room.id, closer).await {
-                tracing::warn!(%error, room_id = %room.id, "call minute not charged");
+            match self.charge(room.id).await {
+                Ok(true) => reached.push(room.id),
+                Ok(false) => {}
+                Err(error) => tracing::warn!(%error, room_id = %room.id, "call minute not charged"),
             }
         }
-        in_call
+        (in_call, reached)
     }
 
     /// Closes media rooms still open for calls that ended (a close that failed, or someone
@@ -250,10 +256,10 @@ impl MeteringService {
         while work.join_next().await.is_some() {}
     }
 
-    /// One minute of `room`'s call, charged to its owner; ends it at a plan limit.
-    async fn charge(&self, room: RoomId, closer: &dyn MediaRoomCloser) -> Result<(), LimitError> {
+    /// One minute of `room`'s call, charged to its owner; `true` when this ended it.
+    async fn charge(&self, room: RoomId) -> Result<bool, LimitError> {
         let Some(stored) = self.rooms.find_by_id(&room).await? else {
-            return Ok(());
+            return Ok(false);
         };
         let owner = self.accounts.find_by_username(&stored.owner).await?;
         let mut limit = None;
@@ -280,10 +286,7 @@ impl MeteringService {
             Ok(())
         };
         self.rooms.modify(&room, Box::new(charge)).await?;
-        if ended_here {
-            close_at_limit(closer, &room).await;
-        }
-        Ok(())
+        Ok(ended_here)
     }
 
     fn today(&self) -> u32 {
@@ -327,16 +330,30 @@ async fn remove_orphan_listeners(
     }
 }
 
-/// Disconnects everyone from a call that reached its plan's limit.
-async fn close_at_limit(closer: &dyn MediaRoomCloser, room: &RoomId) {
-    tracing::info!(room_id = %room, "call ended: plan limit reached");
-    // With a deadline: a stalled close must not hold up charging the other calls.
-    if tokio::time::timeout(CLOSE_TIMEOUT, close_ended(closer, room))
-        .await
-        .is_err()
-    {
-        warn_close_timed_out(room);
+/// Runs `work` for at most `SWEEP_BUDGET`: a slow media server never stalls the meter.
+async fn within_budget(work: impl Future<Output = ()>, what: &str) {
+    if tokio::time::timeout(SWEEP_BUDGET, work).await.is_err() {
+        tracing::warn!(what, "took too long; the rest waits for the next minute");
     }
+}
+
+/// Disconnects everyone from the calls that reached their plan's limit, all at once, each
+/// with its own deadline.
+async fn close_at_limit(closer: &Arc<dyn MediaRoomCloser>, rooms: Vec<RoomId>) {
+    let mut closing = tokio::task::JoinSet::new();
+    for room in rooms {
+        tracing::info!(room_id = %room, "call ended: plan limit reached");
+        let closer = closer.clone();
+        closing.spawn(async move {
+            if tokio::time::timeout(CLOSE_TIMEOUT, close_ended(closer.as_ref(), &room))
+                .await
+                .is_err()
+            {
+                warn_close_timed_out(&room);
+            }
+        });
+    }
+    while closing.join_next().await.is_some() {}
 }
 
 fn warn_close_timed_out(room: &RoomId) {
