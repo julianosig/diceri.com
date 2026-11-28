@@ -6,8 +6,8 @@ use diceri_domain::{
 };
 
 use crate::ports::{
-    IdGenerator, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole,
-    MediaRoomCloser, RandomSource, RoomChangeError, RoomRepository, RoomRepositoryError,
+    IdGenerator, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaPresence,
+    MediaRole, MediaRoomCloser, RandomSource, RoomChangeError, RoomRepository, RoomRepositoryError,
     TranslationDispatcher,
 };
 
@@ -68,6 +68,8 @@ pub struct AdmissionService {
     media: Option<Arc<dyn MediaAccessIssuer>>,
     translation: Option<Arc<dyn TranslationDispatcher>>,
     closer: Option<Arc<dyn MediaRoomCloser>>,
+    /// Who is in each call, to keep calls to their size; `None` (tests): not checked.
+    presence: Option<Arc<dyn MediaPresence>>,
 }
 
 impl std::fmt::Debug for AdmissionService {
@@ -93,6 +95,7 @@ impl AdmissionService {
             media,
             translation: None,
             closer: None,
+            presence: None,
         }
     }
 
@@ -124,6 +127,13 @@ impl AdmissionService {
         Ok(())
     }
 
+    /// Keeps calls to their size (`Room::max_participants`) using who is connected now.
+    #[must_use]
+    pub fn with_presence(mut self, presence: Arc<dyn MediaPresence>) -> Self {
+        self.presence = Some(presence);
+        self
+    }
+
     /// Enables live translation: the media agent is started when people join.
     #[must_use]
     pub fn with_translation(mut self, dispatcher: Arc<dyn TranslationDispatcher>) -> Self {
@@ -144,7 +154,8 @@ impl AdmissionService {
         }
         room.ensure_open()?;
         ensure_voice_belongs(&room, account, profile)?;
-        let ticket = self.ticket(&room.id, Some(profile), MediaRole::Speaker)?;
+        let identity = self.seat(&room, account).await?;
+        let ticket = self.grant(&room.id, identity, Some(profile), MediaRole::Speaker)?;
         self.start_translation(&room.id).await;
         Ok(ticket)
     }
@@ -158,9 +169,11 @@ impl AdmissionService {
         let room = self.load(code).await?;
         room.ensure_open()?;
         ensure_voice_belongs(&room, account, &profile)?;
+        // Said before waiting for the host, not after being let in.
+        self.ensure_space(&room, account).await?;
         let request_id = self.ids.request_id();
         let key = AccessKey::from_random_bytes(self.random.random_128());
-        let request = JoinRequest::new(request_id, profile, key.clone());
+        let request = JoinRequest::new(request_id, *account, profile, key.clone());
         let knock = move |room: &mut Room| {
             room.ensure_open()?;
             room.knock(request)
@@ -209,7 +222,13 @@ impl AdmissionService {
             RequestStatus::Denied => KnockOutcome::Denied,
             RequestStatus::Admitted => {
                 room.ensure_open()?;
-                let ticket = self.ticket(&room.id, Some(&request.profile), MediaRole::Speaker)?;
+                let identity = self.seat(&room, &request.account).await?;
+                let ticket = self.grant(
+                    &room.id,
+                    identity,
+                    Some(&request.profile),
+                    MediaRole::Speaker,
+                )?;
                 self.start_translation(&room.id).await;
                 KnockOutcome::Admitted(ticket)
             }
@@ -227,7 +246,8 @@ impl AdmissionService {
             return Err(AdmissionError::Forbidden);
         }
         room.ensure_open()?;
-        self.ticket(&room.id, None, MediaRole::Monitor)
+        let identity = format!("monitor-{}", self.ids.participant_id());
+        self.grant(&room.id, identity, None, MediaRole::Monitor)
     }
 
     async fn load(&self, code: &RoomCode) -> Result<Room, AdmissionError> {
@@ -255,9 +275,51 @@ impl AdmissionService {
         }
     }
 
-    fn ticket(
+    /// `account`'s seat in the call (its media identity). Rejoining (a reload) reuses the seat,
+    /// so the new connection replaces the old one instead of counting twice; a new person gets
+    /// a seat only while the call has room.
+    async fn seat(&self, room: &Room, account: &AccountId) -> Result<String, AdmissionError> {
+        if let Some(identity) = room.seat_of(account) {
+            return Ok(identity.to_owned());
+        }
+        self.ensure_space(room, account).await?;
+        let (account, identity) = (*account, format!("p-{}", self.ids.participant_id()));
+        let take = move |room: &mut Room| {
+            room.take_seat(account, identity);
+            Ok(())
+        };
+        let seated = self.rooms.modify(&room.id, Box::new(take)).await?;
+        seated
+            .seat_of(&account)
+            .map(str::to_owned)
+            .ok_or(AdmissionError::NotFound)
+    }
+
+    /// Refuses a new person when the call already holds `max_participants` people. If the
+    /// media server cannot say, joining is allowed: an outage must not lock people out.
+    async fn ensure_space(&self, room: &Room, account: &AccountId) -> Result<(), AdmissionError> {
+        let Some(presence) = &self.presence else {
+            return Ok(());
+        };
+        if room.seat_of(account).is_some() {
+            return Ok(());
+        }
+        match presence.people_in(&room.id).await {
+            Ok(people) if people >= usize::from(room.max_participants) => {
+                Err(AdmissionError::Rule(RoomRuleError::Full))
+            }
+            Ok(_) => Ok(()),
+            Err(error) => {
+                tracing::warn!(%error, room_id = %room.id, "call size not checked");
+                Ok(())
+            }
+        }
+    }
+
+    fn grant(
         &self,
         room_id: &RoomId,
+        identity: String,
         profile: Option<&ParticipantProfile>,
         role: MediaRole,
     ) -> Result<JoinTicket, AdmissionError> {
@@ -265,12 +327,6 @@ impl AdmissionService {
             .media
             .as_ref()
             .ok_or(AdmissionError::MediaUnavailable)?;
-        let prefix = if role == MediaRole::Monitor {
-            "monitor"
-        } else {
-            "p"
-        };
-        let identity = format!("{prefix}-{}", self.ids.participant_id());
         let grant = media.issue(
             room_id,
             MediaParticipant {
@@ -295,6 +351,9 @@ fn ensure_voice_belongs(
     }
 }
 
+#[cfg(test)]
+#[path = "admission_seat_tests.rs"]
+mod seat_tests;
 #[cfg(test)]
 #[path = "admission_tests.rs"]
 mod tests;

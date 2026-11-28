@@ -242,6 +242,7 @@ export const pt: Messages = {
 		freeLine: (minutes: number) => `Grátis: ${String(minutes)} min de chamadas todo mês.`
 	},
 	limits: {
+		full: 'Esta chamada está cheia: cabem duas pessoas. Tente de novo quando alguém sair.',
 		beta: 'O Diceri está em beta público e todas as vagas foram preenchidas por enquanto. Tente de novo mais tarde.',
 		network: 'Esta rede já garantiu o máximo de nomes de sala permitido. Entre com um deles.',
 		quota: 'Você usou os minutos de chamada do seu plano neste mês. Eles renovam no dia 1º (UTC).',

@@ -38,7 +38,10 @@ fn plan(prefix: &str, defaults: PlanLimits) -> anyhow::Result<PlanLimits> {
             &format!("DICERI_{prefix}_PRICE_CENTS"),
             defaults.monthly_price_cents,
         )?,
-        participants: defaults.participants,
+        participants: number(
+            &format!("DICERI_{prefix}_PARTICIPANTS"),
+            defaults.participants,
+        )?,
     })
 }
 

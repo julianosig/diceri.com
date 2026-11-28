@@ -62,7 +62,7 @@ impl Fixture {
             mascot: Mascot::Ghost,
             plan: diceri_domain::Plan::Free,
         };
-        let room = self.rooms.open(&account, settings).await.unwrap();
+        let room = self.rooms.open(&account, settings, 2).await.unwrap();
         self.media.rooms.lock().unwrap().push(LiveRoom {
             room: room.id,
             people,

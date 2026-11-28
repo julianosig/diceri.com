@@ -56,26 +56,33 @@ impl RoomService {
         }
     }
 
-    /// Opens the owner's room with `settings` (its mascot is the owner's). If the room
-    /// is already live it is reused with the new settings, so its link, code and host
-    /// key stay valid. The host key must be handed only to the owner.
-    pub async fn open(&self, owner: &Account, settings: RoomSettings) -> Result<Room, RoomError> {
+    /// Opens the owner's room with `settings` (its mascot is the owner's) for up to
+    /// `participants` people (their plan's call size). If the room is already live it is
+    /// reused with the new settings, so its link, code and host key stay valid. The host key
+    /// must be handed only to the owner.
+    pub async fn open(
+        &self,
+        owner: &Account,
+        settings: RoomSettings,
+        participants: u8,
+    ) -> Result<Room, RoomError> {
         let settings = RoomSettings {
             mascot: owner.mascot,
             ..settings
         };
         if let Some(room) = self.repository.find_live_by_owner(&owner.username).await? {
-            return self.reuse(&room, settings).await;
+            return self.reuse(&room, settings, participants).await;
         }
         let code = RoomCode::from_random_bytes(self.random.random_128());
         let host_key = AccessKey::from_random_bytes(self.random.random_128());
-        let room = Room::new(
+        let mut room = Room::new(
             self.ids.room_id(),
             code,
             host_key,
             owner.username.clone(),
             settings,
         );
+        room.max_participants = participants;
         match self.repository.insert(room.clone()).await {
             Ok(()) => Ok(room),
             // Another request (a second tab) opened it first: use that room.
@@ -85,16 +92,22 @@ impl RoomService {
                     .find_live_by_owner(&owner.username)
                     .await?
                     .ok_or(RoomError::NotFound)?;
-                self.reuse(&live, room.settings).await
+                self.reuse(&live, room.settings, participants).await
             }
             Err(error) => Err(error.into()),
         }
     }
 
     /// The owner's live room with `settings` applied; its link and host key stay valid.
-    async fn reuse(&self, room: &Room, settings: RoomSettings) -> Result<Room, RoomError> {
+    async fn reuse(
+        &self,
+        room: &Room,
+        settings: RoomSettings,
+        participants: u8,
+    ) -> Result<Room, RoomError> {
         let apply = move |room: &mut Room| {
             room.settings = settings;
+            room.max_participants = participants;
             Ok(())
         };
         Ok(self.repository.modify(&room.id, Box::new(apply)).await?)
@@ -130,7 +143,7 @@ mod tests {
     #[tokio::test]
     async fn the_room_is_named_after_its_owner_and_shows_their_mascot() {
         let service = service();
-        let room = service.open(&owner(), private_room()).await.unwrap();
+        let room = service.open(&owner(), private_room(), 2).await.unwrap();
         assert_eq!(room.owner, owner().username);
         assert_eq!(room.settings.mascot, Mascot::Robot);
         assert_eq!(service.live(&owner().username).await.unwrap(), room);
@@ -140,12 +153,12 @@ mod tests {
     #[tokio::test]
     async fn opening_again_reuses_the_live_room_with_new_settings() {
         let service = service();
-        let first = service.open(&owner(), private_room()).await.unwrap();
+        let first = service.open(&owner(), private_room(), 2).await.unwrap();
         let open = RoomSettings {
             entry: EntryPolicy::Open,
             ..private_room()
         };
-        let again = service.open(&owner(), open).await.unwrap();
+        let again = service.open(&owner(), open, 2).await.unwrap();
         assert_eq!(again.code, first.code);
         assert_eq!(again.settings.entry, EntryPolicy::Open);
     }
@@ -201,18 +214,18 @@ mod tests {
         repository
             .looked
             .store(true, std::sync::atomic::Ordering::Relaxed);
-        let stored = service.open(&owner(), private_room()).await.unwrap();
+        let stored = service.open(&owner(), private_room(), 2).await.unwrap();
         repository
             .looked
             .store(false, std::sync::atomic::Ordering::Relaxed);
-        let second = service.open(&owner(), private_room()).await.unwrap();
+        let second = service.open(&owner(), private_room(), 2).await.unwrap();
         assert_eq!(second.code, stored.code);
         assert_eq!(repository.live_rooms().await.unwrap().len(), 1);
     }
 
     #[tokio::test]
     async fn the_link_code_and_host_key_are_separate_random_values() {
-        let room = service().open(&owner(), private_room()).await.unwrap();
+        let room = service().open(&owner(), private_room(), 2).await.unwrap();
         assert_ne!(room.host_key().expose(), room.code.as_str());
         assert_ne!(room.code.as_str(), room.id.to_string());
     }

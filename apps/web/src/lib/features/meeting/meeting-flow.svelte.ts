@@ -45,9 +45,13 @@ export class MeetingFlow {
 		/** Minutes the owner's plan leaves for this call, if the API said. */
 		private readonly minutesLeft?: number
 	) {
-		this.knock = new GuestKnock(roomId, (credentials, request) => {
-			void this.#startCall(credentials, request.requestKey);
-		});
+		this.knock = new GuestKnock(
+			roomId,
+			(credentials, request) => {
+				void this.#startCall(credentials, request.requestKey);
+			},
+			(cause) => limitText(cause, i18n.t)
+		);
 		this.hostRequests = hostKey ? new HostRequests(roomId, hostKey) : undefined;
 	}
 

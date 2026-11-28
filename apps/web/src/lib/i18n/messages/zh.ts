@@ -237,6 +237,7 @@ export const zh: Messages = {
 		freeLine: (minutes: number) => `免费：每月 ${String(minutes)} 分钟通话。`
 	},
 	limits: {
+		full: '此通话已满（最多 2 人）。有人离开后请再试一次。',
 		beta: 'Diceri 正在进行公开测试，目前名额已满。请稍后再试。',
 		network: '这个网络领取的房间用户名已达上限。请用其中一个登录。',
 		quota: '你本月套餐的通话分钟数已用完，将在每月 1 日（UTC）重置。',

@@ -239,6 +239,7 @@ export const ko: Messages = {
 		freeLine: (minutes: number) => `무료: 매월 ${String(minutes)}분 통화.`
 	},
 	limits: {
+		full: '이 통화는 가득 찼어요(최대 2명). 누군가 나가면 다시 시도해 주세요.',
 		beta: 'Diceri는 공개 베타 중이며 지금은 모든 자리가 찼어요. 나중에 다시 시도해 주세요.',
 		network:
 			'이 네트워크에서 만들 수 있는 방 이름의 최대 개수에 도달했어요. 기존 방 이름으로 로그인하세요.',

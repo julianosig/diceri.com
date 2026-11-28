@@ -145,7 +145,7 @@ impl Fixture {
     /// Opens `account`'s room with `people` in its call.
     async fn call(&self, account: &Account, people: usize) -> Room {
         let room = room_service(self.rooms.clone())
-            .open(account, private_room())
+            .open(account, private_room(), 2)
             .await
             .unwrap();
         self.people.0.lock().unwrap().insert(room.id, people);

@@ -62,6 +62,8 @@ export default defineConfig({
 				DICERI_VOICE_KEY: Buffer.alloc(32, 7).toString('base64'),
 				// Tests open many rooms within a minute; production keeps the default caps.
 				DICERI_MAX_LIVE_CALLS: '1000',
+				// One test puts three people in a call (one speaker, two listener languages).
+				DICERI_FREE_PARTICIPANTS: '3',
 				DICERI_MONTHLY_CALL_MINUTES: '1000000',
 				DICERI_DEPLOYMENT: 'e2e',
 				// A fresh database per run, never the dev file.

@@ -170,6 +170,10 @@ impl From<AdmissionError> for ApiError {
             }
             AdmissionError::Forbidden => Self::Forbidden,
             AdmissionError::Rule(rule @ RoomRuleError::Ended) => Self::Gone(rule.to_string()),
+            AdmissionError::Rule(RoomRuleError::Full) => Self::Limit {
+                limit: "full",
+                detail: "the call is full; try again when someone leaves",
+            },
             AdmissionError::Rule(rule @ RoomRuleError::AlreadyDecided) => {
                 Self::Conflict(rule.to_string())
             }

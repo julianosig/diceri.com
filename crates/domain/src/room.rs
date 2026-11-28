@@ -16,6 +16,8 @@ pub enum RoomRuleError {
     TooManyVoices,
     #[error("the meeting has ended")]
     Ended,
+    #[error("the call is full")]
+    Full,
 }
 
 /// A meeting room joined through a shared link. Its owner (the account that
@@ -33,6 +35,9 @@ pub struct Room {
     requests: Vec<JoinRequest>,
     /// Voice clones used in this room (provider ids), each with the account that recorded it.
     voices: Vec<(AccountId, String)>,
+    /// Each account's seat in the call: its media identity, reused when it rejoins (a reload)
+    /// so one person never counts twice. Oldest first.
+    seats: Vec<(AccountId, String)>,
     /// Set when the host ends the call for everyone; nobody can join afterwards.
     ended: bool,
     /// Minutes someone has been in this call; counted against the owner's plan.
@@ -46,6 +51,8 @@ impl Room {
     pub const MAX_PENDING_REQUESTS: usize = 20;
     /// Caps voice-clone creation (a paid, quota-limited provider call) per room.
     pub const MAX_VOICES: usize = 10;
+    /// Seats remembered per room; the oldest is forgotten (that account just gets a new one).
+    pub const MAX_SEATS: usize = 20;
 
     #[must_use]
     pub fn new(
@@ -64,6 +71,7 @@ impl Room {
             host_key,
             requests: Vec::new(),
             voices: Vec::new(),
+            seats: Vec::new(),
             ended: false,
             call_minutes: 0,
         }
@@ -157,6 +165,26 @@ impl Room {
             .any(|(owner, voice)| owner == account && voice == voice_id)
     }
 
+    /// The media identity of `account`'s seat, if it has joined this call before.
+    #[must_use]
+    pub fn seat_of(&self, account: &AccountId) -> Option<&str> {
+        self.seats
+            .iter()
+            .find(|(owner, _)| owner == account)
+            .map(|(_, identity)| identity.as_str())
+    }
+
+    /// Gives `account` a seat with `identity` unless it already has one (which is kept).
+    pub fn take_seat(&mut self, account: AccountId, identity: String) {
+        if self.seat_of(&account).is_some() {
+            return;
+        }
+        if self.seats.len() >= Self::MAX_SEATS {
+            self.seats.remove(0);
+        }
+        self.seats.push((account, identity));
+    }
+
     pub fn decide(&mut self, id: &RequestId, admit: bool) -> Result<(), RoomRuleError> {
         let request = self
             .requests
@@ -190,7 +218,12 @@ mod tests {
             output_language: "en".parse().unwrap(),
             voice_id: None,
         };
-        JoinRequest::new(RequestId::from_parts(1, [seed; 10]), profile, key(seed))
+        JoinRequest::new(
+            RequestId::from_parts(1, [seed; 10]),
+            AccountId::from_parts(4, [seed; 10]),
+            profile,
+            key(seed),
+        )
     }
 
     fn room() -> Room {
@@ -249,6 +282,20 @@ mod tests {
             room().decide(&request(9).id, true),
             Err(RoomRuleError::UnknownRequest)
         );
+    }
+
+    #[test]
+    fn an_account_keeps_its_seat_and_old_seats_are_forgotten() {
+        let mut room = room();
+        let ana = AccountId::from_parts(1, [1; 10]);
+        room.take_seat(ana, "p-ana".to_owned());
+        room.take_seat(ana, "p-other".to_owned());
+        assert_eq!(room.seat_of(&ana), Some("p-ana"));
+        for n in 0..Room::MAX_SEATS {
+            let seed = u8::try_from(n).unwrap() + 10;
+            room.take_seat(AccountId::from_parts(2, [seed; 10]), format!("p-{n}"));
+        }
+        assert_eq!(room.seat_of(&ana), None);
     }
 
     #[test]

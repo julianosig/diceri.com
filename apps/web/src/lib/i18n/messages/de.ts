@@ -247,6 +247,7 @@ export const de: Messages = {
 		freeLine: (minutes: number) => `Kostenlos: ${String(minutes)} Min. Anrufe jeden Monat.`
 	},
 	limits: {
+		full: 'Dieser Anruf ist voll: Er hat Platz für zwei Personen. Versuch es erneut, wenn jemand geht.',
 		beta: 'Diceri ist in einer öffentlichen Beta und alle Plätze sind vorerst vergeben. Versuch es später noch einmal.',
 		network:
 			'Dieses Netzwerk hat schon die erlaubte Höchstzahl an Raumnamen gesichert. Melde dich mit einem davon an.',

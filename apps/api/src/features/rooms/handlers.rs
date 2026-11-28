@@ -13,8 +13,12 @@ pub(crate) async fn open_room(
     CurrentAccount(owner): CurrentAccount,
     Json(body): Json<OpenRoomRequest>,
 ) -> Result<(StatusCode, Json<CreatedRoomResponse>), ApiError> {
-    state.metering.admit(&owner).await?;
-    let room = state.rooms.open(&owner, body.settings()).await?;
+    let allowance = state.metering.admit(&owner).await?;
+    let participants = allowance.limits.participants;
+    let room = state
+        .rooms
+        .open(&owner, body.settings(), participants)
+        .await?;
     tracing::info!(room_id = %room.id, "room opened");
     let body = CreatedRoomResponse {
         room: RoomResponse::from(&room),

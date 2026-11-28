@@ -54,7 +54,7 @@ pub(super) async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomCode) {
 async fn setup_hearing(heard: &'static str) -> (VoiceService, Arc<InMemoryRooms>, RoomCode) {
     let repository = Arc::new(InMemoryRooms::default());
     let rooms = room_service(repository.clone());
-    let room = rooms.open(&owner(), private_room()).await.unwrap();
+    let room = rooms.open(&owner(), private_room(), 2).await.unwrap();
     (
         VoiceService::new(
             repository.clone(),

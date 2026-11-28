@@ -246,6 +246,7 @@ export const it: Messages = {
 		freeLine: (minutes: number) => `Gratis: ${String(minutes)} min di chiamate ogni mese.`
 	},
 	limits: {
+		full: 'Questa chiamata è piena: c’è posto per due persone. Riprova quando qualcuno esce.',
 		beta: 'Diceri è in beta pubblica e per ora tutti i posti sono occupati. Riprova più tardi.',
 		network:
 			'Questa rete ha già prenotato il numero massimo di nomi di stanza. Accedi con uno di quelli.',

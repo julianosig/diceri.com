@@ -245,6 +245,7 @@ export const en = {
 		freeLine: (minutes: number) => `Free: ${String(minutes)} min of calls every month.`
 	},
 	limits: {
+		full: 'This call is full: it has room for two people. Try again when someone leaves.',
 		beta: 'Diceri is in a public beta and all spots are taken for now. Please try again later.',
 		network:
 			'This network has already claimed the most room usernames allowed. Sign in to one of them instead.',

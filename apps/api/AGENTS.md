@@ -57,6 +57,7 @@ in responses.
 | `DICERI_FREE_CALL_MINUTES` | `60` | longest call on the free plan (everyone's default) |
 | `DICERI_FREE_DAILY_MINUTES` | `60` | call minutes per account per UTC day on the free plan (same as the month: no daily limit) |
 | `DICERI_FREE_MONTHLY_MINUTES` | `60` | call minutes per account per UTC month on the free plan |
+| `DICERI_FREE_PARTICIPANTS` | `2` | people at once in a call on the free plan (same for `PRO`, `TEAM`); newcomers to a full call are refused with 429 `limit: "full"` |
 | `DICERI_PRO_CALL_MINUTES` / `DICERI_PRO_DAILY_MINUTES` / `DICERI_PRO_MONTHLY_MINUTES` | `60` / `300` / `300` | same for the pro plan (assigned with `diceri-api plan <user> pro`) |
 | `DICERI_PRO_PRICE_CENTS` | `2900` | pro price shown on the plans, US cents a month ([pricing](../../docs/pricing.md)) |
 | `DICERI_TEAM_CALL_MINUTES` / `DICERI_TEAM_DAILY_MINUTES` / `DICERI_TEAM_MONTHLY_MINUTES` | `120` / `600` / `800` | same for the team plan |

@@ -15,7 +15,9 @@ export class GuestKnock {
 
 	constructor(
 		private readonly roomId: string,
-		private readonly onAdmitted: (credentials: MediaCredentials, request: Knock) => void
+		private readonly onAdmitted: (credentials: MediaCredentials, request: Knock) => void,
+		/** Words a known refusal (a full call, a plan limit) in the visitor's language. */
+		private readonly explain: (cause: unknown) => string | undefined = () => undefined
 	) {}
 
 	async ask(profile: Profile): Promise<void> {
@@ -60,6 +62,6 @@ export class GuestKnock {
 
 	#fail(cause: unknown): void {
 		this.status = 'error';
-		this.error = cause instanceof Error ? cause.message : String(cause);
+		this.error = this.explain(cause) ?? (cause instanceof Error ? cause.message : String(cause));
 	}
 }
