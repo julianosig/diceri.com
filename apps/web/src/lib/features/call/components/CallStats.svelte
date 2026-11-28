@@ -2,8 +2,8 @@
 	import { Activity } from '@lucide/svelte';
 	import { i18n } from '#lib/i18n/index.ts';
 	import SettingsSection from './SettingsSection.svelte';
-	import type { TransportMetrics } from '../transport-stats.ts';
-	import type { CallMetrics } from '../stats-poller.ts';
+	import type { TransportMetrics } from '../stats/transport-stats.ts';
+	import type { CallMetrics } from '../stats/stats-poller.ts';
 
 	let { metrics }: { metrics: CallMetrics } = $props();
 

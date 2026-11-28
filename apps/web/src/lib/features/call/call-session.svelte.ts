@@ -7,11 +7,8 @@ import {
 	Room,
 	RoomEvent,
 	Track,
-	LocalVideoTrack,
-	RemoteVideoTrack,
 	VideoPresets,
 	type VideoTrack,
-	type Participant as RoomParticipant,
 	type RemoteParticipant,
 	type RemoteTrack,
 	type RemoteTrackPublication
@@ -26,6 +23,7 @@ import {
 	type AudioSettings,
 	type EnhancedFilter
 } from './audio-settings.ts';
+import { cameraOf } from './camera-track.ts';
 import { LevelMeter } from './level-meter.ts';
 import { LocalMonitor } from './local-monitor.ts';
 import { LoopbackMonitor } from './loopback-monitor.ts';
@@ -42,7 +40,7 @@ import {
 	wantsTranslatedTrack,
 	type Listener
 } from '#lib/features/translation/index.ts';
-import { StatsPoller, type CallMetrics } from './stats-poller.ts';
+import { StatsPoller, type CallMetrics } from './stats/stats-poller.ts';
 
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
 /** Hear yourself: off, local mic, through the server, or translated by the agent. */
@@ -463,12 +461,4 @@ export class CallSession {
 		document.body.append(element);
 		this.#remoteElements.set(track, element);
 	}
-}
-
-/** A participant's camera track while it is on and (for others) received. */
-function cameraOf(participant: RoomParticipant): VideoTrack | undefined {
-	const publication = participant.getTrackPublication(Track.Source.Camera);
-	const track = publication?.track;
-	const video = track instanceof LocalVideoTrack || track instanceof RemoteVideoTrack;
-	return video && !publication?.isMuted ? track : undefined;
 }
