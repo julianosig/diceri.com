@@ -35,6 +35,8 @@ export class CallMonitor {
 		this.#local = undefined;
 		this.#loopback = undefined;
 		await Promise.allSettled([local?.close(), loopback?.stop()]);
+		// A newer choice, or leaving, came while the old monitor closed: it wins.
+		if (request !== this.#request || this.options.isClosing()) return;
 		this.mode = mode;
 		if (mode === 'local' && outgoing) this.#local = new LocalMonitor(outgoing);
 		if (mode === 'loopback') await this.#startLoopback(request);
