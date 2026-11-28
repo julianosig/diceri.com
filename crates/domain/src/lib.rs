@@ -26,6 +26,6 @@ pub use language::{LanguageCode, LanguageCodeError};
 pub use mascot::{Mascot, MascotError};
 pub use participant_profile::ParticipantProfile;
 pub use plan::{Plan, PlanError, PlanLimits};
-pub use room::{Room, RoomRuleError};
+pub use room::{Room, RoomRuleError, listener_identity, listener_seat, surplus_listeners};
 pub use room_code::{RoomCode, RoomCodeError};
 pub use room_settings::{EntryPolicy, RoomSettings};

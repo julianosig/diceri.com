@@ -34,8 +34,13 @@ reconnects and late tokens, then reaches the API the moment it happens.
 - Who is beyond the size is one rule of the room, used by every event and by the sweep, so
   they all pick the same people whatever order reports arrive in: the owner's place is always
   kept, then the seats given credentials most recently, then anyone without a seat.
-- `participant_left`: the person's hidden listener (`monitor-<seat>`) is removed, unless the
-  person is back already (a reload reuses both identities; reports can come late or twice).
+- `participant_left`: the person's hidden listener is removed, unless the person is back
+  already (reports can come late or twice). Each listener connection has its own identity,
+  `monitor-<seat>.<UUIDv7>`, and only connections seen in the same look that showed the person
+  absent are removed, so a listener reconnecting meanwhile is never hit; of one person's
+  listeners only the newest stays.
+- Every report, and the sweep, look at the call first and read the room after, so a seat
+  granted meanwhile is counted.
 - `room_finished`: the call stops counting against the capacity (the owner keeps counting if
   they already have a newer call).
 - Webhook delivery is not guaranteed (LiveKit retries, then gives up), so the minute's sweep

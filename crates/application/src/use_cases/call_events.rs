@@ -4,14 +4,13 @@
 
 use std::sync::Arc;
 
-use diceri_domain::{Room, RoomId};
+use diceri_domain::{RoomId, surplus_listeners};
 
 use super::MeteringService;
 use crate::ports::{MediaAccessError, MediaEvent, MediaPresence, MediaRoomCloser, RoomRepository};
 
-/// Media identities: people are `p-<id>`, hidden listeners `monitor-<their person's identity>`.
+/// People's media identities; listeners are named after them (`diceri_domain::listener_identity`).
 const PERSON_PREFIX: &str = "p-";
-const LISTENER_PREFIX: &str = "monitor-";
 
 #[derive(Clone)]
 pub struct CallEventsService {
@@ -70,49 +69,38 @@ impl CallEventsService {
             self.close(room_id).await;
             return;
         }
-        if let Some(person) = identity.strip_prefix(LISTENER_PREFIX) {
-            if !self.is_in_call(room_id, person).await.unwrap_or(true) {
-                self.remove(room_id, identity).await;
-            }
-            return;
+        if identity.starts_with(PERSON_PREFIX)
+            && let Some(metering) = &self.metering
+        {
+            metering.note_live(room_id, room.owner.clone());
         }
+        self.tidy(room_id).await;
+    }
+
+    /// A person leaving takes their listener along; anything else is tidied the same way.
+    async fn left(&self, room_id: RoomId, identity: &str) {
         if identity.starts_with(PERSON_PREFIX) {
-            if let Some(metering) = &self.metering {
-                metering.note_live(room_id, room.owner.clone());
-            }
-            self.keep_to_size(&room).await;
+            self.tidy(room_id).await;
         }
     }
 
-    /// Removes whoever is beyond the call's size, by the room's one rule (the owner stays,
-    /// then the newest grants), so every event and the sweep agree on who goes, whoever
-    /// joined last. Unknown presence: nothing (the sweep checks again).
-    async fn keep_to_size(&self, room: &Room) {
-        let Ok(members) = self.presence.call_members(&room.id).await else {
+    /// Removes people beyond the call's size and listeners without their person (or beyond
+    /// one per person), all from one look at the call. The room is read after that look, so
+    /// a seat granted meanwhile is counted, and by the room's one rule (owner kept, newest
+    /// grants next), so every report and the sweep agree on who goes whatever their order.
+    /// Only connections that look showed are removed: a listener connecting since has its
+    /// own identity and is never hit. Unknown presence or room: nothing (the sweep retries).
+    async fn tidy(&self, room_id: RoomId) {
+        let Ok(members) = self.presence.call_members(&room_id).await else {
             return;
         };
-        for identity in room.beyond_size(&members.people) {
-            self.remove(room.id, &identity).await;
-        }
-    }
-
-    /// `None` when the media server cannot say.
-    async fn is_in_call(&self, room: RoomId, person: &str) -> Option<bool> {
-        let members = self.presence.call_members(&room).await.ok()?;
-        Some(members.people.iter().any(|identity| identity == person))
-    }
-
-    /// Their hidden listener goes with them, unless they are back already (a reload reuses
-    /// the same identities, and a report may come late or twice).
-    async fn left(&self, room: RoomId, identity: &str) {
-        if !identity.starts_with(PERSON_PREFIX)
-            || !matches!(self.rooms.find_by_id(&room).await, Ok(Some(_)))
-        {
+        let Ok(Some(room)) = self.rooms.find_by_id(&room_id).await else {
             return;
-        }
-        if self.is_in_call(room, identity).await == Some(false) {
-            self.remove(room, &format!("{LISTENER_PREFIX}{identity}"))
-                .await;
+        };
+        let beyond = room.beyond_size(&members.people);
+        let surplus = surplus_listeners(&members.people, &members.listeners);
+        for identity in beyond.iter().chain(&surplus) {
+            self.remove(room_id, identity).await;
         }
     }
 

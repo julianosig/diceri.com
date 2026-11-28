@@ -1,4 +1,7 @@
+mod listeners;
 mod seats;
+
+pub use listeners::{listener_identity, listener_seat, surplus_listeners};
 
 use seats::Seats;
 

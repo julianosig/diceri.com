@@ -299,7 +299,7 @@ impl MeteringService {
             let Ok(Some(stored)) = self.rooms.find_by_id(&room).await else {
                 continue;
             };
-            let closer = closer.clone();
+            let (closer, rooms) = (closer.clone(), self.rooms.clone());
             if stored.is_ended() {
                 work.spawn(within_deadline(
                     async move { close_ended(closer.as_ref(), &room).await },
@@ -315,7 +315,7 @@ impl MeteringService {
                 work.spawn(within_deadline(
                     async move {
                         if let Some(fresh) = members_of(presence.as_ref(), &room).await {
-                            tidy_members(closer.as_ref(), &stored, fresh).await;
+                            tidy_members(closer.as_ref(), rooms.as_ref(), &room, fresh).await;
                         }
                     },
                     room,

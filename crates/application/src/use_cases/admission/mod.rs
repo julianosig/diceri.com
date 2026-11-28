@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use diceri_domain::{
     AccessKey, AccountId, JoinRequest, ParticipantProfile, RequestId, RequestStatus, Room,
-    RoomCode, RoomId, RoomRuleError,
+    RoomCode, RoomId, RoomRuleError, listener_identity,
 };
 
 use crate::ports::{
@@ -303,7 +303,7 @@ impl AdmissionService {
             }
         }
         self.ensure_still_open(&room.id).await?;
-        let identity = format!("monitor-{seat}");
+        let identity = listener_identity(&seat, &self.ids.participant_id().to_string());
         self.grant(&room.id, identity, None, MediaRole::Monitor)
     }
 

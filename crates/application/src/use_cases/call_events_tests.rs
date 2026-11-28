@@ -33,10 +33,12 @@ impl MediaPresence for People {
     }
 
     async fn call_members(&self, room: &RoomId) -> Result<CallMembers, MediaAccessError> {
-        Ok(CallMembers {
-            people: self.identities_in(room).await?,
-            listeners: Vec::new(),
-        })
+        let (listeners, people) = self
+            .identities_in(room)
+            .await?
+            .into_iter()
+            .partition(|identity| identity.starts_with("monitor-"));
+        Ok(CallMembers { people, listeners })
     }
 }
 
@@ -142,10 +144,19 @@ async fn people_within_the_calls_size_stay() {
 #[tokio::test]
 async fn a_listener_without_its_person_in_the_call_is_removed() {
     let f = fixture().await;
-    f.connected(&["p-owner"]);
-    f.join("monitor-p-owner").await;
-    f.join("monitor-p-gone").await;
-    assert_eq!(f.removed(), vec!["monitor-p-gone".to_owned()]);
+    f.seat_owner("p-owner").await;
+    f.connected(&["p-owner", "monitor-p-owner.01", "monitor-p-gone.01"]);
+    f.join("monitor-p-gone.01").await;
+    assert_eq!(f.removed(), vec!["monitor-p-gone.01".to_owned()]);
+}
+
+#[tokio::test]
+async fn only_the_newest_listener_of_a_person_stays() {
+    let f = fixture().await;
+    f.seat_owner("p-owner").await;
+    f.connected(&["p-owner", "monitor-p-owner.01", "monitor-p-owner.02"]);
+    f.join("monitor-p-owner.02").await;
+    assert_eq!(f.removed(), vec!["monitor-p-owner.01".to_owned()]);
 }
 
 #[tokio::test]
@@ -167,13 +178,15 @@ async fn a_person_leaving_takes_their_listener_along_unless_they_are_back() {
         room: f.room.id,
         identity: "p-guest".to_owned(),
     };
+    f.seat_owner("p-owner").await;
     // Back already (a reload): a late report leaves the new listener alone.
-    f.connected(&["p-guest"]);
+    f.connected(&["p-owner", "p-guest", "monitor-p-guest.02"]);
     f.events.handle(left()).await;
     assert_eq!(f.removed(), Vec::<String>::new());
-    f.connected(&[]);
+    // Gone: only the listener that look showed is removed.
+    f.connected(&["p-owner", "monitor-p-guest.02"]);
     f.events.handle(left()).await;
-    assert_eq!(f.removed(), vec!["monitor-p-guest".to_owned()]);
+    assert_eq!(f.removed(), vec!["monitor-p-guest.02".to_owned()]);
 }
 
 #[tokio::test]

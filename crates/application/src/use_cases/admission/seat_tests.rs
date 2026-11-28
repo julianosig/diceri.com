@@ -256,7 +256,8 @@ async fn only_someone_shown_in_the_call_gets_a_listener() {
         .monitor(&room.code, room.host_key())
         .await
         .unwrap();
-    assert_eq!(listener.identity, format!("monitor-{}", host.identity));
+    let prefix = format!("monitor-{}.", host.identity);
+    assert!(listener.identity.starts_with(&prefix));
     // When it cannot be checked, asking again later is the answer, not access.
     *people.0.lock().unwrap() = None;
     assert!(matches!(

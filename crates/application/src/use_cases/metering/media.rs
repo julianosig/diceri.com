@@ -3,9 +3,9 @@
 
 use std::sync::Arc;
 
-use diceri_domain::{Room, RoomId};
+use diceri_domain::{Room, RoomId, surplus_listeners};
 
-use crate::ports::{CallMembers, MediaAccessError, MediaPresence, MediaRoomCloser};
+use crate::ports::{CallMembers, MediaAccessError, MediaPresence, MediaRoomCloser, RoomRepository};
 
 /// Every media room open now, from one listing; `None` when the media server cannot say.
 pub(super) async fn open_media_rooms(presence: &dyn MediaPresence) -> Option<Vec<RoomId>> {
@@ -43,47 +43,29 @@ pub(super) async fn close_ended(closer: &dyn MediaRoomCloser, room: &RoomId) {
     }
 }
 
-/// Whether a listener (named `monitor-<seat>`) has no person of its seat in the call.
-fn is_orphan(listener: &str, people: &[String]) -> bool {
-    listener
-        .strip_prefix("monitor-")
-        .is_none_or(|seat| !people.iter().any(|person| person == seat))
-}
-
-/// Whether `room`'s call holds a listener without its person or people beyond its size.
+/// Whether `room`'s call holds people beyond its size or listeners to remove.
 pub(super) fn needs_tidy(room: &Room, members: &CallMembers) -> bool {
-    has_orphan_listeners(members) || !room.beyond_size(&members.people).is_empty()
+    !room.beyond_size(&members.people).is_empty()
+        || !surplus_listeners(&members.people, &members.listeners).is_empty()
 }
 
-/// Removes people beyond the call's size (the same rule as the media events) and
-/// listeners without their person.
-pub(super) async fn tidy_members(closer: &dyn MediaRoomCloser, room: &Room, members: CallMembers) {
-    for identity in room.beyond_size(&members.people) {
-        if let Err(error) = closer.remove(&room.id, &identity).await {
-            tracing::warn!(%error, room_id = %room.id, "person beyond the size not removed");
-        }
-    }
-    remove_orphan_listeners(closer, &room.id, members).await;
-}
-
-fn has_orphan_listeners(members: &CallMembers) -> bool {
-    members
-        .listeners
-        .iter()
-        .any(|listener| is_orphan(listener, &members.people))
-}
-
-/// Hidden listeners are named `monitor-<seat>`: one whose person is not in the call goes.
-async fn remove_orphan_listeners(
+/// Removes people beyond the call's size and surplus listeners from `members` (a fresh
+/// look), by the same rules as media events; the room is read after that look, so a seat
+/// granted meanwhile counts.
+pub(super) async fn tidy_members(
     closer: &dyn MediaRoomCloser,
+    rooms: &dyn RoomRepository,
     room: &RoomId,
-    CallMembers { people, listeners }: CallMembers,
+    members: CallMembers,
 ) {
-    for listener in listeners {
-        if is_orphan(&listener, &people)
-            && let Err(error) = closer.remove(room, &listener).await
-        {
-            tracing::warn!(%error, room_id = %room, "listener not removed");
+    let Ok(Some(stored)) = rooms.find_by_id(room).await else {
+        return;
+    };
+    let beyond = stored.beyond_size(&members.people);
+    let surplus = surplus_listeners(&members.people, &members.listeners);
+    for identity in beyond.iter().chain(&surplus) {
+        if let Err(error) = closer.remove(room, identity).await {
+            tracing::warn!(%error, room_id = %room, "not removed from the call");
         }
     }
 }
