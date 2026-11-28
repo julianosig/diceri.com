@@ -142,33 +142,39 @@ export class CallSession {
 		}
 	}
 
-	/** Applies new capture settings by republishing the microphone, one change at a time. */
+	/** Applies new capture settings to the microphone, one change at a time. */
 	async updateSettings(patch: Partial<AudioSettings>): Promise<void> {
+		const previous = this.settings;
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
-		const change = this.#settingsChange.then(() => this.#replaceMicrophone());
+		const change = this.#settingsChange.then(() => this.#restartMicrophone(previous));
 		this.#settingsChange = change.catch(() => undefined);
 		await change;
 	}
 
 	/**
-	 * A new track: re-enabling the old one would only unmute it, ignoring the new device and
-	 * settings and briefly sending audio from a muted microphone. It is captured before the
-	 * old one goes, so a device that fails leaves the caller with the microphone they had.
+	 * Restarts the published microphone with the new device and settings: the same publication,
+	 * kept muted when the caller is (re-enabling it would only unmute it and ignore the new
+	 * settings). A device that fails puts the previous settings back.
 	 */
-	async #replaceMicrophone(): Promise<void> {
+	async #restartMicrophone(previous: AudioSettings): Promise<void> {
+		const track = this.#micTrack();
+		if (!track) return;
 		const mode = this.monitor;
 		await this.setMonitor('off');
+		let failed = false;
 		try {
-			const captured = await this.#capture();
-			const old = this.#micTrack();
-			if (old) await this.#room.localParticipant.unpublishTrack(old, true);
-			await this.#publishMicrophone(captured);
+			await track.restartTrack(toCaptureOptions(this.settings));
 		} catch {
-			this.error = 'micChangeFailed' satisfies CallProblem;
-		} finally {
-			await this.setMonitor(mode);
+			failed = true;
+			this.settings = previous;
+			await track.restartTrack(toCaptureOptions(previous)).catch(() => undefined);
 		}
+		const result = await applyEnhancedFilter(track, this.settings.enhancedFilter);
+		this.activeFilter = result.active;
+		this.error = failed ? ('micChangeFailed' satisfies CallProblem) : result.error;
+		await this.#startMeter(outgoingMediaTrack(track));
+		await this.setMonitor(mode);
 	}
 
 	/** A microphone track with the current settings, muted when the caller is. */
@@ -234,8 +240,8 @@ export class CallSession {
 		this.participants = [];
 	}
 
-	async #publishMicrophone(captured?: LocalAudioTrack): Promise<void> {
-		captured ??= await this.#capture();
+	async #publishMicrophone(): Promise<void> {
+		const captured = await this.#capture();
 		await this.#room.localParticipant.publishTrack(captured, { source: Track.Source.Microphone });
 		const track = this.#micTrack();
 		// The message is a problem key; CallScreen words it in the visitor's language.
