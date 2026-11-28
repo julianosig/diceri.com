@@ -28,16 +28,6 @@ pub struct MeteringService {
     calls: Arc<Mutex<LiveCalls>>,
 }
 
-/// Calls counted against the service's capacity, by owner: those someone was in at the last
-/// tick, and owners let in whose join credentials are still usable (reserved until then).
-#[derive(Debug, Default)]
-struct LiveCalls {
-    in_call: HashSet<RoomId>,
-    live_owners: HashSet<Username>,
-    /// When each owner was let in (Unix ms).
-    admitted: HashMap<Username, u64>,
-}
-
 /// What one tick saw: calls someone is in, calls it ended, and who is in each call it looked at.
 #[derive(Default)]
 struct Checked {
@@ -45,22 +35,6 @@ struct Checked {
     ended_now: HashSet<RoomId>,
     members: HashMap<RoomId, CallMembers>,
 }
-
-impl LiveCalls {
-    /// Distinct owners with a call live or about to be: one call never counts twice.
-    fn live_count(&self) -> usize {
-        let reserved = self
-            .admitted
-            .keys()
-            .filter(|owner| !self.live_owners.contains(*owner))
-            .count();
-        self.live_owners.len() + reserved
-    }
-}
-
-/// An owner's place in the service's capacity is held while their join credentials (2-minute
-/// media tokens) can still be used, with a margin.
-const RESERVATION_MS: u64 = 150_000;
 
 impl std::fmt::Debug for MeteringService {
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -380,7 +354,10 @@ fn month_start(day: u32) -> u32 {
     u32::try_from(i64::from(day) - (day_of_month - 1)).unwrap_or(0)
 }
 
+mod capacity;
 mod media;
+
+use capacity::{LiveCalls, RESERVATION_MS};
 
 use media::{
     close_ended, close_within_deadline, members_of, open_media_rooms, remove_orphan_listeners,
