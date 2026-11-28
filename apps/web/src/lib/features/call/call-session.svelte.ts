@@ -140,8 +140,12 @@ export class CallSession {
 		try {
 			const { serverUrl, token } = this.options.credentials;
 			await this.#room.connect(serverUrl, token);
+			// Leaving during setup stops it: no microphone, camera or stats start afterwards.
+			if (this.#isClosing()) return;
 			await this.#publishMicrophone();
+			if (this.#isClosing()) return;
 			if (this.options.camera) await this.setCamera(true);
+			if (this.#isClosing()) return;
 			void this.loadDevices();
 			this.audioBlocked = !this.#room.canPlaybackAudio;
 			this.#stats.start(
@@ -152,6 +156,7 @@ export class CallSession {
 			this.status = 'connected';
 			this.#refreshParticipants();
 		} catch (cause) {
+			if (this.#isClosing()) return;
 			this.status = 'error';
 			this.error = cause instanceof Error ? cause.message : String(cause);
 		}
