@@ -181,7 +181,7 @@ impl VoiceService {
         }
         self.keep(account, &voice).await;
         if let Some(old) = previous.filter(|old| self.is_ours(old) && old.voice != voice) {
-            self.delete_at_provider(&old.voice).await;
+            self.discard(&old.voice);
         }
         Ok(voice)
     }
@@ -341,18 +341,12 @@ impl VoiceService {
         }
     }
 
-    /// Deletes a clone nobody will track (its call ended meanwhile), trying a few times, on
-    /// its own task: a request cut short by its time limit must not stop the cleanup. Once
-    /// this gives up, only the logged id can find it at the provider.
+    /// Deletes a clone nobody will track (its call ended meanwhile, or a newer recording
+    /// replaced it), trying a few times, on its own task: a request cut short by its time
+    /// limit must not stop the cleanup. Once this gives up, only the logged id finds it.
     fn discard(&self, voice: &VoiceId) {
         let (cloner, voice) = (self.cloner.clone(), voice.clone());
         tokio::spawn(async move { discard_with_retries(cloner.as_ref(), &voice).await });
-    }
-
-    async fn delete_at_provider(&self, voice: &VoiceId) {
-        if let Err(error) = self.cloner.delete(voice).await {
-            tracing::warn!(%error, "account voice clone not deleted at the provider");
-        }
     }
 }
 
