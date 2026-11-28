@@ -249,7 +249,8 @@ export class CallSession {
 	async toggleMute(): Promise<void> {
 		await this.#inTurn(async () => {
 			const track = this.#micTrack();
-			if (!track) return;
+			// Left the call while waiting its turn: the microphone stays off.
+			if (!track || this.#isClosing()) return;
 			if (this.muted) {
 				// Changes made while muted, applied before the microphone goes live.
 				const [deferred, revisions] = [this.#deferred, this.#deferredRevisions];
@@ -258,7 +259,13 @@ export class CallSession {
 				if (settingKeys(deferred).length > 0) {
 					await this.#restartMicrophone(deferred, revisions);
 				}
+				if (this.#isClosing()) return;
 				await track.unmute();
+				// Left while unmuting: never leave the microphone capturing.
+				if (this.#isClosing()) {
+					track.stop();
+					return;
+				}
 			} else await track.mute();
 			this.muted = !this.muted;
 			this.#refreshParticipants();
