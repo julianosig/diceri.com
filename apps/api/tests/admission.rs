@@ -182,8 +182,13 @@ async fn invalid_names_are_rejected() {
 #[tokio::test]
 async fn monitor_session_requires_membership() {
     let app = app(true);
-    let (id, host_key) = create_room(&app).await;
+    let host = open_room(&app, json!({})).await;
+    let (id, host_key) = (host.code.clone(), host.key.clone());
     let uri = format!("/api/v1/rooms/{id}/monitor-session");
+    // Only someone in the call may listen: the host joins first.
+    let (status, _) = send(&app, "POST", &uri, Some(&host_key), None).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    host_join(&app, &host, name("Ana")).await;
     let (status, body) = send(&app, "POST", &uri, Some(&host_key), None).await;
     assert_eq!(status, StatusCode::OK);
     assert!(body["identity"].as_str().unwrap().starts_with("monitor-"));

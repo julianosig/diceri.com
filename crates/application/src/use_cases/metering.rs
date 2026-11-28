@@ -174,7 +174,7 @@ impl MeteringService {
         };
         // First, so a call ended below at its limit is only swept if still open next minute;
         // with a time budget, so a slow media server never holds up charging live calls.
-        let sweep = self.close_ended_calls(presence.as_ref(), closer.as_ref());
+        let sweep = self.tidy_media_rooms(presence, closer);
         if tokio::time::timeout(SWEEP_BUDGET, sweep).await.is_err() {
             tracing::warn!("closing ended calls took too long; the rest wait for the next minute");
         }
@@ -211,10 +211,15 @@ impl MeteringService {
         in_call
     }
 
-    /// Closes media rooms still open for calls that ended: a close that failed, or someone
-    /// connecting with credentials issued just before the end (which reopens the media
-    /// room). Only rooms this service knows are touched, never another deployment's.
-    async fn close_ended_calls(&self, presence: &dyn MediaPresence, closer: &dyn MediaRoomCloser) {
+    /// Closes media rooms still open for calls that ended (a close that failed, or someone
+    /// connecting with credentials issued just before the end), and disconnects hidden
+    /// listeners whose person left the call. Only rooms this service knows are touched,
+    /// never another deployment's; all at once, each with its own deadline.
+    async fn tidy_media_rooms(
+        &self,
+        presence: &Arc<dyn MediaPresence>,
+        closer: &Arc<dyn MediaRoomCloser>,
+    ) {
         let Ok(media) = presence
             .open_rooms()
             .await
@@ -222,13 +227,27 @@ impl MeteringService {
         else {
             return;
         };
+        let mut work = tokio::task::JoinSet::new();
         for room in media {
-            let ended =
-                matches!(self.rooms.find_by_id(&room).await, Ok(Some(stored)) if stored.is_ended());
-            if ended && let Err(error) = closer.close(&room).await {
-                warn_not_closed(&error, &room);
-            }
+            let Ok(Some(stored)) = self.rooms.find_by_id(&room).await else {
+                continue;
+            };
+            let (presence, closer) = (presence.clone(), closer.clone());
+            let ended = stored.is_ended();
+            work.spawn(async move {
+                let tidy = async {
+                    if ended {
+                        close_ended(closer.as_ref(), &room).await;
+                    } else {
+                        remove_orphan_listeners(presence.as_ref(), closer.as_ref(), &room).await;
+                    }
+                };
+                if tokio::time::timeout(CLOSE_TIMEOUT, tidy).await.is_err() {
+                    tracing::warn!(room_id = %room, "media room tidy-up timed out");
+                }
+            });
         }
+        while work.join_next().await.is_some() {}
     }
 
     /// One minute of `room`'s call, charged to its owner; ends it at a plan limit.
@@ -279,6 +298,34 @@ async fn someone_in(presence: &dyn MediaPresence, room: &RoomId) -> bool {
     }
 }
 
+async fn close_ended(closer: &dyn MediaRoomCloser, room: &RoomId) {
+    if let Err(error) = closer.close(room).await {
+        warn_not_closed(&error, room);
+    }
+}
+
+/// Hidden listeners are named `monitor-<seat>`: one whose person is not in the call goes.
+async fn remove_orphan_listeners(
+    presence: &dyn MediaPresence,
+    closer: &dyn MediaRoomCloser,
+    room: &RoomId,
+) {
+    let (Ok(people), Ok(listeners)) = (
+        presence.identities_in(room).await,
+        presence.listeners_in(room).await,
+    ) else {
+        return;
+    };
+    for listener in listeners {
+        let seat = listener.strip_prefix("monitor-");
+        if seat.is_none_or(|seat| !people.iter().any(|person| person == seat))
+            && let Err(error) = closer.remove(room, &listener).await
+        {
+            tracing::warn!(%error, room_id = %room, "listener not removed");
+        }
+    }
+}
+
 /// Disconnects everyone from a call that reached its plan's limit.
 async fn close_at_limit(closer: &dyn MediaRoomCloser, room: &RoomId) {
     tracing::info!(room_id = %room, "call ended: plan limit reached");
@@ -290,6 +337,9 @@ async fn close_at_limit(closer: &dyn MediaRoomCloser, room: &RoomId) {
 fn warn_not_closed(error: &MediaAccessError, room: &RoomId) {
     tracing::warn!(%error, room_id = %room, "media room not closed");
 }
+
+/// How long tidying one media room (closing it, or removing listeners) may take.
+const CLOSE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(5);
 
 /// How long the minute's sweep of ended calls may take before charging goes ahead.
 const SWEEP_BUDGET: std::time::Duration = std::time::Duration::from_secs(10);

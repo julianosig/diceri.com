@@ -251,12 +251,15 @@ impl AdmissionService {
         key: &AccessKey,
     ) -> Result<JoinTicket, AdmissionError> {
         let room = self.load(code).await?;
-        // Only someone with a place in the call may listen to it.
-        if !room.is_in_call(key) {
+        // Only someone in the call right now may listen to it (unknown presence: their seat
+        // is enough); the listener is named after that seat, so it goes when they leave.
+        let seat = room.seat_of_key(key).ok_or(AdmissionError::Forbidden)?;
+        room.ensure_open()?;
+        let (present, _) = self.who_is_in(&room).await;
+        if present.is_some_and(|present| !present.iter().any(|identity| identity == seat)) {
             return Err(AdmissionError::Forbidden);
         }
-        room.ensure_open()?;
-        let identity = format!("monitor-{}", self.ids.participant_id());
+        let identity = format!("monitor-{seat}");
         self.grant(&room.id, identity, None, MediaRole::Monitor)
     }
 

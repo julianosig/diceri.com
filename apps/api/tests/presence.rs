@@ -33,6 +33,13 @@ impl MediaPresence for FakePresence {
         Ok(Vec::new())
     }
 
+    async fn listeners_in(
+        &self,
+        _: &diceri_domain::RoomId,
+    ) -> Result<Vec<String>, MediaAccessError> {
+        Ok(Vec::new())
+    }
+
     async fn open_rooms(&self) -> Result<Vec<diceri_domain::RoomId>, MediaAccessError> {
         Ok(Vec::new())
     }

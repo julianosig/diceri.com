@@ -24,6 +24,9 @@ pub trait MediaPresence: Send + Sync {
     /// exist), so a call can be kept to its size.
     async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError>;
 
+    /// Media identities of the hidden listeners (loopback monitors) in one room's call.
+    async fn listeners_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError>;
+
     /// People in one room's call right now (0 when the media room does not exist).
     /// Adapters should answer with a single-room query; this default scans every room.
     async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {

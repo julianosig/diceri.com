@@ -16,7 +16,11 @@ use crate::test_support::{FakeClock, InMemoryAccounts, InMemoryRooms, private_ro
 const NOW_MS: u64 = 1_795_780_800_000;
 
 #[derive(Default)]
-struct People(Mutex<HashMap<RoomId, usize>>);
+/// People in each call, and the hidden listeners (`monitor-<seat>`) in each.
+struct People(
+    Mutex<HashMap<RoomId, usize>>,
+    Mutex<HashMap<RoomId, Vec<String>>>,
+);
 
 #[async_trait]
 impl MediaPresence for People {
@@ -37,6 +41,16 @@ impl MediaPresence for People {
         Ok(self.0.lock().unwrap().get(room).copied().unwrap_or(0))
     }
 
+    async fn listeners_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+        Ok(self
+            .1
+            .lock()
+            .unwrap()
+            .get(room)
+            .cloned()
+            .unwrap_or_default())
+    }
+
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
         Ok(self
             .live_rooms()
@@ -53,12 +67,18 @@ impl MediaPresence for People {
 }
 
 #[derive(Default)]
-struct Closer(Mutex<Vec<RoomId>>);
+/// Rooms closed, and listeners removed.
+struct Closer(Mutex<Vec<RoomId>>, Mutex<Vec<String>>);
 
 #[async_trait]
 impl MediaRoomCloser for Closer {
     async fn close(&self, room: &RoomId) -> Result<(), MediaAccessError> {
         self.0.lock().unwrap().push(*room);
+        Ok(())
+    }
+
+    async fn remove(&self, _: &RoomId, identity: &str) -> Result<(), MediaAccessError> {
+        self.1.lock().unwrap().push(identity.to_owned());
         Ok(())
     }
 }
@@ -307,4 +327,18 @@ async fn an_ended_call_still_open_at_the_media_server_is_closed() {
     f.people.0.lock().unwrap().insert(other, 2);
     f.metering.tick().await;
     assert_eq!(*f.closer.0.lock().unwrap(), vec![room.id]);
+}
+
+#[tokio::test]
+async fn a_listener_whose_person_left_is_disconnected() {
+    let f = fixture();
+    let ana = f.account(1, "ana").await;
+    let room = f.call(&ana, 1).await;
+    // p-0 is in the call (see `identities_in`); p-9 left but kept listening.
+    f.people.1.lock().unwrap().insert(
+        room.id,
+        vec!["monitor-p-0".to_owned(), "monitor-p-9".to_owned()],
+    );
+    f.metering.tick().await;
+    assert_eq!(*f.closer.1.lock().unwrap(), vec!["monitor-p-9".to_owned()]);
 }

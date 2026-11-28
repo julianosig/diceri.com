@@ -34,6 +34,10 @@ impl Seats {
         self.owner = Some(owner);
     }
 
+    pub(crate) fn owner_identity(&self) -> Option<&str> {
+        self.identity_of(&self.owner?)
+    }
+
     fn is_active(seat: &Seat, present: &[String], now_ms: u64) -> bool {
         present.contains(&seat.identity) || now_ms.saturating_sub(seat.issued_at_ms) < SEAT_GRACE_MS
     }

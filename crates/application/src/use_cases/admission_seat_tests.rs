@@ -25,6 +25,10 @@ impl MediaPresence for People {
         Ok(Vec::new())
     }
 
+    async fn listeners_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+        Ok(Vec::new())
+    }
+
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
         Ok(Vec::new())
     }
@@ -197,6 +201,10 @@ struct Stalled;
 #[async_trait]
 impl MediaPresence for Stalled {
     async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError> {
+        Ok(Vec::new())
+    }
+
+    async fn listeners_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
         Ok(Vec::new())
     }
 

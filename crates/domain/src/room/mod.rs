@@ -98,16 +98,17 @@ impl Room {
                 .any(|r| r.status == RequestStatus::Admitted && &r.key == key)
     }
 
-    /// The host, or an admitted guest who got a place in the call: being let in is not enough
-    /// when the call filled up before they took their seat.
+    /// The seat (media identity) of whoever holds `key`: the host's, or an admitted guest's
+    /// once they took their place. Being let in is not enough when the call filled up first.
     #[must_use]
-    pub fn is_in_call(&self, key: &AccessKey) -> bool {
-        self.is_host(key)
-            || self.requests.iter().any(|r| {
-                r.status == RequestStatus::Admitted
-                    && &r.key == key
-                    && self.seats.identity_of(&r.account).is_some()
-            })
+    pub fn seat_of_key(&self, key: &AccessKey) -> Option<&str> {
+        if self.is_host(key) {
+            return self.seats.owner_identity();
+        }
+        self.requests
+            .iter()
+            .find(|r| r.status == RequestStatus::Admitted && &r.key == key)
+            .and_then(|r| self.seats.identity_of(&r.account))
     }
 
     /// Adds a join request; in an open room it is admitted at once.
@@ -301,11 +302,10 @@ mod tests {
         let mut room = room();
         room.knock(request(1)).unwrap();
         room.decide(&request(1).id, true).unwrap();
-        assert!(!room.is_in_call(&key(1)));
+        assert_eq!(room.seat_of_key(&key(1)), None);
         room.claim_seat(request(1).account, "p-guest".to_owned(), Some(&[]), 0)
             .unwrap();
-        assert!(room.is_in_call(&key(1)));
-        assert!(room.is_in_call(&key(100)));
+        assert_eq!(room.seat_of_key(&key(1)), Some("p-guest"));
     }
 
     #[test]

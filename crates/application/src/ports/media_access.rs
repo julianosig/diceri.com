@@ -35,6 +35,8 @@ pub struct MediaAccessError(pub String);
 #[async_trait::async_trait]
 pub trait MediaRoomCloser: Send + Sync {
     async fn close(&self, room: &RoomId) -> Result<(), MediaAccessError>;
+    /// Disconnects one participant from the room's call.
+    async fn remove(&self, room: &RoomId, identity: &str) -> Result<(), MediaAccessError>;
 }
 
 /// Issues short-lived, room-scoped media credentials (for example LiveKit JWTs).

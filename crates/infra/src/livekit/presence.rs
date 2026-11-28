@@ -16,6 +16,8 @@ use super::twirp::TwirpClient;
 const MAX_ROOMS: usize = 50;
 /// Identity prefix of people in a call (monitors and the translator are excluded).
 const PERSON_PREFIX: &str = "p-";
+/// Hidden listeners are named `monitor-<their seat>` by the API.
+const LISTENER_PREFIX: &str = "monitor-";
 
 /// Counts people per room with LiveKit's `ListRooms` and `ListParticipants`.
 #[derive(Debug, Clone)]
@@ -100,6 +102,19 @@ impl MediaPresence for LiveKitPresence {
 
     async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {
         Ok(self.identities_in(room).await?.len())
+    }
+
+    async fn listeners_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+        let name = room.to_string();
+        if !self.exists(&name).await? {
+            return Ok(Vec::new());
+        }
+        let people = self.participants(name).await?;
+        Ok(people
+            .into_iter()
+            .map(|p| p.identity)
+            .filter(|identity| identity.starts_with(LISTENER_PREFIX))
+            .collect())
     }
 
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {

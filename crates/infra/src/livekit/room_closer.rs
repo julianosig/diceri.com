@@ -44,4 +44,20 @@ impl MediaRoomCloser for LiveKitRoomCloser {
             .await
             .map(|_| ())
     }
+
+    async fn remove(&self, room: &RoomId, identity: &str) -> Result<(), MediaAccessError> {
+        let grants = VideoGrants {
+            room_admin: true,
+            room: room.to_string(),
+            ..VideoGrants::default()
+        };
+        self.twirp
+            .call::<serde::de::IgnoredAny>(
+                "RemoveParticipant",
+                grants,
+                &json!({ "room": room.to_string(), "identity": identity }),
+            )
+            .await
+            .map(|_| ())
+    }
 }
