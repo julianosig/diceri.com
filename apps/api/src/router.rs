@@ -75,10 +75,12 @@ fn cors_layer(origins: &[String]) -> CorsLayer {
 
 /// Answers 408 when a request runs past its time limit (dropping it cancels the work).
 async fn limit_time(request: Request, next: Next) -> Response {
-    // Recording or reusing a voice waits for the cloning provider.
+    // Recording, reusing or deleting a voice waits for the cloning provider.
     let path = request.uri().path();
-    let is_voice = path.ends_with("/voices") || path.ends_with("/voices/kept");
-    let limit = if request.method() == Method::POST && is_voice {
+    let records = request.method() == Method::POST
+        && (path.ends_with("/voices") || path.ends_with("/voices/kept"));
+    let deletes = request.method() == Method::DELETE && path.ends_with("/accounts/me/voice");
+    let limit = if records || deletes {
         VOICE_TIMEOUT
     } else {
         REQUEST_TIMEOUT
