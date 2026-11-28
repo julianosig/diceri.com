@@ -34,6 +34,8 @@ struct Checked {
     in_call: HashSet<RoomId>,
     ended_now: HashSet<RoomId>,
     members: HashMap<RoomId, CallMembers>,
+    /// Calls the media server could not say anything about this time.
+    unseen: HashSet<RoomId>,
 }
 
 impl std::fmt::Debug for MeteringService {
@@ -183,11 +185,20 @@ impl MeteringService {
         // Calls ended just now are already being closed; within a budget, so a slow media
         // server never runs into the next minute.
         within_budget(
-            self.tidy_media_rooms(closer, open, &checked),
+            self.tidy_media_rooms(presence, closer, open, &checked),
             "tidying media rooms",
         )
         .await;
-        let in_call = checked.in_call;
+        // A call that could not be seen keeps counting as it did: capacity never drops on a
+        // failed look.
+        let mut in_call = checked.in_call;
+        let previous = self
+            .calls
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .in_call
+            .clone();
+        in_call.extend(checked.unseen.intersection(&previous).copied());
         let live_owners = self.owners_of(&in_call).await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         // Reservations last until their credentials expire (see `admit`), even once the call
@@ -231,7 +242,15 @@ impl MeteringService {
             looks.spawn(async move { (room, members_of(presence.as_ref(), &room).await) });
         }
         let mut checked = Checked::default();
-        while let Some(Ok((room, Some(members)))) = looks.join_next().await {
+        // Every answer is read: one call the media server cannot see never stops the others.
+        while let Some(answer) = looks.join_next().await {
+            let Ok((room, members)) = answer else {
+                continue;
+            };
+            let Some(members) = members else {
+                checked.unseen.insert(room);
+                continue;
+            };
             let someone = !members.people.is_empty();
             checked.members.insert(room, members);
             if someone {
@@ -265,6 +284,7 @@ impl MeteringService {
     /// this service knows are touched, never another deployment's; each with its own deadline.
     async fn tidy_media_rooms(
         &self,
+        presence: &Arc<dyn MediaPresence>,
         closer: &Arc<dyn MediaRoomCloser>,
         open: Option<Vec<RoomId>>,
         checked: &Checked,
@@ -283,9 +303,15 @@ impl MeteringService {
                     async move { close_ended(closer.as_ref(), &room).await },
                     room,
                 ));
-            } else if let Some(members) = checked.members.get(&room).cloned() {
+            } else if checked.members.get(&room).is_some_and(has_orphan_listeners) {
+                // Looked at again just before: someone may have rejoined with a new listener.
+                let presence = presence.clone();
                 work.spawn(within_deadline(
-                    async move { remove_orphan_listeners(closer.as_ref(), &room, members).await },
+                    async move {
+                        if let Some(fresh) = members_of(presence.as_ref(), &room).await {
+                            remove_orphan_listeners(closer.as_ref(), &room, fresh).await;
+                        }
+                    },
                     room,
                 ));
             }
@@ -360,8 +386,8 @@ mod media;
 use capacity::{LiveCalls, RESERVATION_MS};
 
 use media::{
-    close_ended, close_within_deadline, members_of, open_media_rooms, remove_orphan_listeners,
-    within_budget, within_deadline,
+    close_ended, close_within_deadline, has_orphan_listeners, members_of, open_media_rooms,
+    remove_orphan_listeners, within_budget, within_deadline,
 };
 
 #[cfg(test)]

@@ -20,6 +20,8 @@ const NOW_MS: u64 = 1_795_780_800_000;
 struct People(
     Mutex<HashMap<RoomId, usize>>,
     Mutex<HashMap<RoomId, Vec<String>>>,
+    /// Rooms the media server fails to answer about.
+    Mutex<std::collections::HashSet<RoomId>>,
 );
 
 #[async_trait]
@@ -45,6 +47,9 @@ impl MediaPresence for People {
         &self,
         room: &RoomId,
     ) -> Result<crate::ports::CallMembers, MediaAccessError> {
+        if self.2.lock().unwrap().contains(room) {
+            return Err(MediaAccessError("room closed meanwhile".to_owned()));
+        }
         let listeners = self.1.lock().unwrap().get(room).cloned();
         Ok(crate::ports::CallMembers {
             people: self.identities_in(room).await?,
@@ -123,6 +128,8 @@ impl UsageRepository for Usage {
 struct Fixture {
     metering: MeteringService,
     rooms: Arc<InMemoryRooms>,
+    /// One service for every room of a test, so their ids and codes differ.
+    room_service: crate::use_cases::RoomService,
     accounts: Arc<InMemoryAccounts>,
     usage: Arc<Usage>,
     people: Arc<People>,
@@ -162,6 +169,7 @@ fn fixture() -> Fixture {
     .with_media(people.clone(), closer.clone());
     Fixture {
         metering,
+        room_service: room_service(rooms.clone()),
         rooms,
         accounts,
         usage,
@@ -188,7 +196,8 @@ impl Fixture {
 
     /// Opens `account`'s room with `people` in its call.
     async fn call(&self, account: &Account, people: usize) -> Room {
-        let room = room_service(self.rooms.clone())
+        let room = self
+            .room_service
             .open(account, private_room(), 2)
             .await
             .unwrap();
@@ -367,4 +376,17 @@ async fn an_owner_still_connecting_keeps_their_place_through_a_tick() {
     ));
     // Coming back while her place is held is not a second call.
     assert!(f.metering.admit(&ana).await.is_ok());
+}
+
+#[tokio::test]
+async fn one_call_the_media_server_cannot_see_does_not_stop_the_others() {
+    let f = fixture();
+    let ana = f.account(1, "ana").await;
+    let bob = f.account(2, "bob").await;
+    let unseen = f.call(&ana, 2).await;
+    let seen = f.call(&bob, 2).await;
+    f.people.2.lock().unwrap().insert(unseen.id);
+    f.metering.tick().await;
+    assert_eq!(f.room(&seen).await.call_minutes, 1);
+    assert_eq!(f.room(&unseen).await.call_minutes, 0);
 }

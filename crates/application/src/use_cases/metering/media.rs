@@ -43,6 +43,20 @@ pub(super) async fn close_ended(closer: &dyn MediaRoomCloser, room: &RoomId) {
     }
 }
 
+/// Whether a listener (named `monitor-<seat>`) has no person of its seat in the call.
+fn is_orphan(listener: &str, people: &[String]) -> bool {
+    listener
+        .strip_prefix("monitor-")
+        .is_none_or(|seat| !people.iter().any(|person| person == seat))
+}
+
+pub(super) fn has_orphan_listeners(members: &CallMembers) -> bool {
+    members
+        .listeners
+        .iter()
+        .any(|listener| is_orphan(listener, &members.people))
+}
+
 /// Hidden listeners are named `monitor-<seat>`: one whose person is not in the call goes.
 pub(super) async fn remove_orphan_listeners(
     closer: &dyn MediaRoomCloser,
@@ -50,8 +64,7 @@ pub(super) async fn remove_orphan_listeners(
     CallMembers { people, listeners }: CallMembers,
 ) {
     for listener in listeners {
-        let seat = listener.strip_prefix("monitor-");
-        if seat.is_none_or(|seat| !people.iter().any(|person| person == seat))
+        if is_orphan(&listener, &people)
             && let Err(error) = closer.remove(room, &listener).await
         {
             tracing::warn!(%error, room_id = %room, "listener not removed");
