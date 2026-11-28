@@ -35,14 +35,17 @@ pub(crate) async fn host_session(
 ) -> Result<Json<JoinResponse>, ApiError> {
     require_voice(&state, &body)?;
     let code = parse_room_code(&code)?;
-    // The host starting (or rejoining) the call spends the owner's plan minutes.
-    state
-        .metering
-        .admit_owner_of(&state.rooms.get(&code).await?)
+    let profile = body.profile()?;
+    // Only the host, with a voice of their own, takes a place in the service's capacity.
+    let room = state
+        .admission
+        .check_host(&code, &key, &account.id, &profile)
         .await?;
+    // The host starting (or rejoining) the call spends the owner's plan minutes.
+    state.metering.admit_owner_of(&room).await?;
     let ticket = state
         .admission
-        .join_as_host(&code, &key, &account.id, &body.profile()?)
+        .join_as_host(&code, &key, &account.id, &profile)
         .await?;
     tracing::info!(identity = %ticket.identity, "host joined");
     Ok(Json(ticket.into()))

@@ -148,6 +148,24 @@ impl AdmissionService {
         self
     }
 
+    /// The room, once `host_key` is its host's and `profile` may join it: checked before
+    /// anything is spent on the call (its place in the service's capacity).
+    pub async fn check_host(
+        &self,
+        code: &RoomCode,
+        host_key: &AccessKey,
+        account: &AccountId,
+        profile: &ParticipantProfile,
+    ) -> Result<Room, AdmissionError> {
+        let room = self.load(code).await?;
+        if !room.is_host(host_key) {
+            return Err(AdmissionError::Forbidden);
+        }
+        room.ensure_open()?;
+        ensure_voice_belongs(&room, account, profile)?;
+        Ok(room)
+    }
+
     pub async fn join_as_host(
         &self,
         code: &RoomCode,
@@ -155,12 +173,7 @@ impl AdmissionService {
         account: &AccountId,
         profile: &ParticipantProfile,
     ) -> Result<JoinTicket, AdmissionError> {
-        let room = self.load(code).await?;
-        if !room.is_host(host_key) {
-            return Err(AdmissionError::Forbidden);
-        }
-        room.ensure_open()?;
-        ensure_voice_belongs(&room, account, profile)?;
+        let room = self.check_host(code, host_key, account, profile).await?;
         let identity = self.seat(&room, account).await?;
         let ticket = self.grant(&room.id, identity, Some(profile), MediaRole::Speaker)?;
         self.start_translation(&room.id).await;
