@@ -40,6 +40,8 @@ import {
 import { StatsPoller, type CallMetrics } from './stats/stats-poller.ts';
 
 export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
+/** Which change last edited each setting. */
+type Revisions = Partial<Record<keyof AudioSettings, number>>;
 /** Hear yourself: off, local mic, through the server, or translated by the agent. */
 export type { MonitorMode } from './call-monitor.svelte.ts';
 
@@ -94,7 +96,9 @@ export class CallSession {
 	#revision = 0;
 	/** Settings changed while muted, applied when unmuting. */
 	#deferred: Partial<AudioSettings> = {};
-	#owners: Partial<Record<keyof AudioSettings, number>> = {};
+	/** The change that made each deferred setting, so a failure undoes only its own. */
+	#deferredRevisions: Revisions = {};
+	#owners: Revisions = {};
 	/** The settings the published microphone really runs with. */
 	#applied: AudioSettings = DEFAULT_AUDIO_SETTINGS;
 	/** The settings change in progress; the next one waits for it. */
@@ -159,12 +163,18 @@ export class CallSession {
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
 		const revision = ++this.#revision;
-		for (const key of settingKeys(patch)) this.#owners[key] = revision;
+		const revisions: Revisions = {};
+		for (const key of settingKeys(patch)) {
+			this.#owners[key] = revision;
+			revisions[key] = revision;
+		}
 		// Decided when its turn comes: restarting a muted microphone briefly sends the new
 		// one live, so while muted the change waits for unmute.
 		await this.#inTurn(async () => {
-			if (this.muted) this.#deferred = { ...this.#deferred, ...patch };
-			else await this.#restartMicrophone(patch, revision);
+			if (this.muted) {
+				this.#deferred = { ...this.#deferred, ...patch };
+				this.#deferredRevisions = { ...this.#deferredRevisions, ...revisions };
+			} else await this.#restartMicrophone(patch, revisions);
 		});
 	}
 
@@ -180,7 +190,7 @@ export class CallSession {
 	 * when the caller is (re-enabling it would only unmute it and ignore the new settings).
 	 * A device that fails puts this change's settings back.
 	 */
-	async #restartMicrophone(patch: Partial<AudioSettings>, revision: number): Promise<void> {
+	async #restartMicrophone(patch: Partial<AudioSettings>, revisions: Revisions): Promise<void> {
 		const track = this.#micTrack();
 		if (!track) return;
 		await this.#monitor.pause();
@@ -195,7 +205,7 @@ export class CallSession {
 			// Left the call meanwhile: never open a microphone again.
 			if (this.#isClosing()) return;
 			// Only settings this change is still the latest edit of go back; newer choices stay.
-			const owned = settingKeys(patch).filter((key) => this.#owners[key] === revision);
+			const owned = settingKeys(patch).filter((key) => this.#owners[key] === revisions[key]);
 			this.settings = { ...this.settings, ...valuesOf(this.#applied, owned) };
 			// Browsers that stop the old microphone first leave nothing if both fail.
 			problem = await restartWith(track, this.#applied).then(
@@ -242,10 +252,11 @@ export class CallSession {
 			if (!track) return;
 			if (this.muted) {
 				// Changes made while muted, applied before the microphone goes live.
-				const deferred = this.#deferred;
+				const [deferred, revisions] = [this.#deferred, this.#deferredRevisions];
 				this.#deferred = {};
+				this.#deferredRevisions = {};
 				if (settingKeys(deferred).length > 0) {
-					await this.#restartMicrophone(deferred, this.#revision);
+					await this.#restartMicrophone(deferred, revisions);
 				}
 				await track.unmute();
 			} else await track.mute();
