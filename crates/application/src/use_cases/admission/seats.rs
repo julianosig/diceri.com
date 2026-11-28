@@ -15,10 +15,16 @@ impl AdmissionService {
         &self,
         room: &Room,
         account: &AccountId,
+        voice: Option<&str>,
     ) -> Result<String, AdmissionError> {
         let (present, now_ms) = self.who_is_in(room).await;
         let (account, identity) = (*account, format!("p-{}", self.ids.participant_id()));
+        let voice = voice.map(str::to_owned);
         let claim = move |room: &mut Room| {
+            // Checked here too: the voice may have been recorded again while presence was asked.
+            if voice.is_some_and(|voice| !room.has_voice_of(&account, &voice)) {
+                return Err(RoomRuleError::VoiceReplaced);
+            }
             room.claim_seat(account, identity, present.as_deref(), now_ms)
                 .map(|_| ())
         };

@@ -174,9 +174,9 @@ impl From<AdmissionError> for ApiError {
                 limit: "full",
                 detail: "the call is full; try again when someone leaves",
             },
-            AdmissionError::Rule(rule @ RoomRuleError::AlreadyDecided) => {
-                Self::Conflict(rule.to_string())
-            }
+            AdmissionError::Rule(
+                rule @ (RoomRuleError::AlreadyDecided | RoomRuleError::VoiceReplaced),
+            ) => Self::Conflict(rule.to_string()),
             AdmissionError::Rule(
                 rule @ (RoomRuleError::TooManyPending | RoomRuleError::TooManyVoices),
             ) => Self::TooManyRequests(rule.to_string()),

@@ -174,7 +174,9 @@ impl AdmissionService {
         profile: &ParticipantProfile,
     ) -> Result<JoinTicket, AdmissionError> {
         let room = self.check_host(code, host_key, account, profile).await?;
-        let identity = self.seat(&room, account).await?;
+        let identity = self
+            .seat(&room, account, profile.voice_id.as_deref())
+            .await?;
         let ticket = self.grant(&room.id, identity, Some(profile), MediaRole::Speaker)?;
         self.start_translation(&room.id).await;
         self.ensure_still_open(&room.id).await?;
@@ -262,7 +264,9 @@ impl AdmissionService {
                 room.ensure_open()?;
                 // The voice may have been recorded again (another tab) while waiting.
                 ensure_voice_belongs(&room, &request.account, &request.profile)?;
-                let identity = self.seat(&room, &request.account).await?;
+                let identity = self
+                    .seat(&room, &request.account, request.profile.voice_id.as_deref())
+                    .await?;
                 let ticket = self.grant(
                     &room.id,
                     identity,

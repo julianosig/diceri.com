@@ -22,6 +22,9 @@ pub enum RoomRuleError {
     Ended,
     #[error("the call is full")]
     Full,
+    /// The voice asked for is not this person's voice in the room any more (recorded again).
+    #[error("that voice was replaced; record or reuse your voice again")]
+    VoiceReplaced,
 }
 
 /// A meeting room joined through a shared link. Its owner (the account that
