@@ -139,14 +139,14 @@ impl VoiceService {
         // still be cut short; once the provider is asked for a clone, it always finishes
         // (kept or deleted, never lost).
         let turn = self.locks.lock(&account).await;
-        let checked = self.checked_room(code, &sample).await?;
+        let checked = self.checked_room(code, &account, &sample).await?;
         let previous = match &self.samples {
             Some((samples, _)) => samples.kept_clone(&account).await?,
             None => None,
         };
         // That took a moment: the call may have ended or filled up meanwhile, and then the
         // recording never reaches the provider.
-        let room = self.open_room_with_space(&checked.code).await?;
+        let room = self.open_room_with_space(&checked.code, &account).await?;
         to_completion(async move {
             let _turn = turn;
             this.record_in(room, &account, sample, previous).await
@@ -208,7 +208,7 @@ impl VoiceService {
             .await?
             .ok_or(VoiceError::NoSavedVoice)?;
         // Looked at last, just before the provider is asked for a clone.
-        let room = self.open_room_with_space(code).await?;
+        let room = self.open_room_with_space(code, &account).await?;
         to_completion(async move {
             let _turn = turn;
             this.clone_kept(room, &account, sample).await

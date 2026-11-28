@@ -153,16 +153,25 @@ impl Room {
         }
     }
 
+    /// Whether `account` can register a voice: a free slot, or the one it already has.
+    #[must_use]
+    pub fn has_voice_capacity_for(&self, account: &AccountId) -> bool {
+        self.has_voice_capacity() || self.voices.iter().any(|(owner, _)| owner == account)
+    }
+
     #[must_use]
     pub fn has_voice_capacity(&self) -> bool {
         self.voices.len() < Self::MAX_VOICES
     }
 
+    /// Registers `account`'s voice in this room, replacing the one it had: one voice per
+    /// person, so recording again never uses up another person's slot.
     pub fn register_voice(
         &mut self,
         account: AccountId,
         voice_id: String,
     ) -> Result<(), RoomRuleError> {
+        self.voices.retain(|(owner, _)| *owner != account);
         if !self.has_voice_capacity() {
             return Err(RoomRuleError::TooManyVoices);
         }

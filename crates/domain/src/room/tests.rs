@@ -100,6 +100,18 @@ fn an_ended_call_gives_no_seat() {
 }
 
 #[test]
+fn recording_again_replaces_the_voice_instead_of_taking_a_slot() {
+    let mut room = room();
+    let ana = AccountId::from_parts(1, [1; 10]);
+    for n in 0..Room::MAX_VOICES * 2 {
+        room.register_voice(ana, format!("v{n}")).unwrap();
+    }
+    assert!(room.has_voice_capacity());
+    assert!(room.has_voice_of(&ana, &format!("v{}", Room::MAX_VOICES * 2 - 1)));
+    assert!(!room.has_voice_of(&ana, "v0"));
+}
+
+#[test]
 fn voices_belong_to_whoever_recorded_them_and_are_capped() {
     let mut room = room();
     let ana = AccountId::from_parts(1, [1; 10]);
@@ -109,12 +121,17 @@ fn voices_belong_to_whoever_recorded_them_and_are_capped() {
     assert!(!room.has_voice_of(&bob, "v1"));
     assert!(!room.has_voice_of(&ana, "someone-elses"));
     for n in 1..Room::MAX_VOICES {
-        room.register_voice(ana, format!("v{}", n + 1)).unwrap();
+        let seed = u8::try_from(n).unwrap() + 10;
+        room.register_voice(AccountId::from_parts(3, [seed; 10]), format!("v{}", n + 1))
+            .unwrap();
     }
     assert_eq!(
         room.register_voice(bob, "extra".to_owned()),
         Err(RoomRuleError::TooManyVoices)
     );
+    // Someone with a voice here can still record again.
+    assert!(room.has_voice_capacity_for(&ana));
+    assert!(room.register_voice(ana, "again".to_owned()).is_ok());
 }
 
 #[test]

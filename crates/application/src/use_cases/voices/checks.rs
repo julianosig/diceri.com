@@ -1,7 +1,7 @@
 //! Checks before a recording reaches the cloning provider: the room's call is open and has
 //! room for a voice, and the recording is clear speech.
 
-use diceri_domain::{Room, RoomCode, RoomRuleError};
+use diceri_domain::{AccountId, Room, RoomCode, RoomRuleError};
 
 use super::{MAX_SAMPLE_BYTES, MIN_SAMPLE_BYTES, VoiceError, VoiceService};
 use crate::ports::VoiceSample;
@@ -16,11 +16,16 @@ impl VoiceService {
             .ok_or(VoiceError::NotFound)
     }
 
-    /// The room as it is now, if its call is open and has room for one more voice.
-    pub(super) async fn open_room_with_space(&self, code: &RoomCode) -> Result<Room, VoiceError> {
+    /// The room as it is now, if its call is open and has room for `account`'s voice (a free
+    /// slot, or the one it already has).
+    pub(super) async fn open_room_with_space(
+        &self,
+        code: &RoomCode,
+        account: &AccountId,
+    ) -> Result<Room, VoiceError> {
         let room = self.find_room(code).await?;
         room.ensure_open()?;
-        if !room.has_voice_capacity() {
+        if !room.has_voice_capacity_for(account) {
             return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
         }
         Ok(room)
@@ -30,6 +35,7 @@ impl VoiceService {
     pub(super) async fn checked_room(
         &self,
         code: &RoomCode,
+        account: &AccountId,
         sample: &VoiceSample,
     ) -> Result<Room, VoiceError> {
         if !(MIN_SAMPLE_BYTES..=MAX_SAMPLE_BYTES).contains(&sample.bytes.len()) {
@@ -41,7 +47,7 @@ impl VoiceService {
             return Err(VoiceError::NoSpeech);
         }
         // Check before the paid recognizer and provider; both are checked again afterwards.
-        let room = self.open_room_with_space(code).await?;
+        let room = self.open_room_with_space(code, account).await?;
         // The recognizer must hear words: noise or music that passed the loudness check
         // still never reaches the cloning provider.
         let started = std::time::Instant::now();
