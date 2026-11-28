@@ -179,6 +179,15 @@ impl Room {
         Ok(())
     }
 
+    /// The voice `account` has registered in this room, if any.
+    #[must_use]
+    pub fn voice_of(&self, account: &AccountId) -> Option<&str> {
+        self.voices
+            .iter()
+            .find(|(owner, _)| owner == account)
+            .map(|(_, voice)| voice.as_str())
+    }
+
     /// Takes back a voice registered for `account` (its clone could not be kept), freeing its slot.
     pub fn unregister_voice(&mut self, account: &AccountId, voice_id: &str) {
         self.voices

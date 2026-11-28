@@ -239,15 +239,24 @@ impl VoiceService {
         account: &AccountId,
         voice: &VoiceId,
     ) -> Result<(), VoiceError> {
+        // The voice this replaces in the room, put back if the new one cannot be kept.
+        let previous = self
+            .rooms
+            .find_by_id(&room)
+            .await?
+            .and_then(|stored| stored.voice_of(account).map(str::to_owned));
         self.register(room, account, voice)
             .await
             .inspect_err(|_| self.discard(voice))?;
         if let Err(error) = self.keep(account, voice).await {
-            // Not kept: it leaves the room too, so its slot is free and it is never used.
+            // Not kept: it leaves the room and the voice it replaced comes back.
             let (account, voice_id) = (*account, voice.0.clone());
             let take_back = move |room: &mut Room| {
                 room.unregister_voice(&account, &voice_id);
-                Ok(())
+                match previous {
+                    Some(previous) => room.register_voice(account, previous),
+                    None => Ok(()),
+                }
             };
             let _ = self.rooms.modify(&room, Box::new(take_back)).await;
             self.discard(voice);
