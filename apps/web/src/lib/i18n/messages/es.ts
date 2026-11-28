@@ -178,7 +178,8 @@ export const es: Messages = {
 		captions: 'Subtítulos',
 		filterUnsupported: 'El filtro de ruido avanzado no es compatible con este navegador.',
 		filterFailed: 'Falló el filtro de ruido avanzado.',
-		micUnpublished: 'No se pudo publicar el micrófono.'
+		micUnpublished: 'No se pudo publicar el micrófono.',
+		micChangeFailed: 'No se pudo usar ese micrófono; sigues con el anterior.'
 	},
 	audio: {
 		microphone: 'Micrófono',

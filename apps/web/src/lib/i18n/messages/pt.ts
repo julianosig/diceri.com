@@ -178,7 +178,8 @@ export const pt: Messages = {
 		captions: 'Legendas',
 		filterUnsupported: 'O filtro de ruído avançado não é compatível com este navegador.',
 		filterFailed: 'O filtro de ruído avançado falhou.',
-		micUnpublished: 'Não foi possível transmitir o microfone.'
+		micUnpublished: 'Não foi possível transmitir o microfone.',
+		micChangeFailed: 'Não foi possível usar esse microfone; você continua no anterior.'
 	},
 	audio: {
 		microphone: 'Microfone',

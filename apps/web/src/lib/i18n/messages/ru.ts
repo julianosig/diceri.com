@@ -180,7 +180,8 @@ export const ru: Messages = {
 		captions: 'Субтитры',
 		filterUnsupported: 'Улучшенный шумоподавитель не поддерживается в этом браузере.',
 		filterFailed: 'Сбой улучшенного шумоподавителя.',
-		micUnpublished: 'Не удалось передать звук с микрофона.'
+		micUnpublished: 'Не удалось передать звук с микрофона.',
+		micChangeFailed: 'Не удалось использовать этот микрофон; остаётся прежний.'
 	},
 	audio: {
 		microphone: 'Микрофон',

@@ -181,7 +181,9 @@ export const it: Messages = {
 		captions: 'Sottotitoli',
 		filterUnsupported: 'Il filtro antirumore avanzato non è supportato da questo browser.',
 		filterFailed: 'Il filtro antirumore avanzato non è riuscito.',
-		micUnpublished: 'Impossibile trasmettere il microfono.'
+		micUnpublished: 'Impossibile trasmettere il microfono.',
+		micChangeFailed:
+			'Non è stato possibile usare quel microfono; stai ancora usando quello precedente.'
 	},
 	audio: {
 		microphone: 'Microfono',

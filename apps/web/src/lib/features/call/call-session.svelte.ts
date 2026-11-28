@@ -100,6 +100,8 @@ export class CallSession {
 	#meterFrame = 0;
 	#localMonitor: LocalMonitor | undefined;
 	#loopback: LoopbackMonitor | undefined;
+	/** The settings change in progress; the next one waits for it. */
+	#settingsChange: Promise<void> = Promise.resolve();
 	#stats = new StatsPoller();
 
 	constructor(private readonly options: CallSessionOptions) {
@@ -140,18 +142,41 @@ export class CallSession {
 		}
 	}
 
-	/** Applies new capture settings by republishing the microphone. */
+	/** Applies new capture settings by republishing the microphone, one change at a time. */
 	async updateSettings(patch: Partial<AudioSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
+		const change = this.#settingsChange.then(() => this.#replaceMicrophone());
+		this.#settingsChange = change.catch(() => undefined);
+		await change;
+	}
+
+	/**
+	 * A new track: re-enabling the old one would only unmute it, ignoring the new device and
+	 * settings and briefly sending audio from a muted microphone. It is captured before the
+	 * old one goes, so a device that fails leaves the caller with the microphone they had.
+	 */
+	async #replaceMicrophone(): Promise<void> {
 		const mode = this.monitor;
 		await this.setMonitor('off');
-		// A new track: re-enabling the old one would only unmute it, ignoring the new device
-		// and settings and briefly sending audio from a muted microphone.
-		const old = this.#micTrack();
-		if (old) await this.#room.localParticipant.unpublishTrack(old, true);
-		await this.#publishMicrophone();
-		await this.setMonitor(mode);
+		try {
+			const captured = await this.#capture();
+			const old = this.#micTrack();
+			if (old) await this.#room.localParticipant.unpublishTrack(old, true);
+			await this.#publishMicrophone(captured);
+		} catch {
+			this.error = 'micChangeFailed' satisfies CallProblem;
+		} finally {
+			await this.setMonitor(mode);
+		}
+	}
+
+	/** A microphone track with the current settings, muted when the caller is. */
+	async #capture(): Promise<LocalAudioTrack> {
+		const captured = await createLocalAudioTrack(toCaptureOptions(this.settings));
+		// Muted before it is published, so a muted caller never sends a single frame.
+		if (this.muted) await captured.mute();
+		return captured;
 	}
 
 	async setMonitor(mode: MonitorMode): Promise<void> {
@@ -209,10 +234,8 @@ export class CallSession {
 		this.participants = [];
 	}
 
-	async #publishMicrophone(): Promise<void> {
-		const captured = await createLocalAudioTrack(toCaptureOptions(this.settings));
-		// Muted before it is published, so a muted caller never sends a single frame.
-		if (this.muted) await captured.mute();
+	async #publishMicrophone(captured?: LocalAudioTrack): Promise<void> {
+		captured ??= await this.#capture();
 		await this.#room.localParticipant.publishTrack(captured, { source: Track.Source.Microphone });
 		const track = this.#micTrack();
 		// The message is a problem key; CallScreen words it in the visitor's language.

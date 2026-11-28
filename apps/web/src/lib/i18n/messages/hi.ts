@@ -175,7 +175,8 @@ export const hi: Messages = {
 		captions: 'कैप्शन',
 		filterUnsupported: 'यह ब्राउज़र बेहतर नॉइज़ फ़िल्टर को सपोर्ट नहीं करता।',
 		filterFailed: 'बेहतर नॉइज़ फ़िल्टर काम नहीं कर पाया।',
-		micUnpublished: 'माइक्रोफ़ोन प्रसारित नहीं हो सका।'
+		micUnpublished: 'माइक्रोफ़ोन प्रसारित नहीं हो सका।',
+		micChangeFailed: 'वह माइक्रोफ़ोन इस्तेमाल नहीं हो सका; आप पिछले वाले पर ही हैं।'
 	},
 	audio: {
 		microphone: 'माइक्रोफ़ोन',

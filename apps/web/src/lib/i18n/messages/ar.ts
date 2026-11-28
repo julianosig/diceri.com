@@ -179,7 +179,8 @@ export const ar: Messages = {
 		captions: 'الترجمة النصية',
 		filterUnsupported: 'فلتر الضوضاء المحسّن غير مدعوم في هذا المتصفح.',
 		filterFailed: 'فشل فلتر الضوضاء المحسّن.',
-		micUnpublished: 'تعذّر بث الميكروفون.'
+		micUnpublished: 'تعذّر بث الميكروفون.',
+		micChangeFailed: 'تعذّر استخدام هذا الميكروفون؛ ما زلت تستخدم الميكروفون السابق.'
 	},
 	audio: {
 		microphone: 'الميكروفون',

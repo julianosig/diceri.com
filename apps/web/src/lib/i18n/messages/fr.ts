@@ -181,7 +181,8 @@ export const fr: Messages = {
 		captions: 'Sous-titres',
 		filterUnsupported: 'Le filtre anti-bruit avancé n’est pas pris en charge par ce navigateur.',
 		filterFailed: 'Le filtre anti-bruit avancé a échoué.',
-		micUnpublished: 'Impossible de diffuser le micro.'
+		micUnpublished: 'Impossible de diffuser le micro.',
+		micChangeFailed: 'Ce micro n’a pas pu être utilisé ; vous restez sur le précédent.'
 	},
 	audio: {
 		microphone: 'Micro',

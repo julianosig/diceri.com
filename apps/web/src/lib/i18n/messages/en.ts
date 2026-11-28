@@ -181,7 +181,8 @@ export const en = {
 		captions: 'Captions',
 		filterUnsupported: 'Enhanced noise filter is not supported in this browser.',
 		filterFailed: 'Enhanced noise filter failed.',
-		micUnpublished: 'Microphone could not be published.'
+		micUnpublished: 'Microphone could not be published.',
+		micChangeFailed: 'That microphone could not be used; you are still on the previous one.'
 	},
 	audio: {
 		microphone: 'Microphone',
