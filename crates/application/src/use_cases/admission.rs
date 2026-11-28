@@ -251,7 +251,8 @@ impl AdmissionService {
         key: &AccessKey,
     ) -> Result<JoinTicket, AdmissionError> {
         let room = self.load(code).await?;
-        if !room.is_member(key) {
+        // Only someone with a place in the call may listen to it.
+        if !room.is_in_call(key) {
             return Err(AdmissionError::Forbidden);
         }
         room.ensure_open()?;

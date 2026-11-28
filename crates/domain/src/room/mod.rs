@@ -98,6 +98,18 @@ impl Room {
                 .any(|r| r.status == RequestStatus::Admitted && &r.key == key)
     }
 
+    /// The host, or an admitted guest who got a place in the call: being let in is not enough
+    /// when the call filled up before they took their seat.
+    #[must_use]
+    pub fn is_in_call(&self, key: &AccessKey) -> bool {
+        self.is_host(key)
+            || self.requests.iter().any(|r| {
+                r.status == RequestStatus::Admitted
+                    && &r.key == key
+                    && self.seats.identity_of(&r.account).is_some()
+            })
+    }
+
     /// Adds a join request; in an open room it is admitted at once.
     pub fn knock(&mut self, mut request: JoinRequest) -> Result<(), RoomRuleError> {
         if self.pending().count() >= Self::MAX_PENDING_REQUESTS {
@@ -282,6 +294,18 @@ mod tests {
         room.decide(&request(1).id, true).unwrap();
         assert!(room.is_member(&key(1)));
         assert_eq!(room.pending().count(), 0);
+    }
+
+    #[test]
+    fn an_admitted_guest_is_in_the_call_only_once_seated() {
+        let mut room = room();
+        room.knock(request(1)).unwrap();
+        room.decide(&request(1).id, true).unwrap();
+        assert!(!room.is_in_call(&key(1)));
+        room.claim_seat(request(1).account, "p-guest".to_owned(), Some(&[]), 0)
+            .unwrap();
+        assert!(room.is_in_call(&key(1)));
+        assert!(room.is_in_call(&key(100)));
     }
 
     #[test]

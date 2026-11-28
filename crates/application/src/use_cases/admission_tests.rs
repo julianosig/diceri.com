@@ -189,6 +189,15 @@ async fn monitor_is_only_for_members() {
         .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
+    // Let in, but not in the call until they take their seat.
+    assert!(matches!(
+        f.admission.monitor(&room.code, &knock.key).await,
+        Err(AdmissionError::Forbidden)
+    ));
+    f.admission
+        .outcome(&room.code, &knock.request_id, &knock.key)
+        .await
+        .unwrap();
     let ticket = f.admission.monitor(&room.code, &knock.key).await.unwrap();
     assert!(ticket.identity.starts_with("monitor-"));
     assert_eq!(
