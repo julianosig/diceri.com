@@ -6,20 +6,20 @@ use diceri_application::ports::{
     SpeechToText, TranslationDispatcher, VoiceCloner,
 };
 use diceri_application::use_cases::{
-    AccountService, AdmissionService, Capacity, MeteringService, PlanCatalogue, PresenceService,
-    RoomService, VoiceService,
+    AccountService, AdmissionService, CallEventsService, Capacity, MeteringService, PlanCatalogue,
+    PresenceService, RoomService, VoiceService,
 };
 use diceri_infra::speech::{SonioxConfig, SonioxSpeechToText};
 use diceri_infra::synthesis::{ElevenLabsVoiceCloner, InworldVoiceCloner, TtsProvider};
 use diceri_infra::{
     Argon2Hasher, HttpTranslationDispatcher, LiveKitAccessIssuer, LiveKitPresence,
-    LiveKitRoomCloser, MemoryAccountRepository, MemoryRoomRepository, MemoryUsageRepository,
-    MemoryVoiceSamples, OsRandom, SqliteAccountRepository, SqliteUsageRepository,
-    SqliteVoiceSamples,
+    LiveKitRoomCloser, LiveKitWebhooks, MemoryAccountRepository, MemoryRoomRepository,
+    MemoryUsageRepository, MemoryVoiceSamples, OsRandom, SqliteAccountRepository,
+    SqliteUsageRepository, SqliteVoiceSamples,
 };
 
 use crate::Config;
-use crate::features::SignupNetworks;
+use crate::features::{MediaEvents, SignupNetworks};
 
 /// Accounts over `repository` with Argon2id passwords and the OS clock/randomness.
 fn account_service(repository: Arc<dyn AccountRepository>) -> AccountService {
@@ -50,6 +50,8 @@ pub struct AppState {
     pub(crate) signup_networks: Option<SignupNetworks>,
     /// Joining needs a recorded voice (only when voice cloning is configured).
     pub voice_required: bool,
+    /// Signed reports from the media server (ADR 0018); `None` without a media server.
+    pub media_events: Option<MediaEvents>,
 }
 
 impl AppState {
@@ -127,6 +129,14 @@ impl AppState {
             state.admission = state
                 .admission
                 .with_presence(presence.clone(), Arc::new(OsRandom));
+            let events = CallEventsService::new(
+                state.rooms.repository(),
+                presence.clone(),
+                room_closer.clone(),
+            )
+            .with_metering(state.metering.clone());
+            let webhooks = Arc::new(LiveKitWebhooks::new(&livekit.api_key, &livekit.api_secret));
+            state.media_events = Some(MediaEvents::new(webhooks, events));
             state.metering = state.metering.with_media(presence, room_closer);
         }
         if let Some(agent) = &config.agent {
@@ -180,6 +190,7 @@ impl AppState {
             secure_cookies: false,
             signup_networks: None,
             voice_required: false,
+            media_events: None,
             admission: AdmissionService::new(repository, random, ids, media),
         }
     }

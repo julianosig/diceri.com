@@ -20,6 +20,10 @@ browser ──https──▶ Cloudflare ──tunnel──▶ cloudflared ──
    proxied `CNAME diceri.com → <tunnel-id>.cfargotunnel.com`.
 4. `~/.config/diceri/production.env` (mode 600): provider keys from `.env` plus the
    production overrides; `~/.config/diceri/tunnel.env` with `TUNNEL_TOKEN=…`.
+5. A LiveKit Cloud webhook (Settings → Webhooks, [ADR 0018](decisions/0018-livekit-webhooks-for-call-membership.md)):
+   URL `https://diceri.com/api/v1/livekit/webhook`, signed with the key in
+   `DICERI_LIVEKIT_API_KEY`. Without it calls are still kept to their rules by the minute
+   sweep, only later. "Send a test event" should log nothing at warn level.
 
 ## Deploying
 

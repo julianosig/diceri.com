@@ -21,8 +21,8 @@ mod voice_samples;
 pub use agent_dispatcher::{AGENT_KEY_HEADER, HttpTranslationDispatcher};
 pub use argon2_hasher::Argon2Hasher;
 pub use livekit::{
-    LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser, OUTPUT_LANGUAGE_ATTRIBUTE,
-    VOICE_ATTRIBUTE,
+    LiveKitAccessIssuer, LiveKitPresence, LiveKitRoomCloser, LiveKitWebhooks,
+    OUTPUT_LANGUAGE_ATTRIBUTE, VOICE_ATTRIBUTE,
 };
 pub use memory_accounts::MemoryAccountRepository;
 pub use memory_room_repository::MemoryRoomRepository;

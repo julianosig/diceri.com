@@ -129,6 +129,12 @@ impl RoomService {
         }
     }
 
+    /// Where rooms are kept, for the services that act on them (media events).
+    #[must_use]
+    pub fn repository(&self) -> Arc<dyn RoomRepository> {
+        self.repository.clone()
+    }
+
     /// The live room at `/@username`.
     pub async fn live(&self, owner: &Username) -> Result<Room, RoomError> {
         self.repository

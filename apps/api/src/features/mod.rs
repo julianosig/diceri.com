@@ -5,12 +5,14 @@ mod accounts;
 pub(crate) use accounts::SignupNetworks;
 mod capabilities;
 pub(crate) mod health;
+pub(crate) mod media_events;
 mod presence;
 pub(crate) mod rooms;
 
 use axum::Router;
 
 pub(crate) use accounts::CurrentAccount;
+pub use media_events::MediaEvents;
 pub(crate) use rooms::ACCESS_KEY_HEADER;
 
 use crate::AppState;

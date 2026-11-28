@@ -30,6 +30,10 @@ src/
 tests/              router-level integration tests (oneshot, no network)
 ```
 
+`POST /api/v1/livekit/webhook` receives LiveKit's signed reports (ADR 0018): it sits
+outside the per-address write limit, answers at once and acts in the background, and only
+ever removes people or closes calls.
+
 New endpoint checklist: use case in `application` (with unit test) → handler +
 DTO in `features/<feature>/` → route in its `mod.rs` → router test in `tests/`.
 DTOs are the HTTP contract (camelCase JSON); never serialize domain types directly

@@ -19,6 +19,7 @@ mod web_cache;
 
 pub use config::{AgentConfig, Config, LiveKitConfig, LogFormat};
 pub use error::ApiError;
+pub use features::MediaEvents;
 pub use meter_task::run_meter;
 pub use router::build_router;
 pub use shutdown::shutdown_signal;

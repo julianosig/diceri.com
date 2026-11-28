@@ -1796,6 +1796,7 @@ version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9ddeff67bdf0847650e19afb76dfa7deda8c8281f2cabfa2b1b00b30ea8074f3"
 dependencies = [
+ "base64 0.21.7",
  "http",
  "livekit-protocol",
  "livekit-token",
@@ -1804,6 +1805,7 @@ dependencies = [
  "prost",
  "rand 0.9.5",
  "serde",
+ "serde_json",
  "sha2 0.10.9",
  "thiserror 2.0.21",
  "url",

@@ -23,7 +23,9 @@ pub use media_access::{
     MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaRole, MediaRoomCloser,
 };
 pub use password_hasher::{Clock, PasswordHash, PasswordHasher, PasswordHasherError};
-pub use presence::{CallMembers, LiveRoom, MediaPresence};
+pub use presence::{
+    CallMembers, LiveRoom, MediaEvent, MediaEventError, MediaEventVerifier, MediaPresence,
+};
 pub use random_source::RandomSource;
 pub use room_repository::{RoomChange, RoomChangeError, RoomRepository, RoomRepositoryError};
 pub use speech_to_text::{

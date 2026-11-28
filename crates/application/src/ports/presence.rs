@@ -45,3 +45,34 @@ pub trait MediaPresence: Send + Sync {
             .map_or(0, |live| live.people))
     }
 }
+
+/// What the media server reports about a call as it happens (LiveKit webhooks, ADR 0018).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum MediaEvent {
+    /// Someone connected to `room`'s call (also after a reconnect).
+    Joined { room: RoomId, identity: String },
+    /// Someone left `room`'s call.
+    Left { room: RoomId, identity: String },
+    /// The media room closed.
+    Finished { room: RoomId },
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum MediaEventError {
+    /// Not signed by the media server (or signed for another body).
+    #[error("media event is not signed by the media server")]
+    Unsigned,
+    #[error("media event could not be read")]
+    Unreadable,
+}
+
+/// Checks that a report really comes from the media server and reads it.
+pub trait MediaEventVerifier: Send + Sync {
+    /// The event in `body`, signed in `authorization`; `None` for events not used here or
+    /// rooms not named after a room id.
+    fn verify(
+        &self,
+        body: &str,
+        authorization: &str,
+    ) -> Result<Option<MediaEvent>, MediaEventError>;
+}

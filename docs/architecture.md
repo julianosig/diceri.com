@@ -109,6 +109,12 @@ Reloading during a call rejoins it directly (the tab remembers it was in the cal
 the call timer. Sign-ups are capped by `DICERI_MAX_ACCOUNTS` (public beta, 100) and by
 `DICERI_ACCOUNTS_PER_NETWORK` per network (5).
 
+Each call holds at most its plan's people (`DICERI_<PLAN>_PARTICIPANTS`, 2 by default), one
+seat per account, and the service at most `DICERI_MAX_LIVE_CALLS` calls. LiveKit webhooks
+(ADR 0018) enforce this as it happens: a person beyond the call's size, a hidden listener
+without its person, or anyone joining a call that ended is removed at once; the per-minute
+sweep remains as a backstop.
+
 ## Voices
 
 Joining needs the person's own voice (ADR 0014). They record about 10 seconds once:

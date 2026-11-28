@@ -1,6 +1,7 @@
 //! The service's capacity: how many calls are live or about to be, counted by owner.
 
 use std::collections::{HashMap, HashSet};
+use std::sync::PoisonError;
 
 use diceri_domain::{RoomId, Username};
 
@@ -68,6 +69,22 @@ impl LiveCalls {
             .filter(|owner| !self.live_owners.contains(*owner))
             .count();
         self.live_owners.len() + reserved
+    }
+}
+
+impl super::MeteringService {
+    /// Someone connected to `room`'s call (a media server event): it counts at once.
+    pub fn note_live(&self, room: RoomId, owner: Username) {
+        let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
+        calls.in_call.insert(room);
+        calls.live_owners.insert(owner);
+    }
+
+    /// `room`'s media room closed: it stops counting (a reservation still holds its time).
+    pub fn note_finished(&self, room: RoomId, owner: &Username) {
+        let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
+        calls.in_call.remove(&room);
+        calls.live_owners.remove(owner);
     }
 }
 

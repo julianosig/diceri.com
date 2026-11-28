@@ -208,6 +208,12 @@ impl Room {
         self.seats.reserve_for_owner(owner);
     }
 
+    /// The media identity of the owner's seat, once they have joined.
+    #[must_use]
+    pub fn owner_seat(&self) -> Option<&str> {
+        self.seats.owner_identity()
+    }
+
     /// The media identity of `account`'s seat, if it has joined this call before.
     #[must_use]
     pub fn seat_of(&self, account: &AccountId) -> Option<&str> {

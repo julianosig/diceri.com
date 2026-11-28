@@ -23,9 +23,10 @@ const VOICE_TIMEOUT: Duration = Duration::from_secs(45);
 
 /// Builds the full HTTP router with middleware. Used by `main` and tests.
 pub fn build_router(state: AppState, config: &Config) -> Router {
-    let router = Router::new()
-        .merge(features::health::routes())
-        .nest("/api/v1", with_write_limit(features::api_routes(), config));
+    let router = Router::new().merge(features::health::routes()).nest(
+        "/api/v1",
+        with_write_limit(features::api_routes(), config).merge(features::media_events::routes()),
+    );
     let router = match &config.web_dir {
         Some(dir) => router
             .fallback_service(spa(dir))

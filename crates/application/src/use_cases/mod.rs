@@ -2,6 +2,7 @@
 
 mod accounts;
 mod admission;
+mod call_events;
 mod metering;
 mod plan_limits;
 mod presence;
@@ -14,6 +15,7 @@ pub use accounts::{
     AccountError, AccountService, BetaSpots, Registration, SESSION_TTL_MS, SignedIn,
 };
 pub use admission::{AdmissionError, AdmissionService, JoinTicket, Knock, KnockOutcome};
+pub use call_events::CallEventsService;
 pub use metering::MeteringService;
 pub use plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 pub use presence::{PresenceService, PresenceSnapshot, RANKING_SIZE, RankedRoom};
