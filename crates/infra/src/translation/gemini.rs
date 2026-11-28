@@ -57,9 +57,21 @@ impl GeminiTranslator {
         if status.is_success() {
             return Ok(response);
         }
-        let body = response.text().await.unwrap_or_default();
-        Err(TranslatorError::Request(format!("HTTP {status}: {body}")))
+        // Only the status: error bodies can quote the text being translated (never logged).
+        Err(TranslatorError::Request(format!("HTTP {status}")))
     }
+}
+
+/// Adds `chunk` and returns the lines now complete (events are lines `data: {json}`); a
+/// partial last line, possibly ending mid-character, waits in `pending` for the next chunk.
+fn complete_lines(pending: &mut Vec<u8>, chunk: &[u8]) -> Vec<String> {
+    pending.extend_from_slice(chunk);
+    let mut lines = Vec::new();
+    while let Some(end) = pending.iter().position(|byte| *byte == b'\n') {
+        let raw: Vec<u8> = pending.drain(..=end).collect();
+        lines.push(String::from_utf8_lossy(&raw).into_owned());
+    }
+    lines
 }
 
 fn failed(error: &dyn std::fmt::Display) -> TranslatorError {
@@ -83,13 +95,12 @@ impl Translator for GeminiTranslator {
     ) -> Result<(), TranslatorError> {
         let response = self.post("streamGenerateContent?alt=sse", &request).await?;
         let mut bytes = response.bytes_stream();
-        let mut pending = String::new();
+        // Bytes, not text: a chunk can end in the middle of a multi-byte character (é, 日),
+        // so each line is decoded only once it is complete.
+        let mut pending: Vec<u8> = Vec::new();
         let mut sent_any = false;
         while let Some(chunk) = bytes.next().await {
-            pending.push_str(&String::from_utf8_lossy(&chunk.map_err(|e| failed(&e))?));
-            // Events are lines `data: {json}`; keep a partial last line for the next chunk.
-            while let Some(end) = pending.find('\n') {
-                let line: String = pending.drain(..=end).collect();
+            for line in complete_lines(&mut pending, &chunk.map_err(|e| failed(&e))?) {
                 let Some(data) = line.trim().strip_prefix("data:") else {
                     continue;
                 };
@@ -108,5 +119,25 @@ impl Translator for GeminiTranslator {
         } else {
             Err(TranslatorError::Empty)
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::complete_lines;
+
+    #[test]
+    fn a_character_split_across_chunks_arrives_whole() {
+        let line = "data: {\"text\":\"café 日本\"}\n".as_bytes();
+        let mut pending = Vec::new();
+        // Cut inside the three bytes of 本.
+        let cut = line.len() - 5;
+        assert_eq!(
+            complete_lines(&mut pending, &line[..cut]),
+            Vec::<String>::new()
+        );
+        let lines = complete_lines(&mut pending, &line[cut..]);
+        assert_eq!(lines, vec!["data: {\"text\":\"café 日本\"}\n".to_owned()]);
+        assert_eq!(pending, Vec::<u8>::new());
     }
 }
