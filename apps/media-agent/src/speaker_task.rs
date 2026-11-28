@@ -105,7 +105,13 @@ async fn transcribe(speaker: &Speaker, providers: &Providers, events: &Transcrip
     while let Some(stream) = open_speech_to_text(providers, speaker).await {
         let started = tokio::time::Instant::now();
         pump_audio(&speaker.track, stream.audio, track_ended.clone());
-        if !forward(stream.events, events).await || track_ended.load(Ordering::Relaxed) {
+        if !forward(stream.events, events).await {
+            return;
+        }
+        // The stream closed: what it heard is one phrase, never spliced to the next stream's.
+        if events.send(Ok(TranscriptEvent::Endpoint)).await.is_err()
+            || track_ended.load(Ordering::Relaxed)
+        {
             return;
         }
         // A stream that keeps closing at once is broken, not dropped: stop retrying.
