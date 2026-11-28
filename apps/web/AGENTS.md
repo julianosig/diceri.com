@@ -69,7 +69,7 @@ Dependency direction: `meeting` → `lobby` → `call` → `translation`, `room`
   Module-level `$state` only for truly global client preferences.
 - **Effects:** `$effect` only to sync with external systems (MediaStream,
   LiveKit, WebSocket), always returning cleanup. Derive, don't sync.
-- **Navigation:** `goto(resolve('/r/[room]', { room }))`; never build route
+- **Navigation:** `goto(resolve('/@[username]', { username }))`; never build route
   strings by hand.
 - **Accessibility:** every interactive element is keyboard reachable and
   labelled; toggles use `aria-pressed`; live updates (captions, join/leave,

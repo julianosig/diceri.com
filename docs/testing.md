@@ -50,7 +50,7 @@ sudo pnpm --filter @diceri/web exec playwright install-deps chromium
 
 End-to-end tests start the API, the web build and the media agent. They read
 `DICERI_LIVEKIT_*`, `DICERI_AGENT_KEY`, `DICERI_GEMINI_API_KEY` and
-`DICERI_ELEVENLABS_API_KEY` (Scribe speech-to-text, voices, cloning) from `.env`
-locally and from repository secrets in CI. In CI the end-to-end job runs only on
-`main` and manual runs, and is skipped with a notice when those secrets are not
-configured. `just test-live` checks each provider alone.
+`DICERI_ELEVENLABS_API_KEY` (Scribe speech-to-text) from `.env`, plus
+`DICERI_INWORLD_API_KEY` when `DICERI_TTS_PROVIDER=inworld`, locally and from repository
+secrets in CI. In CI the end-to-end job runs only on `main` and manual runs, and is skipped
+with a notice when those secrets are not configured. `just test-live` checks each provider alone.

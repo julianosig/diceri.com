@@ -31,8 +31,9 @@ subtitles to read and no interpreter to book: just a call, like the one you alre
 
 *Diceri* comes from Latin *dīcere*, "to say, to speak".
 
-- **Your own room.** Claim an @ and your room lives at `diceri.com/@you`. Guests join from
-  the link without an account; you decide whether they walk in or ask first.
+- **Your own room.** Claim an @ and your room lives at `diceri.com/@you`. Open it from
+  `diceri.com/open`; guests sign in with their own @ and you decide whether they walk in or
+  ask first.
 - **Spoken, not subtitled.** Each listener picks the language they want to hear; every
   phrase is transcribed, translated and spoken on a track of its own, with live captions
   alongside.
@@ -41,10 +42,13 @@ subtitles to read and no interpreter to book: just a call, like the one you alre
   idioms and tone come out the way a native speaker would say them.
 - **Fast.** The translation streams straight into speech: the first sentence plays while
   the rest is still being translated.
-- **In your own voice** *(coming soon, Pro)*. With your explicit consent, translations can
-  sound like you; the voice is deleted when you leave.
-- **Private by default.** Rooms are unlisted, audio and transcripts are never stored or
+- **In your own voice.** You record about 10 seconds once; translations are spoken as you,
+  never by a stock voice. The recording is kept encrypted with your account and reused in
+  every call until you choose "Delete my voice".
+- **Private by default.** Rooms are unlisted, call audio and transcripts are never stored or
   logged, and participants reach the translator only under neutral labels.
+- **Public beta.** Accounts are free and limited to 100 spots for now; the home page shows
+  how many are left.
 
 The interface speaks 12 languages; calls translate between 18, directly from one language
 to another, never through English.
@@ -72,8 +76,8 @@ budget and provider choices: [`docs/architecture.md`](docs/architecture.md) and
 | Web app | SvelteKit 3, Svelte 5 runes, Tailwind CSS 4, TypeScript |
 | API and media agent | Rust 1.100 (axum, tokio), hexagonal crates: `domain` ← `application` ← `infra` |
 | Media | LiveKit (WebRTC), Krisp noise filter |
-| Speech and translation | ElevenLabs Scribe / Soniox, Gemini, ElevenLabs voices |
-| Storage | SQLite (accounts only) |
+| Speech and translation | ElevenLabs Scribe / Soniox, Gemini, Inworld TTS-2 voice clones (ElevenLabs selectable) |
+| Storage | SQLite (accounts, plans, encrypted voice recordings) |
 
 ## Quick start
 

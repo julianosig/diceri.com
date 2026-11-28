@@ -1,6 +1,6 @@
 # Architecture
 
-Status: initial target architecture (November 2026). Decisions are recorded in
+Status: as built (late November 2026). Decisions are recorded in
 [`decisions/`](decisions/); the evidence is in
 [`research/2026-11-voice-translation-stack/report.md`](research/2026-11-voice-translation-stack/report.md)
 and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multilingual-stack/report.md).
@@ -21,23 +21,23 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
                      │ per speaker: VAD → STT → MT → TTS    │
                      └──┬──────────┬───────────┬────────────┘
                         │ WS       │ HTTP/WS   │ WS
-                   Scribe STT   LLM (MT)   ElevenLabs TTS (cloned voice)
+                   Scribe STT   LLM (MT)   TTS (account's voice clone)
 
-   HTTP /api/v1 ──► api (axum): rooms, consent, LiveKit tokens, serves SPA build
+   HTTP /api/v1 ──► api (axum): accounts, rooms, voices, plans, LiveKit tokens, SPA
 ```
 
 ## Components
 
 | Component | Responsibility | Status |
 | --- | --- | --- |
-| `apps/web` | landing, lobby (devices, language, consent), call UI, captions | rooms done |
-| `apps/api` | room lifecycle, join tokens, config for clients, static hosting | rooms done |
+| `apps/web` | landing, sign-in, pre-join (devices, camera, language, voice), call UI, captions, rejoin after reload | done |
+| `apps/api` | accounts, room lifecycle, voices, plans and limits, join tokens, static hosting | done |
 | `apps/media-agent` | joins rooms, runs one translation pipeline per speaker and target language | done (Rust, LiveKit SDK) |
 | LiveKit Cloud | SFU, TURN, track routing, Krisp noise filter | done |
 | `crates/media` | per-speaker pipeline: segmentation, translation fan-out, ordered speech | done |
-| `crates/domain` | `RoomId`, `LanguageCode`, `Room` | done |
-| `crates/application` | use cases + ports (`RoomRepository`, later `SpeechToText`, `Translator`, `TextToSpeech`) | rooms done |
-| `crates/infra` | adapters: in-memory storage, LiveKit tokens, Soniox, Gemini, ElevenLabs, agent dispatcher | done |
+| `crates/domain` | ids, `Room`, `Account`, `LanguageCode`, plans | done |
+| `crates/application` | use cases + ports (repositories, `SpeechToText`, `Translator`, `TextToSpeech`, `VoiceCloner`, `VoiceSampleStore`) | done |
+| `crates/infra` | adapters: SQLite and in-memory storage, LiveKit tokens, Scribe, Soniox, Gemini, Inworld, ElevenLabs, agent dispatcher | done |
 
 ## Translation pipeline (per speaker, per target language)
 
@@ -57,8 +57,9 @@ and [`research/2026-11-multilingual-stack/report.md`](research/2026-11-multiling
    because spoken audio cannot be revised.
 5. **TTS:** the translation **streams** from Gemini and each complete sentence (or
    long clause, `Clauses`) is synthesized while the rest is still translating, by
-   ElevenLabs `eleven_v4_turbo` with an instant voice clone created from the
-   consented lobby sample (stock voice without consent).
+   the configured provider (`DICERI_TTS_PROVIDER`: Inworld `inworld-tts-2` in production,
+   ElevenLabs `eleven_v4_turbo` selectable, ADR 0016) in the speaker's own voice clone.
+   Without a clone the phrase is captioned only, never spoken by a stock voice (ADR 0014).
 6. **Publish:** translated audio is published as `<speaker>-<lang>` track; each
    listener subscribes only to the language they chose, with the original track
    ducked underneath.
@@ -91,4 +92,30 @@ routes are lookups on it; source routes use the detected language of the phrase.
 
 Every provider sits behind a trait in `application::ports` so it can be swapped
 after the bake-off (ADR 0005) without touching use cases:
-`SpeechToText`, `Translator`, `TextToSpeech`, `VoiceCloneRegistry`, `MediaGateway`.
+`SpeechToText`, `Translator`, `TextToSpeech`, `VoiceCloner`, `VoiceSampleStore`.
+
+## Accounts, rooms and addresses
+
+Everyone signs in to join (ADR 0013): each account owns one room at `/@username`.
+
+| Address | What it does |
+| --- | --- |
+| `/` | landing page only (with the public beta's free spots) |
+| `/open` | the owner opens their room; once the call starts the address shows `/@username` |
+| `/@username` | joining someone's room; the owner is sent to `/open` |
+| `/signin?next=` | sign in or create an account, then return to `/open` or `/@username` |
+
+Reloading during a call rejoins it directly (the tab remembers it was in the call), keeping
+the call timer. Sign-ups are capped by `DICERI_MAX_ACCOUNTS` (public beta, 100) and by
+`DICERI_ACCOUNTS_PER_NETWORK` per network (5).
+
+## Voices
+
+Joining needs the person's own voice (ADR 0014). They record about 10 seconds once:
+the recording is checked for speech (loudness, then Soniox hears words), kept encrypted
+with AES-256-GCM under `DICERI_VOICE_KEY` (ADR 0015), and cloned **once per account**
+at the provider (ADR 0017). The clone's id is stored in `account_voices` and reused
+instantly in every later call and after reloads; recording again replaces it, and
+"Delete my voice" deletes the recording and the clone. Account clones are named
+`diceri-account-<deployment>-<account id>`, so the media agent's startup sweep of
+orphaned per-call clones (`diceri-<deployment>-`) never touches them.

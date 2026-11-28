@@ -63,7 +63,7 @@ in responses.
 | `DICERI_TEAM_PRICE_CENTS` | `7900` | team price shown on the plans, US cents a month |
 | `DICERI_MAX_LIVE_CALLS` | `15` | calls with someone in them at once, across the service |
 | `DICERI_MONTHLY_CALL_MINUTES` | `1500` | call minutes per UTC month across every account (keeps within the media free tier) |
-| `DICERI_VOICE_CLONING` | `false` | `true` offers recording your own voice (needs the ElevenLabs and Soniox keys) |
+| `DICERI_VOICE_CLONING` | `false` | `true` offers recording your own voice (needs the voice provider's key and the Soniox key) |
 | `DICERI_VOICE_KEY` | unset | 32 bytes in base64 (`openssl rand -base64 32`) encrypting each account's kept voice recording (ADR 0015); unset: recordings are not kept. Losing it loses the recordings (secret) |
 | `DICERI_VOICE_REQUIRED` | `false` | `true` makes joining a call need a recorded voice (ADR 0014); only with voice cloning |
 | `DICERI_TTS_PROVIDER` | `elevenlabs` | who clones voices: `elevenlabs` or `inworld` (ADR 0016); the media agent must use the same |
