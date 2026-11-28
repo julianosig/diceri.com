@@ -43,7 +43,7 @@
 
 	onMount(() => {
 		return () => {
-			void flow.leave();
+			void flow.dispose();
 		};
 	});
 </script>

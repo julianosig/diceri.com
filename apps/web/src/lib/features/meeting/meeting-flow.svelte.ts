@@ -36,6 +36,7 @@ export class MeetingFlow {
 	deadline = $state<number | undefined>();
 	/** Bumped by every host join and by leaving: an older join that finishes late is ignored. */
 	#joinAttempt = 0;
+	#gone = false;
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
 	#devices: JoinDevices = {};
@@ -67,6 +68,8 @@ export class MeetingFlow {
 	}
 
 	async join(profile: Profile, devices: JoinDevices): Promise<void> {
+		// The page was left: a join still finishing its last step (closing the preview) never starts.
+		if (this.#gone) return;
 		saveDisplayName(profile.name);
 		saveLanguage(profile.outputLanguage);
 		this.#devices = devices;
@@ -99,6 +102,12 @@ export class MeetingFlow {
 
 	async leave(): Promise<void> {
 		await this.#close('left');
+	}
+
+	/** The page is left for good: leaves the call, and nothing can join from it again. */
+	async dispose(): Promise<void> {
+		this.#gone = true;
+		await this.leave();
 	}
 
 	/** Host only: ends the meeting for everyone, then shows the transcript. */
