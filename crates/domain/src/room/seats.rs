@@ -46,7 +46,9 @@ impl Seats {
     }
 
     /// Whether `account` can be in a call of `size`: everyone else connected or about to
-    /// connect (credentials issued within `SEAT_GRACE_MS`) leaves a place free.
+    /// connect (credentials issued within `SEAT_GRACE_MS`) leaves a place free. When it is not
+    /// known who is connected, the recent credentials (and the owner's place) still count, so
+    /// an outage neither locks people out nor lets guests fill the owner's call.
     pub(crate) fn has_room_for(
         &self,
         account: &AccountId,
@@ -54,9 +56,7 @@ impl Seats {
         present: Option<&[String]>,
         now_ms: u64,
     ) -> bool {
-        let Some(present) = present else {
-            return true;
-        };
+        let present = present.unwrap_or_default();
         let others = self
             .seats
             .iter()
@@ -195,15 +195,27 @@ mod tests {
     }
 
     #[test]
-    fn without_presence_size_is_not_enforced() {
+    fn without_presence_only_recent_credentials_count() {
         let mut seats = Seats::default();
-        for seed in 1..=5 {
-            assert!(
-                seats
-                    .claim(account(seed), format!("p-{seed}"), 2, None, 0)
-                    .is_some()
-            );
-        }
+        seats.reserve_for_owner(account(0));
+        assert!(
+            seats
+                .claim(account(1), "p-a".to_owned(), 2, None, 0)
+                .is_some()
+        );
+        // The owner's place and the first guest's fresh credentials fill a call of two.
+        assert_eq!(seats.claim(account(2), "p-b".to_owned(), 2, None, 0), None);
+        assert!(
+            seats
+                .claim(account(0), "p-owner".to_owned(), 2, None, 0)
+                .is_some()
+        );
+        // Long after, nobody is known to be in: people are not locked out.
+        assert!(
+            seats
+                .claim(account(3), "p-c".to_owned(), 2, None, LATER)
+                .is_some()
+        );
     }
 
     #[test]
