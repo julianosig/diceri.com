@@ -12,6 +12,18 @@ use secrecy::{ExposeSecret as _, SecretString};
 /// someone connecting (`SEAT_GRACE_MS` in the domain), so an unused token never outlives it.
 const TOKEN_TTL: Duration = Duration::from_mins(2);
 
+/// A hidden listener connects at once and is removed when its person leaves: its token lasts
+/// only long enough to connect, so it cannot be used to come back much later.
+const LISTENER_TOKEN_TTL: Duration = Duration::from_secs(30);
+
+fn ttl_for(role: MediaRole) -> Duration {
+    if role == MediaRole::Monitor {
+        LISTENER_TOKEN_TTL
+    } else {
+        TOKEN_TTL
+    }
+}
+
 /// Issues LiveKit JWTs scoped to a single room.
 #[derive(Debug, Clone)]
 pub struct LiveKitAccessIssuer {
@@ -78,7 +90,7 @@ impl MediaAccessIssuer for LiveKitAccessIssuer {
     ) -> Result<MediaGrant, MediaAccessError> {
         let mut token = AccessToken::with_api_key(&self.api_key, self.api_secret.expose_secret())
             .with_identity(participant.identity)
-            .with_ttl(TOKEN_TTL)
+            .with_ttl(ttl_for(participant.role))
             .with_grants(grants_for(room, participant.role));
         if participant.role == MediaRole::Translator {
             token = token.with_kind("agent");
