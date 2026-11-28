@@ -177,7 +177,8 @@ export const ko: Messages = {
 		filterUnsupported: '이 브라우저는 고급 소음 필터를 지원하지 않습니다.',
 		filterFailed: '고급 소음 필터에 문제가 발생했습니다.',
 		micUnpublished: '마이크를 송출할 수 없습니다.',
-		micChangeFailed: '그 마이크를 사용할 수 없어요. 이전 마이크를 계속 사용해요.'
+		micChangeFailed: '그 마이크를 사용할 수 없어요. 이전 마이크를 계속 사용해요.',
+		micLost: '마이크가 작동하지 않아요. 오디오 설정에서 마이크를 선택해 주세요.'
 	},
 	audio: {
 		microphone: '마이크',

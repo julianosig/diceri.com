@@ -175,7 +175,8 @@ export const zh: Messages = {
 		filterUnsupported: '此浏览器不支持增强降噪。',
 		filterFailed: '增强降噪出错。',
 		micUnpublished: '无法发布麦克风。',
-		micChangeFailed: '无法使用该麦克风，仍在使用之前的麦克风。'
+		micChangeFailed: '无法使用该麦克风，仍在使用之前的麦克风。',
+		micLost: '你的麦克风已停止工作。请在音频设置中选择一个麦克风。'
 	},
 	audio: {
 		microphone: '麦克风',

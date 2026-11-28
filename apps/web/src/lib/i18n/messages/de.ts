@@ -183,7 +183,9 @@ export const de: Messages = {
 		filterUnsupported: 'Der erweiterte Rauschfilter wird in diesem Browser nicht unterstützt.',
 		filterFailed: 'Der erweiterte Rauschfilter ist fehlgeschlagen.',
 		micUnpublished: 'Das Mikrofon konnte nicht übertragen werden.',
-		micChangeFailed: 'Dieses Mikrofon konnte nicht verwendet werden; du nutzt weiter das vorherige.'
+		micChangeFailed:
+			'Dieses Mikrofon konnte nicht verwendet werden; du nutzt weiter das vorherige.',
+		micLost: 'Dein Mikrofon funktioniert nicht mehr. Wähle eines in den Audioeinstellungen.'
 	},
 	audio: {
 		microphone: 'Mikrofon',

@@ -162,17 +162,20 @@ export class CallSession {
 		if (!track) return;
 		const mode = this.monitor;
 		await this.setMonitor('off');
-		let failed = false;
+		let problem: CallProblem | undefined;
 		try {
 			await track.restartTrack(toCaptureOptions(this.settings));
 		} catch {
-			failed = true;
 			this.settings = previous;
-			await track.restartTrack(toCaptureOptions(previous)).catch(() => undefined);
+			// Browsers that stop the old microphone first leave nothing if both fail.
+			problem = await track.restartTrack(toCaptureOptions(previous)).then(
+				() => 'micChangeFailed' as const,
+				() => 'micLost' as const
+			);
 		}
 		const result = await applyEnhancedFilter(track, this.settings.enhancedFilter);
 		this.activeFilter = result.active;
-		this.error = failed ? ('micChangeFailed' satisfies CallProblem) : result.error;
+		this.error = problem ?? result.error;
 		await this.#startMeter(outgoingMediaTrack(track));
 		await this.setMonitor(mode);
 	}

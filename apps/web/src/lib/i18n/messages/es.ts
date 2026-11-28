@@ -179,7 +179,8 @@ export const es: Messages = {
 		filterUnsupported: 'El filtro de ruido avanzado no es compatible con este navegador.',
 		filterFailed: 'Falló el filtro de ruido avanzado.',
 		micUnpublished: 'No se pudo publicar el micrófono.',
-		micChangeFailed: 'No se pudo usar ese micrófono; sigues con el anterior.'
+		micChangeFailed: 'No se pudo usar ese micrófono; sigues con el anterior.',
+		micLost: 'Tu micrófono dejó de funcionar. Elige uno en los ajustes de audio.'
 	},
 	audio: {
 		microphone: 'Micrófono',

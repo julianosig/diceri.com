@@ -183,7 +183,8 @@ export const it: Messages = {
 		filterFailed: 'Il filtro antirumore avanzato non è riuscito.',
 		micUnpublished: 'Impossibile trasmettere il microfono.',
 		micChangeFailed:
-			'Non è stato possibile usare quel microfono; stai ancora usando quello precedente.'
+			'Non è stato possibile usare quel microfono; stai ancora usando quello precedente.',
+		micLost: 'Il microfono ha smesso di funzionare. Scegline uno nelle impostazioni audio.'
 	},
 	audio: {
 		microphone: 'Microfono',

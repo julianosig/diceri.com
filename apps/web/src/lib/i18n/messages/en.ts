@@ -182,7 +182,8 @@ export const en = {
 		filterUnsupported: 'Enhanced noise filter is not supported in this browser.',
 		filterFailed: 'Enhanced noise filter failed.',
 		micUnpublished: 'Microphone could not be published.',
-		micChangeFailed: 'That microphone could not be used; you are still on the previous one.'
+		micChangeFailed: 'That microphone could not be used; you are still on the previous one.',
+		micLost: 'Your microphone stopped working. Choose one in the audio settings.'
 	},
 	audio: {
 		microphone: 'Microphone',

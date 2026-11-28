@@ -177,7 +177,8 @@ export const ja: Messages = {
 		filterUnsupported: 'このブラウザは高度なノイズフィルタに対応していません。',
 		filterFailed: '高度なノイズフィルタでエラーが発生しました。',
 		micUnpublished: 'マイクの音声を送信できませんでした。',
-		micChangeFailed: 'そのマイクは使えませんでした。前のマイクのままです。'
+		micChangeFailed: 'そのマイクは使えませんでした。前のマイクのままです。',
+		micLost: 'マイクが動作しなくなりました。音声設定でマイクを選んでください。'
 	},
 	audio: {
 		microphone: 'マイク',
