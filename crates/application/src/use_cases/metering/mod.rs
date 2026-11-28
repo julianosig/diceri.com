@@ -36,6 +36,8 @@ struct Checked {
     members: HashMap<RoomId, CallMembers>,
     /// Calls the media server could not say anything about this time.
     unseen: HashSet<RoomId>,
+    /// Calls it did answer about (empty or not).
+    seen: HashSet<RoomId>,
 }
 
 impl std::fmt::Debug for MeteringService {
@@ -137,9 +139,7 @@ impl MeteringService {
         }
         let now_ms = self.clock.now_ms();
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
-        calls
-            .admitted
-            .retain(|_, at| now_ms.saturating_sub(*at) < RESERVATION_MS);
+        calls.release_expired(now_ms);
         let owner = &account.username;
         let already_live = calls.live_owners.contains(owner) || calls.admitted.contains_key(owner);
         if !already_live && calls.live_count() >= self.capacity.max_live_calls {
@@ -200,12 +200,12 @@ impl MeteringService {
             .clone();
         in_call.extend(checked.unseen.intersection(&previous).copied());
         let live_owners = self.owners_of(&in_call).await;
-        let unseen_owners = self.owners_of(&checked.unseen).await;
+        let seen_owners = self.owners_of(&checked.seen).await;
         let now_ms = self.clock.now_ms();
         self.calls
             .lock()
             .unwrap_or_else(PoisonError::into_inner)
-            .update(in_call, live_owners, &unseen_owners, now_ms);
+            .update(in_call, live_owners, &seen_owners, now_ms);
     }
 
     async fn owners_of(&self, rooms: &HashSet<RoomId>) -> HashSet<Username> {
@@ -234,15 +234,17 @@ impl MeteringService {
             .inspect_err(|error| tracing::warn!(%error, "usage meter could not list rooms"))
             .unwrap_or_default();
         // Only rooms with a media room open can have anyone in them.
+        let mut checked = Checked::default();
         let mut looks = tokio::task::JoinSet::new();
         for room in rooms.iter().map(|room| room.id) {
             if open.is_some_and(|open| !open.contains(&room)) {
+                // No media room open: known to be empty.
+                checked.seen.insert(room);
                 continue;
             }
             let presence = presence.clone();
             looks.spawn(async move { (room, members_of(presence.as_ref(), &room).await) });
         }
-        let mut checked = Checked::default();
         // Every answer is read: one call the media server cannot see never stops the others.
         while let Some(answer) = looks.join_next().await {
             let Ok((room, members)) = answer else {
@@ -253,6 +255,7 @@ impl MeteringService {
                 continue;
             };
             let someone = !members.people.is_empty();
+            checked.seen.insert(room);
             checked.members.insert(room, members);
             if someone {
                 checked.in_call.insert(room);
@@ -384,7 +387,7 @@ fn month_start(day: u32) -> u32 {
 mod capacity;
 mod media;
 
-use capacity::{LiveCalls, RESERVATION_MS};
+use capacity::LiveCalls;
 
 use media::{
     close_ended, close_within_deadline, has_orphan_listeners, members_of, open_media_rooms,
