@@ -34,6 +34,8 @@ export class MeetingFlow {
 	lostConnection = $state(false);
 	/** When the owner's plan ends this call (ms since epoch), once it has started. */
 	deadline = $state<number | undefined>();
+	/** Bumped by every host join and by leaving: an older join that finishes late is ignored. */
+	#joinAttempt = 0;
 	readonly knock: GuestKnock;
 	readonly hostRequests: HostRequests | undefined;
 	#devices: JoinDevices = {};
@@ -76,10 +78,14 @@ export class MeetingFlow {
 			return;
 		}
 		this.phase = 'joining';
+		const attempt = ++this.#joinAttempt;
 		try {
 			const credentials = await hostSession(this.roomId, this.hostKey, profile);
+			// Left (the page, or the call) while the credentials came: never start it.
+			if (attempt !== this.#joinAttempt) return;
 			await this.#startCall(credentials, this.hostKey);
 		} catch (cause) {
+			if (attempt !== this.#joinAttempt) return;
 			this.phase = 'prejoin';
 			this.error =
 				limitText(cause, i18n.t) ?? (cause instanceof Error ? cause.message : String(cause));
@@ -104,7 +110,8 @@ export class MeetingFlow {
 	}
 
 	async #close(phase: 'left' | 'ended'): Promise<void> {
-		// A join request still waiting (leaving the page) must never connect afterwards.
+		// A join still on its way (leaving the page) must never connect afterwards.
+		this.#joinAttempt += 1;
 		this.knock.cancel();
 		this.hostRequests?.stop();
 		this.transcript = this.session?.transcript ?? this.transcript;
