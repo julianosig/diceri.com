@@ -92,6 +92,8 @@ export class CallSession {
 
 	/** Numbers each settings change; `#owners` says which change last edited each setting. */
 	#revision = 0;
+	/** Settings changed while muted, applied when unmuting. */
+	#deferred: Partial<AudioSettings> = {};
 	#owners: Partial<Record<keyof AudioSettings, number>> = {};
 	/** The settings the published microphone really runs with. */
 	#applied: AudioSettings = DEFAULT_AUDIO_SETTINGS;
@@ -156,6 +158,15 @@ export class CallSession {
 	async updateSettings(patch: Partial<AudioSettings>): Promise<void> {
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
+		// Restarting a muted microphone briefly sends the new one live: it waits for unmute.
+		if (this.muted) {
+			this.#deferred = { ...this.#deferred, ...patch };
+			return;
+		}
+		await this.#queueRestart(patch);
+	}
+
+	async #queueRestart(patch: Partial<AudioSettings>): Promise<void> {
 		const revision = ++this.#revision;
 		for (const key of settingKeys(patch)) this.#owners[key] = revision;
 		const change = this.#settingsChange.then(() => this.#restartMicrophone(patch, revision));
@@ -227,8 +238,12 @@ export class CallSession {
 	async toggleMute(): Promise<void> {
 		const track = this.#micTrack();
 		if (!track) return;
-		if (this.muted) await track.unmute();
-		else await track.mute();
+		if (this.muted) {
+			const deferred = this.#deferred;
+			this.#deferred = {};
+			if (settingKeys(deferred).length > 0) await this.#queueRestart(deferred);
+			await track.unmute();
+		} else await track.mute();
 		this.muted = !this.muted;
 		this.#refreshParticipants();
 	}
