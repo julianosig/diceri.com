@@ -1,3 +1,7 @@
+mod seats;
+
+use seats::Seats;
+
 use crate::{
     AccessKey, AccountId, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomCode, RoomId,
     RoomSettings, Username,
@@ -35,9 +39,8 @@ pub struct Room {
     requests: Vec<JoinRequest>,
     /// Voice clones used in this room (provider ids), each with the account that recorded it.
     voices: Vec<(AccountId, String)>,
-    /// Each account's seat in the call: its media identity, reused when it rejoins (a reload)
-    /// so one person never counts twice. Oldest first.
-    seats: Vec<(AccountId, String)>,
+    /// Each account's place in the call (its media identity), kept to the call's size.
+    seats: Seats,
     /// Set when the host ends the call for everyone; nobody can join afterwards.
     ended: bool,
     /// Minutes someone has been in this call; counted against the owner's plan.
@@ -51,8 +54,6 @@ impl Room {
     pub const MAX_PENDING_REQUESTS: usize = 20;
     /// Caps voice-clone creation (a paid, quota-limited provider call) per room.
     pub const MAX_VOICES: usize = 10;
-    /// Seats remembered per room; the oldest is forgotten (that account just gets a new one).
-    pub const MAX_SEATS: usize = 20;
 
     #[must_use]
     pub fn new(
@@ -71,7 +72,7 @@ impl Room {
             host_key,
             requests: Vec::new(),
             voices: Vec::new(),
-            seats: Vec::new(),
+            seats: Seats::default(),
             ended: false,
             call_minutes: 0,
         }
@@ -168,21 +169,35 @@ impl Room {
     /// The media identity of `account`'s seat, if it has joined this call before.
     #[must_use]
     pub fn seat_of(&self, account: &AccountId) -> Option<&str> {
-        self.seats
-            .iter()
-            .find(|(owner, _)| owner == account)
-            .map(|(_, identity)| identity.as_str())
+        self.seats.identity_of(account)
     }
 
-    /// Gives `account` a seat with `identity` unless it already has one (which is kept).
-    pub fn take_seat(&mut self, account: AccountId, identity: String) {
-        if self.seat_of(&account).is_some() {
-            return;
-        }
-        if self.seats.len() >= Self::MAX_SEATS {
-            self.seats.remove(0);
-        }
-        self.seats.push((account, identity));
+    /// Whether `account` could join now, given who is connected (`present`; `None` when the
+    /// media server cannot say) and who was just given credentials.
+    #[must_use]
+    pub fn has_room_for(
+        &self,
+        account: &AccountId,
+        present: Option<&[String]>,
+        now_ms: u64,
+    ) -> bool {
+        self.seats
+            .has_room_for(account, self.max_participants, present, now_ms)
+    }
+
+    /// Gives `account` its place in the open call: its existing seat (a reload) or a new one
+    /// with `identity`; refused when the call has ended or is full.
+    pub fn claim_seat(
+        &mut self,
+        account: AccountId,
+        identity: String,
+        present: Option<&[String]>,
+        now_ms: u64,
+    ) -> Result<String, RoomRuleError> {
+        self.ensure_open()?;
+        self.seats
+            .claim(account, identity, self.max_participants, present, now_ms)
+            .ok_or(RoomRuleError::Full)
     }
 
     pub fn decide(&mut self, id: &RequestId, admit: bool) -> Result<(), RoomRuleError> {
@@ -285,17 +300,14 @@ mod tests {
     }
 
     #[test]
-    fn an_account_keeps_its_seat_and_old_seats_are_forgotten() {
+    fn an_ended_call_gives_no_seat() {
         let mut room = room();
+        room.end();
         let ana = AccountId::from_parts(1, [1; 10]);
-        room.take_seat(ana, "p-ana".to_owned());
-        room.take_seat(ana, "p-other".to_owned());
-        assert_eq!(room.seat_of(&ana), Some("p-ana"));
-        for n in 0..Room::MAX_SEATS {
-            let seed = u8::try_from(n).unwrap() + 10;
-            room.take_seat(AccountId::from_parts(2, [seed; 10]), format!("p-{n}"));
-        }
-        assert_eq!(room.seat_of(&ana), None);
+        assert_eq!(
+            room.claim_seat(ana, "p-ana".to_owned(), Some(&[]), 0),
+            Err(RoomRuleError::Ended)
+        );
     }
 
     #[test]

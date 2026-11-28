@@ -98,15 +98,20 @@ impl MediaPresence for LiveKitPresence {
     }
 
     async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {
+        Ok(self.identities_in(room).await?.len())
+    }
+
+    async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
         let name = room.to_string();
         if !self.exists(&name).await? {
-            return Ok(0);
+            return Ok(Vec::new());
         }
         let people = self.participants(name).await?;
         Ok(people
-            .iter()
-            .filter(|p| p.identity.starts_with(PERSON_PREFIX))
-            .count())
+            .into_iter()
+            .map(|p| p.identity)
+            .filter(|identity| identity.starts_with(PERSON_PREFIX))
+            .collect())
     }
 }
 

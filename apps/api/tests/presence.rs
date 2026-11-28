@@ -25,6 +25,13 @@ impl MediaPresence for FakePresence {
     async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError> {
         Ok(self.0.lock().unwrap().clone())
     }
+
+    async fn identities_in(
+        &self,
+        _: &diceri_domain::RoomId,
+    ) -> Result<Vec<String>, MediaAccessError> {
+        Ok(Vec::new())
+    }
 }
 
 fn app() -> (Router, Arc<FakePresence>) {

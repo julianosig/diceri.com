@@ -6,9 +6,9 @@ use diceri_domain::{
 };
 
 use crate::ports::{
-    IdGenerator, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant, MediaPresence,
-    MediaRole, MediaRoomCloser, RandomSource, RoomChangeError, RoomRepository, RoomRepositoryError,
-    TranslationDispatcher,
+    Clock, IdGenerator, MediaAccessError, MediaAccessIssuer, MediaGrant, MediaParticipant,
+    MediaPresence, MediaRole, MediaRoomCloser, RandomSource, RoomChangeError, RoomRepository,
+    RoomRepositoryError, TranslationDispatcher,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -68,8 +68,8 @@ pub struct AdmissionService {
     media: Option<Arc<dyn MediaAccessIssuer>>,
     translation: Option<Arc<dyn TranslationDispatcher>>,
     closer: Option<Arc<dyn MediaRoomCloser>>,
-    /// Who is in each call, to keep calls to their size; `None` (tests): not checked.
-    presence: Option<Arc<dyn MediaPresence>>,
+    /// Who is in each call and the time, to keep calls to their size; `None`: not checked.
+    presence: Option<(Arc<dyn MediaPresence>, Arc<dyn Clock>)>,
 }
 
 impl std::fmt::Debug for AdmissionService {
@@ -129,8 +129,12 @@ impl AdmissionService {
 
     /// Keeps calls to their size (`Room::max_participants`) using who is connected now.
     #[must_use]
-    pub fn with_presence(mut self, presence: Arc<dyn MediaPresence>) -> Self {
-        self.presence = Some(presence);
+    pub fn with_presence(
+        mut self,
+        presence: Arc<dyn MediaPresence>,
+        clock: Arc<dyn Clock>,
+    ) -> Self {
+        self.presence = Some((presence, clock));
         self
     }
 
@@ -275,43 +279,44 @@ impl AdmissionService {
         }
     }
 
-    /// `account`'s seat in the call (its media identity). Rejoining (a reload) reuses the seat,
-    /// so the new connection replaces the old one instead of counting twice; a new person gets
-    /// a seat only while the call has room.
+    /// `account`'s place in the call (its media identity), reserved on the room as it is now:
+    /// a reload reuses it, and nobody gets in once the call has ended or is full, even when
+    /// two people are let in at the same moment.
     async fn seat(&self, room: &Room, account: &AccountId) -> Result<String, AdmissionError> {
-        if let Some(identity) = room.seat_of(account) {
-            return Ok(identity.to_owned());
-        }
-        self.ensure_space(room, account).await?;
+        let (present, now_ms) = self.who_is_in(room).await;
         let (account, identity) = (*account, format!("p-{}", self.ids.participant_id()));
-        let take = move |room: &mut Room| {
-            room.take_seat(account, identity);
-            Ok(())
+        let claim = move |room: &mut Room| {
+            room.claim_seat(account, identity, present.as_deref(), now_ms)
+                .map(|_| ())
         };
-        let seated = self.rooms.modify(&room.id, Box::new(take)).await?;
+        let seated = self.rooms.modify(&room.id, Box::new(claim)).await?;
         seated
             .seat_of(&account)
             .map(str::to_owned)
             .ok_or(AdmissionError::NotFound)
     }
 
-    /// Refuses a new person when the call already holds `max_participants` people. If the
-    /// media server cannot say, joining is allowed: an outage must not lock people out.
+    /// Refuses a newcomer to a full call up front, before they wait for the host.
     async fn ensure_space(&self, room: &Room, account: &AccountId) -> Result<(), AdmissionError> {
-        let Some(presence) = &self.presence else {
-            return Ok(());
-        };
-        if room.seat_of(account).is_some() {
-            return Ok(());
+        let (present, now_ms) = self.who_is_in(room).await;
+        if room.has_room_for(account, present.as_deref(), now_ms) {
+            Ok(())
+        } else {
+            Err(AdmissionError::Rule(RoomRuleError::Full))
         }
-        match presence.people_in(&room.id).await {
-            Ok(people) if people >= usize::from(room.max_participants) => {
-                Err(AdmissionError::Rule(RoomRuleError::Full))
-            }
-            Ok(_) => Ok(()),
+    }
+
+    /// Who is connected to `room`'s call and the time now; `None` when the media server cannot
+    /// say (then size is not enforced: an outage must not lock people out).
+    async fn who_is_in(&self, room: &Room) -> (Option<Vec<String>>, u64) {
+        let Some((presence, clock)) = &self.presence else {
+            return (None, 0);
+        };
+        match presence.identities_in(&room.id).await {
+            Ok(identities) => (Some(identities), clock.now_ms()),
             Err(error) => {
                 tracing::warn!(%error, room_id = %room.id, "call size not checked");
-                Ok(())
+                (None, clock.now_ms())
             }
         }
     }

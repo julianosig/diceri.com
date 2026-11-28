@@ -1,17 +1,23 @@
 //! Calls keep to their size: one seat per account, reused when it rejoins.
 
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
 use diceri_domain::{AccountId, RoomId, RoomRuleError};
 
-use super::tests::{fixture, name, someone};
+use super::tests::{Fixture, fixture, name, someone};
 use super::{AdmissionError, KnockOutcome};
 use crate::ports::{LiveRoom, MediaAccessError, MediaPresence};
-use crate::test_support::{owner, private_room};
+use crate::test_support::{FakeClock, owner, private_room};
 
-/// Says how many people are in every call; `None` stands for the media server failing.
-struct People(Mutex<Option<usize>>);
+/// The identities connected to every call; `None` stands for the media server failing.
+struct People(Mutex<Option<Vec<String>>>);
+
+impl People {
+    fn set(&self, identities: &[&str]) {
+        *self.0.lock().unwrap() = Some(identities.iter().map(|&id| id.to_owned()).collect());
+    }
+}
 
 #[async_trait]
 impl MediaPresence for People {
@@ -19,24 +25,30 @@ impl MediaPresence for People {
         Ok(Vec::new())
     }
 
-    async fn people_in(&self, _: &RoomId) -> Result<usize, MediaAccessError> {
+    async fn identities_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
         self.0
             .lock()
             .unwrap()
+            .clone()
             .ok_or_else(|| MediaAccessError("unreachable".to_owned()))
     }
 }
 
-fn with_people(people: Option<usize>) -> (super::tests::Fixture, std::sync::Arc<People>) {
-    let presence = std::sync::Arc::new(People(Mutex::new(people)));
+/// A fixture whose calls are watched by `People`, at a fixed time.
+fn with_people(identities: Option<&[&str]>) -> (Fixture, Arc<People>) {
+    let people = Arc::new(People(Mutex::new(None)));
+    if let Some(identities) = identities {
+        people.set(identities);
+    }
+    let clock = Arc::new(FakeClock(std::sync::atomic::AtomicU64::new(1_000)));
     let mut f = fixture(true);
-    f.admission = f.admission.clone().with_presence(presence.clone());
-    (f, presence)
+    f.admission = f.admission.clone().with_presence(people.clone(), clock);
+    (f, people)
 }
 
 #[tokio::test]
 async fn rejoining_after_a_reload_keeps_the_same_seat_even_in_a_full_call() {
-    let (f, people) = with_people(Some(0));
+    let (f, people) = with_people(Some(&[]));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
     let host = AccountId::from_parts(1, [1; 10]);
     let first = f
@@ -44,8 +56,8 @@ async fn rejoining_after_a_reload_keeps_the_same_seat_even_in_a_full_call() {
         .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
         .await
         .unwrap();
-    // Two people in the call, one of them the host's old tab: the host is not a newcomer.
-    *people.0.lock().unwrap() = Some(2);
+    // Two people connected, one of them the host's old tab: the host is not a newcomer.
+    people.set(&[&first.identity, "p-guest"]);
     let again = f
         .admission
         .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
@@ -56,7 +68,7 @@ async fn rejoining_after_a_reload_keeps_the_same_seat_even_in_a_full_call() {
 
 #[tokio::test]
 async fn a_newcomer_cannot_ask_to_join_a_full_call() {
-    let (f, _) = with_people(Some(2));
+    let (f, _) = with_people(Some(&["p-a", "p-b"]));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
     let result = f.admission.knock(&room.code, &someone(), name("Eve")).await;
     assert!(matches!(
@@ -67,7 +79,7 @@ async fn a_newcomer_cannot_ask_to_join_a_full_call() {
 
 #[tokio::test]
 async fn a_guest_let_in_after_the_call_filled_up_is_refused() {
-    let (f, people) = with_people(Some(1));
+    let (f, people) = with_people(Some(&["p-host"]));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
     let knock = f
         .admission
@@ -78,7 +90,7 @@ async fn a_guest_let_in_after_the_call_filled_up_is_refused() {
         .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
-    *people.0.lock().unwrap() = Some(2);
+    people.set(&["p-host", "p-carla"]);
     let outcome = f
         .admission
         .outcome(&room.code, &knock.request_id, &knock.key)
@@ -86,6 +98,29 @@ async fn a_guest_let_in_after_the_call_filled_up_is_refused() {
     assert!(matches!(
         outcome,
         Err(AdmissionError::Rule(RoomRuleError::Full))
+    ));
+}
+
+#[tokio::test]
+async fn an_ended_call_gives_no_credentials_even_to_someone_seated() {
+    let (f, _) = with_people(Some(&[]));
+    let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
+    let host = AccountId::from_parts(1, [1; 10]);
+    f.admission
+        .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
+        .await
+        .unwrap();
+    f.admission
+        .end_call(&room.code, room.host_key())
+        .await
+        .unwrap();
+    let again = f
+        .admission
+        .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
+        .await;
+    assert!(matches!(
+        again,
+        Err(AdmissionError::Rule(RoomRuleError::Ended))
     ));
 }
 

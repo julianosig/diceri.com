@@ -172,6 +172,9 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
+        // First, so a call ended below at its limit is only swept if still open next minute.
+        self.close_ended_calls(presence.as_ref(), closer.as_ref())
+            .await;
         let in_call = self
             .charge_live_calls(presence.as_ref(), closer.as_ref())
             .await;
@@ -203,6 +206,25 @@ impl MeteringService {
             }
         }
         in_call
+    }
+
+    /// Closes media rooms still open for calls that ended: a close that failed, or someone
+    /// connecting with credentials issued just before the end (which reopens the media
+    /// room). Only rooms this service knows are touched, never another deployment's.
+    async fn close_ended_calls(&self, presence: &dyn MediaPresence, closer: &dyn MediaRoomCloser) {
+        let Ok(media) = presence
+            .live_rooms()
+            .await
+            .inspect_err(|error| tracing::warn!(%error, "usage meter could not list media rooms"))
+        else {
+            return;
+        };
+        for live in media {
+            let ended = matches!(self.rooms.find_by_id(&live.room).await, Ok(Some(room)) if room.is_ended());
+            if ended && let Err(error) = closer.close(&live.room).await {
+                warn_not_closed(&error, &live.room);
+            }
+        }
     }
 
     /// One minute of `room`'s call, charged to its owner; ends it at a plan limit.

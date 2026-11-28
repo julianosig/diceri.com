@@ -124,7 +124,9 @@ impl AppState {
                 reqwest::Client::new(),
             ));
             state.presence = state.presence.with_source(presence.clone());
-            state.admission = state.admission.with_presence(presence.clone());
+            state.admission = state
+                .admission
+                .with_presence(presence.clone(), Arc::new(OsRandom));
             state.metering = state.metering.with_media(presence, room_closer);
         }
         if let Some(agent) = &config.agent {

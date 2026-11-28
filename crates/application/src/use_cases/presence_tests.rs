@@ -2,7 +2,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use diceri_domain::{Account, AccountId, EntryPolicy, Mascot, Room, RoomSettings};
+use diceri_domain::{Account, AccountId, EntryPolicy, Mascot, Room, RoomId, RoomSettings};
 
 use super::{PresenceService, RANKING_SIZE};
 use crate::ports::{LiveRoom, MediaAccessError, MediaPresence, RoomRepository as _};
@@ -24,6 +24,10 @@ impl MediaPresence for FakePresence {
             return Err(MediaAccessError("down".to_owned()));
         }
         Ok(self.rooms.lock().unwrap().clone())
+    }
+
+    async fn identities_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+        Ok(Vec::new())
     }
 }
 

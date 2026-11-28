@@ -21,11 +21,25 @@ struct People(Mutex<HashMap<RoomId, usize>>);
 #[async_trait]
 impl MediaPresence for People {
     async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError> {
-        Ok(Vec::new())
+        let rooms = self.0.lock().unwrap();
+        Ok(rooms
+            .iter()
+            .filter(|(_, people)| **people > 0)
+            .map(|(room, people)| LiveRoom {
+                room: *room,
+                people: *people,
+                languages: Vec::new(),
+            })
+            .collect())
     }
 
     async fn people_in(&self, room: &RoomId) -> Result<usize, MediaAccessError> {
         Ok(self.0.lock().unwrap().get(room).copied().unwrap_or(0))
+    }
+
+    async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+        let people = self.people_in(room).await?;
+        Ok((0..people).map(|n| format!("p-{n}")).collect())
     }
 }
 
@@ -265,4 +279,23 @@ fn finds_the_first_day_of_the_month() {
     assert_eq!(month_start(20_757), 20_758 - 31);
     assert_eq!(month_start(19_782), 19_754);
     assert_eq!(utc_day(NOW_MS), 20_784);
+}
+
+#[tokio::test]
+async fn an_ended_call_still_open_at_the_media_server_is_closed() {
+    let f = fixture();
+    let ana = f.account(1, "ana").await;
+    let room = f.call(&ana, 0).await;
+    let end = |room: &mut Room| {
+        room.end();
+        Ok(())
+    };
+    f.rooms.modify(&room.id, Box::new(end)).await.unwrap();
+    // Someone connected with credentials issued just before the end, reopening the media room.
+    f.people.0.lock().unwrap().insert(room.id, 1);
+    // A room of another deployment sharing the media server is never touched.
+    let other = RoomId::from_parts(9, [9; 10]);
+    f.people.0.lock().unwrap().insert(other, 2);
+    f.metering.tick().await;
+    assert_eq!(*f.closer.0.lock().unwrap(), vec![room.id]);
 }
