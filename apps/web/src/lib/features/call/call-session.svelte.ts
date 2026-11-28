@@ -100,6 +100,8 @@ export class CallSession {
 	#meterFrame = 0;
 	#localMonitor: LocalMonitor | undefined;
 	#loopback: LoopbackMonitor | undefined;
+	/** The settings the published microphone really runs with. */
+	#applied: AudioSettings = DEFAULT_AUDIO_SETTINGS;
 	/** The settings change in progress; the next one waits for it. */
 	#settingsChange: Promise<void> = Promise.resolve();
 	#stats = new StatsPoller();
@@ -142,38 +144,43 @@ export class CallSession {
 		}
 	}
 
-	/** Applies new capture settings to the microphone, one change at a time. */
+	/**
+	 * Applies new capture settings to the microphone, one change at a time. Each change is
+	 * applied on top of the settings the microphone really has, and a change that fails only
+	 * undoes itself, never a later one.
+	 */
 	async updateSettings(patch: Partial<AudioSettings>): Promise<void> {
-		const previous = this.settings;
 		this.settings = { ...this.settings, ...patch };
 		if (this.status !== 'connected') return;
-		const change = this.#settingsChange.then(() => this.#restartMicrophone(previous));
+		const change = this.#settingsChange.then(() => this.#restartMicrophone(patch));
 		this.#settingsChange = change.catch(() => undefined);
 		await change;
 	}
 
 	/**
-	 * Restarts the published microphone with the new device and settings: the same publication,
-	 * kept muted when the caller is (re-enabling it would only unmute it and ignore the new
-	 * settings). A device that fails puts the previous settings back.
+	 * Restarts the published microphone with `patch` applied: the same publication, kept muted
+	 * when the caller is (re-enabling it would only unmute it and ignore the new settings).
+	 * A device that fails puts this change's settings back.
 	 */
-	async #restartMicrophone(previous: AudioSettings): Promise<void> {
+	async #restartMicrophone(patch: Partial<AudioSettings>): Promise<void> {
 		const track = this.#micTrack();
 		if (!track) return;
 		const mode = this.monitor;
 		await this.setMonitor('off');
+		const target = { ...this.#applied, ...patch };
 		let problem: CallProblem | undefined;
 		try {
-			await track.restartTrack(toCaptureOptions(this.settings));
+			await track.restartTrack(toCaptureOptions(target));
+			this.#applied = target;
 		} catch {
-			this.settings = previous;
+			this.settings = { ...this.settings, ...pick(this.#applied, patch) };
 			// Browsers that stop the old microphone first leave nothing if both fail.
-			problem = await track.restartTrack(toCaptureOptions(previous)).then(
+			problem = await track.restartTrack(toCaptureOptions(this.#applied)).then(
 				() => 'micChangeFailed' as const,
 				() => 'micLost' as const
 			);
 		}
-		const result = await applyEnhancedFilter(track, this.settings.enhancedFilter);
+		const result = await applyEnhancedFilter(track, this.#applied.enhancedFilter);
 		this.activeFilter = result.active;
 		this.error = problem ?? result.error;
 		await this.#startMeter(outgoingMediaTrack(track));
@@ -245,7 +252,16 @@ export class CallSession {
 
 	async #publishMicrophone(): Promise<void> {
 		const captured = await this.#capture();
-		await this.#room.localParticipant.publishTrack(captured, { source: Track.Source.Microphone });
+		try {
+			await this.#room.localParticipant.publishTrack(captured, {
+				source: Track.Source.Microphone
+			});
+		} catch (cause) {
+			// Never leave the microphone capturing for a track that is not in the call.
+			captured.stop();
+			throw cause;
+		}
+		this.#applied = this.settings;
 		const track = this.#micTrack();
 		// The message is a problem key; CallScreen words it in the visitor's language.
 		if (!track) throw new Error('micUnpublished' satisfies CallProblem);
@@ -430,4 +446,11 @@ function cameraOf(participant: RoomParticipant): VideoTrack | undefined {
 	const track = publication?.track;
 	const video = track instanceof LocalVideoTrack || track instanceof RemoteVideoTrack;
 	return video && !publication?.isMuted ? track : undefined;
+}
+
+/** The values `from` has for the settings `patch` changes. */
+function pick(from: AudioSettings, patch: Partial<AudioSettings>): Partial<AudioSettings> {
+	return Object.fromEntries(
+		Object.keys(patch).map((key) => [key, from[key as keyof AudioSettings]])
+	);
 }
