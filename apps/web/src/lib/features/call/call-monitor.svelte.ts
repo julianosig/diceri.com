@@ -24,36 +24,42 @@ export class CallMonitor {
 	#local: LocalMonitor | undefined;
 	#loopback: LoopbackMonitor | undefined;
 	#request = 0;
+	/** Set while the microphone is being changed: choices are kept, nothing starts. */
+	#paused = false;
 
 	constructor(private readonly options: CallMonitorOptions) {}
 
 	/** Switches to `mode`; `outgoing` is the audio the call sends (for the local monitor). */
 	async set(mode: MonitorMode, outgoing: MediaStreamTrack | undefined): Promise<void> {
-		const request = ++this.#request;
-		// Detached first, so two callers never close the same monitor twice.
-		const [local, loopback] = [this.#local, this.#loopback];
-		this.#local = undefined;
-		this.#loopback = undefined;
-		await Promise.allSettled([local?.close(), loopback?.stop()]);
-		// A newer choice, or leaving, came while the old monitor closed: it wins.
-		if (request !== this.#request || this.options.isClosing()) return;
+		// The choice counts at once, even while paused or while the old monitor closes.
 		this.mode = mode;
+		const request = await this.#stop();
+		// A newer choice, a pause, or leaving came while the old monitor closed: it wins.
+		if (request !== this.#request || this.#paused || this.options.isClosing()) return;
 		if (mode === 'local' && outgoing) this.#local = new LocalMonitor(outgoing);
 		if (mode === 'loopback') await this.#startLoopback(request);
 	}
 
 	/** Stops hearing yourself for a moment (the microphone is being changed); keeps the choice. */
 	async pause(): Promise<void> {
-		this.#request += 1;
-		const [local, loopback] = [this.#local, this.#loopback];
-		this.#local = undefined;
-		this.#loopback = undefined;
-		await Promise.allSettled([local?.close(), loopback?.stop()]);
+		this.#paused = true;
+		await this.#stop();
 	}
 
 	/** Back to the latest choice, which may have changed during the pause. */
 	async resume(outgoing: MediaStreamTrack | undefined): Promise<void> {
+		this.#paused = false;
 		await this.set(this.mode, outgoing);
+	}
+
+	/** Closes whatever monitor runs (detached first, so it is never closed twice). */
+	async #stop(): Promise<number> {
+		const request = ++this.#request;
+		const [local, loopback] = [this.#local, this.#loopback];
+		this.#local = undefined;
+		this.#loopback = undefined;
+		await Promise.allSettled([local?.close(), loopback?.stop()]);
+		return request;
 	}
 
 	/** Superseded or failed attempts never linger. */
