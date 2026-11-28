@@ -200,11 +200,12 @@ impl MeteringService {
             .clone();
         in_call.extend(checked.unseen.intersection(&previous).copied());
         let live_owners = self.owners_of(&in_call).await;
-        let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
-        // Reservations last until their credentials expire (see `admit`), even once the call
-        // shows up live: a fresh token stays usable if that connection drops.
-        calls.in_call = in_call;
-        calls.live_owners = live_owners;
+        let unseen_owners = self.owners_of(&checked.unseen).await;
+        let now_ms = self.clock.now_ms();
+        self.calls
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .update(in_call, live_owners, &unseen_owners, now_ms);
     }
 
     async fn owners_of(&self, rooms: &HashSet<RoomId>) -> HashSet<Username> {
