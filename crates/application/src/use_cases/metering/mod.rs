@@ -171,6 +171,13 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
+        // Owners let in from here on are still connecting when this tick ends: they stay.
+        let admitted_before = self
+            .calls
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner)
+            .admitted
+            .clone();
         // Charging first: tidying up never delays a call's charge or its limit.
         let (in_call, ended_now) = self.charge_live_calls(presence, closer).await;
         // Calls ended just now are already being closed; within a budget, so a slow media
@@ -182,7 +189,9 @@ impl MeteringService {
         .await;
         let mut calls = self.calls.lock().unwrap_or_else(PoisonError::into_inner);
         calls.in_call = in_call;
-        calls.admitted.clear();
+        calls
+            .admitted
+            .retain(|owner| !admitted_before.contains(owner));
     }
 
     /// Charges every call someone is in and returns those rooms. Who is in each call is asked
