@@ -121,12 +121,17 @@ async fn transcribe(speaker: &Speaker, providers: &Providers, events: &Transcrip
         let started = tokio::time::Instant::now();
         // Stopped as soon as this stream closes (or the whole speaker does): no audio is
         // sent to a failed stream while reconnecting.
-        let pump = AbortOnDrop(pump_audio(
+        let mut pump = AbortOnDrop(pump_audio(
             &speaker.track,
             stream.audio,
             track_ended.clone(),
         ));
-        let pipeline_open = forward(stream.events, events).await;
+        // Watched together: the stream is over when its transcript ends, and also when the
+        // pump stops because the provider no longer takes audio (a writer that failed).
+        let pipeline_open = tokio::select! {
+            open = forward(stream.events, events) => open,
+            _ = &mut pump.0 => true,
+        };
         drop(pump);
         if !pipeline_open {
             return;
