@@ -25,6 +25,8 @@ export class LoopbackMonitor {
 			this.#elements.push(element);
 		});
 		this.#room.on(RoomEvent.Disconnected, (reason?: DisconnectReason) => {
+			// However it ends, its hidden players go with it.
+			this.#detach();
 			if (reason !== DisconnectReason.CLIENT_INITIATED) this.onEnded();
 		});
 		await this.#room.connect(credentials.serverUrl, credentials.token, { autoSubscribe: true });
@@ -32,8 +34,12 @@ export class LoopbackMonitor {
 	}
 
 	async stop(): Promise<void> {
+		this.#detach();
+		await this.#room.disconnect();
+	}
+
+	#detach(): void {
 		for (const element of this.#elements) element.remove();
 		this.#elements = [];
-		await this.#room.disconnect();
 	}
 }
