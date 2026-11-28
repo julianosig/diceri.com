@@ -181,6 +181,9 @@ impl From<AdmissionError> for ApiError {
                 rule @ (RoomRuleError::TooManyPending | RoomRuleError::TooManyVoices),
             ) => Self::TooManyRequests(rule.to_string()),
             AdmissionError::MediaUnavailable => Self::Unavailable("media server not configured"),
+            AdmissionError::PresenceUnknown => {
+                Self::Unavailable("the call could not be checked, try again")
+            }
             AdmissionError::Repository(source) => Self::Internal(source.into()),
             AdmissionError::MediaAccess(source) => Self::Internal(source.into()),
         }

@@ -25,8 +25,11 @@ impl MediaPresence for People {
         Ok(Vec::new())
     }
 
-    async fn listeners_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
-        Ok(Vec::new())
+    async fn call_members(
+        &self,
+        _: &RoomId,
+    ) -> Result<crate::ports::CallMembers, MediaAccessError> {
+        Ok(crate::ports::CallMembers::default())
     }
 
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
@@ -204,8 +207,11 @@ impl MediaPresence for Stalled {
         Ok(Vec::new())
     }
 
-    async fn listeners_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
-        Ok(Vec::new())
+    async fn call_members(
+        &self,
+        _: &RoomId,
+    ) -> Result<crate::ports::CallMembers, MediaAccessError> {
+        Ok(crate::ports::CallMembers::default())
     }
 
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
@@ -228,4 +234,33 @@ async fn a_stalled_media_server_does_not_hold_up_joining() {
         .join_as_host(&room.code, room.host_key(), &owner().id, &name("Ana"))
         .await;
     assert!(joined.is_ok());
+}
+
+#[tokio::test]
+async fn only_someone_shown_in_the_call_gets_a_listener() {
+    let (f, people) = with_people(Some(&[]));
+    let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
+    let host = f
+        .admission
+        .join_as_host(&room.code, room.host_key(), &owner().id, &name("Ana"))
+        .await
+        .unwrap();
+    // Not connected (yet, or any more): no listener.
+    assert!(matches!(
+        f.admission.monitor(&room.code, room.host_key()).await,
+        Err(AdmissionError::Forbidden)
+    ));
+    people.set(&[&host.identity]);
+    let listener = f
+        .admission
+        .monitor(&room.code, room.host_key())
+        .await
+        .unwrap();
+    assert_eq!(listener.identity, format!("monitor-{}", host.identity));
+    // When it cannot be checked, asking again later is the answer, not access.
+    *people.0.lock().unwrap() = None;
+    assert!(matches!(
+        f.admission.monitor(&room.code, room.host_key()).await,
+        Err(AdmissionError::PresenceUnknown)
+    ));
 }

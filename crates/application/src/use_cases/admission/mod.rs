@@ -21,6 +21,9 @@ pub enum AdmissionError {
     Rule(#[from] RoomRuleError),
     #[error("media server is not configured")]
     MediaUnavailable,
+    /// Who is in the call could not be checked just now; asking again may work.
+    #[error("the call could not be checked, try again")]
+    PresenceUnknown,
     #[error(transparent)]
     Repository(#[from] RoomRepositoryError),
     #[error(transparent)]
@@ -248,14 +251,22 @@ impl AdmissionService {
         key: &AccessKey,
     ) -> Result<JoinTicket, AdmissionError> {
         let room = self.load(code).await?;
-        // Only someone in the call right now may listen to it (unknown presence: their seat
-        // is enough); the listener is named after that seat, so it goes when they leave.
-        let seat = room.seat_of_key(key).ok_or(AdmissionError::Forbidden)?;
+        // Only someone the media server shows in the call right now may listen to it; the
+        // listener is named after their seat, so it goes when they leave.
+        let seat = room
+            .seat_of_key(key)
+            .ok_or(AdmissionError::Forbidden)?
+            .to_owned();
         room.ensure_open()?;
-        let (present, _) = self.who_is_in(&room).await;
-        if present.is_some_and(|present| !present.iter().any(|identity| identity == seat)) {
-            return Err(AdmissionError::Forbidden);
+        // Without a media server watching calls (development) the seat is enough.
+        if self.presence.is_some() {
+            let (present, _) = self.who_is_in(&room).await;
+            let present = present.ok_or(AdmissionError::PresenceUnknown)?;
+            if !present.contains(&seat) {
+                return Err(AdmissionError::Forbidden);
+            }
         }
+        self.ensure_still_open(&room.id).await?;
         let identity = format!("monitor-{seat}");
         self.grant(&room.id, identity, None, MediaRole::Monitor)
     }

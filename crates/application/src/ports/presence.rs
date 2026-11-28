@@ -11,6 +11,13 @@ pub struct LiveRoom {
     pub languages: Vec<LanguageCode>,
 }
 
+/// Media identities in one call: the people, and the hidden listeners (`monitor-<seat>`).
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct CallMembers {
+    pub people: Vec<String>,
+    pub listeners: Vec<String>,
+}
+
 /// Who is connected to the media server at this moment.
 #[async_trait::async_trait]
 pub trait MediaPresence: Send + Sync {
@@ -24,8 +31,9 @@ pub trait MediaPresence: Send + Sync {
     /// exist), so a call can be kept to its size.
     async fn identities_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError>;
 
-    /// Media identities of the hidden listeners (loopback monitors) in one room's call.
-    async fn listeners_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError>;
+    /// People and hidden listeners (loopback monitors) in one room's call, from a single
+    /// look, so a listener is never judged against an older list of people.
+    async fn call_members(&self, room: &RoomId) -> Result<CallMembers, MediaAccessError>;
 
     /// People in one room's call right now (0 when the media room does not exist).
     /// Adapters should answer with a single-room query; this default scans every room.

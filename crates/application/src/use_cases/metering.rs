@@ -9,8 +9,8 @@ use diceri_domain::{Account, Room, RoomId, Username};
 
 use super::plan_limits::{Allowance, Capacity, LimitError, PlanCatalogue};
 use crate::ports::{
-    AccountRepository, Clock, MediaAccessError, MediaPresence, MediaRoomCloser, RoomRepository,
-    UsageRepository,
+    AccountRepository, CallMembers, Clock, MediaAccessError, MediaPresence, MediaRoomCloser,
+    RoomRepository, UsageRepository,
 };
 
 const DAY_MS: u64 = 86_400_000;
@@ -310,10 +310,7 @@ async fn remove_orphan_listeners(
     closer: &dyn MediaRoomCloser,
     room: &RoomId,
 ) {
-    let (Ok(people), Ok(listeners)) = (
-        presence.identities_in(room).await,
-        presence.listeners_in(room).await,
-    ) else {
+    let Ok(CallMembers { people, listeners }) = presence.call_members(room).await else {
         return;
     };
     for listener in listeners {

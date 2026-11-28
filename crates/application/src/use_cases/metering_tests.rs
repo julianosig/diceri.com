@@ -41,14 +41,15 @@ impl MediaPresence for People {
         Ok(self.0.lock().unwrap().get(room).copied().unwrap_or(0))
     }
 
-    async fn listeners_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
-        Ok(self
-            .1
-            .lock()
-            .unwrap()
-            .get(room)
-            .cloned()
-            .unwrap_or_default())
+    async fn call_members(
+        &self,
+        room: &RoomId,
+    ) -> Result<crate::ports::CallMembers, MediaAccessError> {
+        let listeners = self.1.lock().unwrap().get(room).cloned();
+        Ok(crate::ports::CallMembers {
+            people: self.identities_in(room).await?,
+            listeners: listeners.unwrap_or_default(),
+        })
     }
 
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use diceri_application::ports::{LiveRoom, MediaAccessError, MediaPresence};
+use diceri_application::ports::{CallMembers, LiveRoom, MediaAccessError, MediaPresence};
 use diceri_domain::RoomId;
 use futures_util::future::join_all;
 use livekit_api::access_token::VideoGrants;
@@ -104,17 +104,20 @@ impl MediaPresence for LiveKitPresence {
         Ok(self.identities_in(room).await?.len())
     }
 
-    async fn listeners_in(&self, room: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+    async fn call_members(&self, room: &RoomId) -> Result<CallMembers, MediaAccessError> {
         let name = room.to_string();
         if !self.exists(&name).await? {
-            return Ok(Vec::new());
+            return Ok(CallMembers::default());
         }
-        let people = self.participants(name).await?;
-        Ok(people
-            .into_iter()
-            .map(|p| p.identity)
-            .filter(|identity| identity.starts_with(LISTENER_PREFIX))
-            .collect())
+        let mut members = CallMembers::default();
+        for participant in self.participants(name).await? {
+            if participant.identity.starts_with(PERSON_PREFIX) {
+                members.people.push(participant.identity);
+            } else if participant.identity.starts_with(LISTENER_PREFIX) {
+                members.listeners.push(participant.identity);
+            }
+        }
+        Ok(members)
     }
 
     async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
