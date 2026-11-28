@@ -44,10 +44,18 @@ pub(crate) struct WorkerDeps {
     pub output: Arc<dyn PipelineOutput>,
 }
 
-/// Translates and speaks phrases for one target language, strictly in order.
+/// Translates and speaks phrases for one target language, strictly in order. Dropping it
+/// stops the work at once (a pipeline cancelled because its microphone was replaced must not
+/// keep speaking); finishing the queue is waiting on `handle` after closing `jobs`.
 pub(crate) struct TargetWorker {
     pub jobs: mpsc::Sender<PhraseJob>,
     pub handle: JoinHandle<()>,
+}
+
+impl Drop for TargetWorker {
+    fn drop(&mut self) {
+        self.handle.abort();
+    }
 }
 
 impl TargetWorker {
@@ -55,6 +63,13 @@ impl TargetWorker {
         let (jobs, rx) = mpsc::channel(QUEUE_DEPTH);
         let handle = tokio::spawn(run(deps, target, rx));
         Self { jobs, handle }
+    }
+
+    /// Lets the phrases already queued finish, then ends.
+    pub(crate) async fn finish(mut self) {
+        // Closing the queue (its sender is swapped for one that leads nowhere) ends the loop.
+        drop(std::mem::replace(&mut self.jobs, mpsc::channel(1).0));
+        let _ = (&mut self.handle).await;
     }
 }
 

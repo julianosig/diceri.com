@@ -99,8 +99,7 @@ impl SpeakerPipeline {
             }
         }
         for (_, worker) in state.workers.drain() {
-            drop(worker.jobs);
-            let _ = worker.handle.await;
+            worker.finish().await;
         }
     }
 
