@@ -94,7 +94,8 @@ struct Speakers {
     targets: HashMap<String, watch::Sender<Vec<LanguageCode>>>,
     /// One task per speaker: stopped when their microphone or they leave, or replaced when
     /// they publish another one, so nothing transcribes a microphone that is gone.
-    tasks: HashMap<String, AbortHandle>,
+    /// Keyed by participant, with the microphone publication each task transcribes.
+    tasks: HashMap<String, (String, AbortHandle)>,
     clones: HashMap<String, VoiceId>,
 }
 
@@ -122,7 +123,15 @@ impl Speakers {
         } = &event
             && publication.source() == TrackSource::Microphone
         {
-            self.stop(participant.identity().as_str());
+            // Only that microphone's task: a replacement published first keeps running.
+            let identity = participant.identity();
+            if self
+                .tasks
+                .get(identity.as_str())
+                .is_some_and(|(sid, _)| *sid == publication.sid().as_str())
+            {
+                self.stop(identity.as_str());
+            }
             return;
         }
         let RoomEvent::TrackSubscribed {
@@ -134,6 +143,7 @@ impl Speakers {
             return;
         };
         let snapshot = members(room);
+        let publication_sid = publication.sid().as_str().to_owned();
         let Some(speaker) = speaker(track, &publication, &participant, &snapshot) else {
             return;
         };
@@ -152,20 +162,23 @@ impl Speakers {
             receiver,
         ));
         // A new microphone from the same person replaces the old one's work.
-        if let Some(old) = self.tasks.insert(identity, task.abort_handle()) {
+        if let Some((_, old)) = self
+            .tasks
+            .insert(identity, (publication_sid, task.abort_handle()))
+        {
             old.abort();
         }
     }
 
     /// Stops transcribing `identity`: what they already said still finishes translating.
     fn stop(&mut self, identity: &str) {
-        if let Some(task) = self.tasks.remove(identity) {
+        if let Some((_, task)) = self.tasks.remove(identity) {
             task.abort();
         }
     }
 
     fn stop_all(&mut self) {
-        for (_, task) in self.tasks.drain() {
+        for (_, (_, task)) in self.tasks.drain() {
             task.abort();
         }
     }
