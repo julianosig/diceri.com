@@ -211,8 +211,9 @@ export class CallSession {
 		this.activeFilter = result.active;
 		this.error = problem ?? result.error;
 		await this.#startMeter(outgoingMediaTrack(track));
-		// The caller's latest monitor choice, even one made during the change.
-		await this.#monitor.resume(outgoingMediaTrack(track));
+		// The caller's latest monitor choice, even one made during the change; not awaited, so
+		// a slow round trip never holds up the next microphone change.
+		void this.#monitor.resume(outgoingMediaTrack(track));
 	}
 
 	/** A microphone track with the current settings, muted when the caller is. */
