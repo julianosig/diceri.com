@@ -15,7 +15,7 @@
 		>
 			{beta.spotsLeft}
 		</span>
-		<span class="border-line flex flex-col gap-1 border-s ps-4">
+		<span class="flex flex-col gap-1">
 			<span class="text-lg leading-tight font-semibold text-ink">{t.betaLeft}</span>
 			<span
 				class="text-xs font-semibold tracking-wider text-brand-600 uppercase dark:text-brand-400"
