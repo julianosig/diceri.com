@@ -25,6 +25,8 @@ const REOPEN_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 const STABLE_STREAM: std::time::Duration = std::time::Duration::from_secs(30);
 /// Consecutive streams closing before `STABLE_STREAM` after which the speaker is given up.
 const MAX_QUICK_DROPS: u32 = 5;
+/// How long a stream whose track ended may still send its last words.
+const FINAL_WORDS: std::time::Duration = std::time::Duration::from_secs(3);
 /// Transcript events waiting for the pipeline.
 const TRANSCRIPT_QUEUE: usize = 64;
 /// Phrase numbers set aside per track (far more than one track ever says).
@@ -127,10 +129,19 @@ async fn transcribe(speaker: &Speaker, providers: &Providers, events: &Transcrip
             track_ended.clone(),
         ));
         // Watched together: the stream is over when its transcript ends, and also when the
-        // pump stops because the provider no longer takes audio (a writer that failed).
+        // pump stops because the provider no longer takes audio (a writer that failed). When
+        // the track itself ended, the provider still gets a moment to send its last words.
+        let forwarding = forward(stream.events, events);
+        tokio::pin!(forwarding);
         let pipeline_open = tokio::select! {
-            open = forward(stream.events, events) => open,
-            _ = &mut pump.0 => true,
+            open = &mut forwarding => open,
+            _ = &mut pump.0 => {
+                if track_ended.load(Ordering::Relaxed) {
+                    tokio::time::timeout(FINAL_WORDS, &mut forwarding).await.unwrap_or(true)
+                } else {
+                    true
+                }
+            }
         };
         drop(pump);
         if !pipeline_open {
