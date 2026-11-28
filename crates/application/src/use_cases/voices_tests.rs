@@ -71,18 +71,26 @@ async fn setup_hearing(heard: &'static str) -> (VoiceService, Arc<InMemoryRooms>
 async fn cloned_voice_is_owned_by_the_room() {
     let (service, repository, room_id) = setup().await;
     let voice = service
-        .clone_voice(&room_id, recording(true))
+        .record_for(
+            &room_id,
+            &AccountId::from_parts(9, [9; 10]),
+            recording(true),
+        )
         .await
         .unwrap();
     let room = repository.find_by_code(&room_id).await.unwrap().unwrap();
-    assert!(room.owns_voice(&voice.0));
+    assert!(room.has_voice_of(&AccountId::from_parts(9, [9; 10]), &voice.0));
 }
 
 #[tokio::test]
 async fn clones_are_named_after_their_deployment() {
     let (service, _, room_id) = setup().await;
     let voice = service
-        .clone_voice(&room_id, recording(true))
+        .record_for(
+            &room_id,
+            &AccountId::from_parts(9, [9; 10]),
+            recording(true),
+        )
         .await
         .unwrap();
     assert!(voice.0.starts_with(&clone_name_prefix("test")));
@@ -93,12 +101,16 @@ async fn clones_are_named_after_their_deployment() {
 async fn rejects_samples_that_are_too_small_or_too_large() {
     let (service, _, room_id) = setup().await;
     assert!(matches!(
-        service.clone_voice(&room_id, sample(100)).await,
+        service
+            .record_for(&room_id, &AccountId::from_parts(9, [9; 10]), sample(100))
+            .await,
         Err(VoiceError::InvalidSample)
     ));
     let huge = sample(MAX_SAMPLE_BYTES + 1);
     assert!(matches!(
-        service.clone_voice(&room_id, huge).await,
+        service
+            .record_for(&room_id, &AccountId::from_parts(9, [9; 10]), huge)
+            .await,
         Err(VoiceError::InvalidSample)
     ));
 }
@@ -108,7 +120,13 @@ async fn unknown_room_is_not_found() {
     let (service, _, _) = setup().await;
     let unknown = RoomCode::from_random_bytes([200; 16]);
     assert!(matches!(
-        service.clone_voice(&unknown, recording(true)).await,
+        service
+            .record_for(
+                &unknown,
+                &AccountId::from_parts(9, [9; 10]),
+                recording(true)
+            )
+            .await,
         Err(VoiceError::NotFound)
     ));
 }
@@ -117,13 +135,25 @@ async fn unknown_room_is_not_found() {
 async fn silence_or_noise_is_never_cloned() {
     let (service, _, room_id) = setup().await;
     assert!(matches!(
-        service.clone_voice(&room_id, recording(false)).await,
+        service
+            .record_for(
+                &room_id,
+                &AccountId::from_parts(9, [9; 10]),
+                recording(false)
+            )
+            .await,
         Err(VoiceError::NoSpeech)
     ));
     // Loud, but the recognizer hears no words (music, noise, breathing).
     let (service, _, room_id) = setup_hearing("").await;
     assert!(matches!(
-        service.clone_voice(&room_id, recording(true)).await,
+        service
+            .record_for(
+                &room_id,
+                &AccountId::from_parts(9, [9; 10]),
+                recording(true)
+            )
+            .await,
         Err(VoiceError::NoSpeech)
     ));
 }
@@ -132,7 +162,9 @@ async fn silence_or_noise_is_never_cloned() {
 async fn only_16khz_mono_wav_is_accepted() {
     let (service, _, room_id) = setup().await;
     assert!(matches!(
-        service.clone_voice(&room_id, sample(20_000)).await,
+        service
+            .record_for(&room_id, &AccountId::from_parts(9, [9; 10]), sample(20_000))
+            .await,
         Err(VoiceError::InvalidSample)
     ));
 }
@@ -211,7 +243,7 @@ async fn a_recording_is_kept_and_cloned_again_for_the_next_call() {
     assert!(service.has_saved(&ana).await.unwrap());
     let again = service.clone_saved(&room_id, &ana).await.unwrap();
     let room = rooms.find_by_code(&room_id).await.unwrap().unwrap();
-    assert!(room.owns_voice(&again.0));
+    assert!(room.has_voice_of(&ana, &again.0));
 
     assert!(service.delete_saved(&ana).await.unwrap());
     assert!(!service.has_saved(&ana).await.unwrap());

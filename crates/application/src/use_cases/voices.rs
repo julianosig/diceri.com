@@ -122,11 +122,11 @@ impl VoiceService {
         let room = self.checked_room(code, &sample).await?;
         let Some((samples, clock)) = &self.samples else {
             let name = self.call_name(&room);
-            return self.create_in(room, &name, sample).await;
+            return self.create_in(room, account, &name, sample).await;
         };
         let previous = samples.kept_clone(account).await?;
         let voice = self
-            .create_in(room, &self.account_name(account), sample.clone())
+            .create_in(room, account, &self.account_name(account), sample.clone())
             .await?;
         if let Err(error) = samples.save(account, &sample, clock.now_ms()).await {
             warn_not_kept(&error, account);
@@ -157,8 +157,8 @@ impl VoiceService {
             .filter(|kept| self.is_ours(kept))
         {
             // Rejoining (a reload) uses the same clone: register it once per room.
-            if !room.owns_voice(&kept.voice.0) {
-                room.register_voice(kept.voice.0.clone())?;
+            if !room.has_voice_of(account, &kept.voice.0) {
+                room.register_voice(*account, kept.voice.0.clone())?;
                 self.rooms.update(room).await?;
             }
             return Ok(kept.voice);
@@ -171,7 +171,7 @@ impl VoiceService {
             .await?
             .ok_or(VoiceError::NoSavedVoice)?;
         let voice = self
-            .create_in(room, &self.account_name(account), sample)
+            .create_in(room, account, &self.account_name(account), sample)
             .await?;
         self.keep(account, &voice).await;
         Ok(voice)
@@ -197,17 +197,6 @@ impl VoiceService {
             self.delete_at_provider(&kept.voice).await;
         }
         Ok(deleted)
-    }
-
-    /// Clones `sample` for this call only (no account): it is deleted when the call ends.
-    pub async fn clone_voice(
-        &self,
-        code: &RoomCode,
-        sample: VoiceSample,
-    ) -> Result<VoiceId, VoiceError> {
-        let room = self.checked_room(code, &sample).await?;
-        let name = self.call_name(&room);
-        self.create_in(room, &name, sample).await
     }
 
     /// The room, once `sample` is known to be clear speech and the room has room for a voice.
@@ -245,15 +234,16 @@ impl VoiceService {
         Ok(room)
     }
 
-    /// Clones `sample` under `name` and registers the voice in `room`.
+    /// Clones `sample` under `name` and registers the voice in `room` as `account`'s.
     async fn create_in(
         &self,
         mut room: Room,
+        account: &AccountId,
         name: &str,
         sample: VoiceSample,
     ) -> Result<VoiceId, VoiceError> {
         let voice = self.cloner.create(name, sample).await?;
-        room.register_voice(voice.0.clone())?;
+        room.register_voice(*account, voice.0.clone())?;
         self.rooms.update(room).await?;
         Ok(voice)
     }

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use diceri_domain::{
-    AccessKey, JoinRequest, ParticipantProfile, RequestId, RequestStatus, Room, RoomCode, RoomId,
-    RoomRuleError,
+    AccessKey, AccountId, JoinRequest, ParticipantProfile, RequestId, RequestStatus, Room,
+    RoomCode, RoomId, RoomRuleError,
 };
 
 use crate::ports::{
@@ -123,6 +123,7 @@ impl AdmissionService {
         &self,
         code: &RoomCode,
         host_key: &AccessKey,
+        account: &AccountId,
         profile: &ParticipantProfile,
     ) -> Result<JoinTicket, AdmissionError> {
         let room = self.load(code).await?;
@@ -130,7 +131,7 @@ impl AdmissionService {
             return Err(AdmissionError::Forbidden);
         }
         room.ensure_open()?;
-        ensure_voice_belongs(&room, profile)?;
+        ensure_voice_belongs(&room, account, profile)?;
         let ticket = self.ticket(&room.id, Some(profile), MediaRole::Speaker)?;
         self.start_translation(&room.id).await;
         Ok(ticket)
@@ -139,11 +140,12 @@ impl AdmissionService {
     pub async fn knock(
         &self,
         code: &RoomCode,
+        account: &AccountId,
         profile: ParticipantProfile,
     ) -> Result<Knock, AdmissionError> {
         let mut room = self.load(code).await?;
         room.ensure_open()?;
-        ensure_voice_belongs(&room, &profile)?;
+        ensure_voice_belongs(&room, account, &profile)?;
         let request_id = self.ids.request_id();
         let key = AccessKey::from_random_bytes(self.random.random_128());
         room.knock(JoinRequest::new(request_id, profile, key.clone()))?;
@@ -264,10 +266,14 @@ impl AdmissionService {
     }
 }
 
-/// A participant may only use a voice clone recorded in this room.
-fn ensure_voice_belongs(room: &Room, profile: &ParticipantProfile) -> Result<(), AdmissionError> {
+/// A participant may only speak in a voice clone they themselves recorded for this room.
+fn ensure_voice_belongs(
+    room: &Room,
+    account: &AccountId,
+    profile: &ParticipantProfile,
+) -> Result<(), AdmissionError> {
     match &profile.voice_id {
-        Some(voice) if !room.owns_voice(voice) => Err(AdmissionError::Forbidden),
+        Some(voice) if !room.has_voice_of(account, voice) => Err(AdmissionError::Forbidden),
         _ => Ok(()),
     }
 }

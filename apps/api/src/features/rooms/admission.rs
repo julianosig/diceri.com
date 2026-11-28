@@ -28,6 +28,7 @@ fn require_voice(state: &AppState, body: &ProfileRequest) -> Result<(), ApiError
 
 pub(crate) async fn host_session(
     State(state): State<AppState>,
+    CurrentAccount(account): CurrentAccount,
     Path(code): Path<String>,
     CallerKey(key): CallerKey,
     Json(body): Json<ProfileRequest>,
@@ -41,7 +42,7 @@ pub(crate) async fn host_session(
         .await?;
     let ticket = state
         .admission
-        .join_as_host(&code, &key, &body.profile()?)
+        .join_as_host(&code, &key, &account.id, &body.profile()?)
         .await?;
     tracing::info!(identity = %ticket.identity, "host joined");
     Ok(Json(ticket.into()))
@@ -50,14 +51,14 @@ pub(crate) async fn host_session(
 /// Asks to join (or, in an open room, joins): only signed-in accounts may.
 pub(crate) async fn knock(
     State(state): State<AppState>,
-    _signed_in: CurrentAccount,
+    CurrentAccount(account): CurrentAccount,
     Path(code): Path<String>,
     Json(body): Json<ProfileRequest>,
 ) -> Result<(StatusCode, Json<KnockResponse>), ApiError> {
     require_voice(&state, &body)?;
     let knock = state
         .admission
-        .knock(&parse_room_code(&code)?, body.profile()?)
+        .knock(&parse_room_code(&code)?, &account.id, body.profile()?)
         .await?;
     tracing::info!(request_id = %knock.request_id, "guest asked to join");
     Ok((StatusCode::CREATED, Json(knock.into())))

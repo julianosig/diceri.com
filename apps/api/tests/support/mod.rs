@@ -274,14 +274,36 @@ pub(crate) async fn create_room(app: &Router) -> (String, String) {
 /// Signs up a fresh account (`host<n>`), opens its room with a `POST /rooms` body and
 /// returns `(room_code, host_key)`; lobby paths take the code.
 pub(crate) async fn create_room_with(app: &Router, body: Value) -> (String, String) {
+    let host = open_room(app, body).await;
+    (host.code, host.key)
+}
+
+/// A room's owner: its code, host key and signed-in session.
+pub(crate) struct Host {
+    pub code: String,
+    pub key: String,
+    pub session: String,
+}
+
+/// Signs up a fresh account (`host<n>`) and opens its room with a `POST /rooms` body.
+pub(crate) async fn open_room(app: &Router, body: Value) -> Host {
     static ACCOUNTS: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
     let n = ACCOUNTS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-    let cookie = sign_up(app, &format!("host{n}")).await;
-    let headers = headers(None, Some(&cookie));
+    let session = sign_up(app, &format!("host{n}")).await;
+    let headers = headers(None, Some(&session));
     let (status, _, body) = exchange(app, "POST", "/api/v1/rooms", &headers, Some(body)).await;
     assert_eq!(status, StatusCode::CREATED);
-    (
-        body["code"].as_str().unwrap().to_owned(),
-        body["hostKey"].as_str().unwrap().to_owned(),
-    )
+    Host {
+        code: body["code"].as_str().unwrap().to_owned(),
+        key: body["hostKey"].as_str().unwrap().to_owned(),
+        session,
+    }
+}
+
+/// The owner joins their call (`POST /rooms/{code}/host-session`) with `profile`.
+pub(crate) async fn host_join(app: &Router, host: &Host, profile: Value) -> (StatusCode, Value) {
+    let uri = format!("/api/v1/rooms/{}/host-session", host.code);
+    let headers = headers(Some(&host.key), Some(&host.session));
+    let (status, _, body) = exchange(app, "POST", &uri, &headers, Some(profile)).await;
+    (status, body)
 }

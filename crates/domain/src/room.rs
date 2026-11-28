@@ -1,6 +1,6 @@
 use crate::{
-    AccessKey, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomCode, RoomId, RoomSettings,
-    Username,
+    AccessKey, AccountId, EntryPolicy, JoinRequest, RequestId, RequestStatus, RoomCode, RoomId,
+    RoomSettings, Username,
 };
 
 /// Business rule violations on a room.
@@ -31,8 +31,8 @@ pub struct Room {
     pub owner: Username,
     host_key: AccessKey,
     requests: Vec<JoinRequest>,
-    /// Voice clones recorded for this room (provider ids), deleted when people leave.
-    voices: Vec<String>,
+    /// Voice clones used in this room (provider ids), each with the account that recorded it.
+    voices: Vec<(AccountId, String)>,
     /// Set when the host ends the call for everyone; nobody can join afterwards.
     ended: bool,
     /// Minutes someone has been in this call; counted against the owner's plan.
@@ -136,18 +136,25 @@ impl Room {
         self.voices.len() < Self::MAX_VOICES
     }
 
-    pub fn register_voice(&mut self, voice_id: String) -> Result<(), RoomRuleError> {
+    pub fn register_voice(
+        &mut self,
+        account: AccountId,
+        voice_id: String,
+    ) -> Result<(), RoomRuleError> {
         if !self.has_voice_capacity() {
             return Err(RoomRuleError::TooManyVoices);
         }
-        self.voices.push(voice_id);
+        self.voices.push((account, voice_id));
         Ok(())
     }
 
-    /// Only voices recorded in this room may be attached to its participants.
+    /// A participant may only speak in a voice they recorded themselves: another person's
+    /// clone id (visible to everyone in the call) is never accepted.
     #[must_use]
-    pub fn owns_voice(&self, voice_id: &str) -> bool {
-        self.voices.iter().any(|voice| voice == voice_id)
+    pub fn has_voice_of(&self, account: &AccountId, voice_id: &str) -> bool {
+        self.voices
+            .iter()
+            .any(|(owner, voice)| owner == account && voice == voice_id)
     }
 
     pub fn decide(&mut self, id: &RequestId, admit: bool) -> Result<(), RoomRuleError> {
@@ -245,16 +252,19 @@ mod tests {
     }
 
     #[test]
-    fn voices_are_owned_by_the_room_and_capped() {
+    fn voices_belong_to_whoever_recorded_them_and_are_capped() {
         let mut room = room();
-        room.register_voice("v1".to_owned()).unwrap();
-        assert!(room.owns_voice("v1"));
-        assert!(!room.owns_voice("someone-elses"));
+        let ana = AccountId::from_parts(1, [1; 10]);
+        let bob = AccountId::from_parts(2, [2; 10]);
+        room.register_voice(ana, "v1".to_owned()).unwrap();
+        assert!(room.has_voice_of(&ana, "v1"));
+        assert!(!room.has_voice_of(&bob, "v1"));
+        assert!(!room.has_voice_of(&ana, "someone-elses"));
         for n in 1..Room::MAX_VOICES {
-            room.register_voice(format!("v{}", n + 1)).unwrap();
+            room.register_voice(ana, format!("v{}", n + 1)).unwrap();
         }
         assert_eq!(
-            room.register_voice("extra".to_owned()),
+            room.register_voice(bob, "extra".to_owned()),
             Err(RoomRuleError::TooManyVoices)
         );
     }

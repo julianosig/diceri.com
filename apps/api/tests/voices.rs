@@ -9,7 +9,7 @@ mod support;
 
 use axum::http::StatusCode;
 use serde_json::json;
-use support::{app, app_with_voices, create_room, post_bytes, send, wav};
+use support::{app, app_with_voices, create_room, post_bytes, post_bytes_as, send, wav};
 
 const SAMPLE: usize = 20_000;
 /// A recording long and loud enough to be speech.
@@ -20,15 +20,15 @@ fn speech() -> Vec<u8> {
 #[tokio::test]
 async fn a_recorded_voice_can_be_used_to_join_the_same_room() {
     let app = app_with_voices();
-    let (id, host_key) = create_room(&app).await;
-    let uri = format!("/api/v1/rooms/{id}/voices");
-    let (status, body) = post_bytes(&app, &uri, Some("audio/wav"), speech()).await;
+    let host = support::open_room(&app, json!({})).await;
+    let uri = format!("/api/v1/rooms/{}/voices", host.code);
+    let (status, body) =
+        post_bytes_as(&app, &host.session, &uri, Some("audio/wav"), speech()).await;
     assert_eq!(status, StatusCode::CREATED);
     let voice = body["voiceId"].as_str().unwrap();
 
     let profile = json!({ "name": "Ana", "outputLanguage": "en", "voiceId": voice });
-    let join = format!("/api/v1/rooms/{id}/host-session");
-    let (status, body) = send(&app, "POST", &join, Some(&host_key), Some(profile)).await;
+    let (status, body) = support::host_join(&app, &host, profile).await;
     assert_eq!(status, StatusCode::OK);
     assert!(
         body["token"]
@@ -49,10 +49,21 @@ async fn a_voice_recorded_in_another_room_is_forbidden() {
         speech(),
     )
     .await;
-    let (id, host_key) = create_room(&app).await;
+    let host = support::open_room(&app, json!({})).await;
     let profile = json!({ "name": "Eve", "outputLanguage": "en", "voiceId": body["voiceId"] });
-    let join = format!("/api/v1/rooms/{id}/host-session");
-    let (status, _) = send(&app, "POST", &join, Some(&host_key), Some(profile)).await;
+    let (status, _) = support::host_join(&app, &host, profile).await;
+    assert_eq!(status, StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn someone_elses_voice_in_the_same_room_is_forbidden() {
+    let app = app_with_voices();
+    let host = support::open_room(&app, json!({})).await;
+    // A guest records in this room; the host tries to speak in that voice.
+    let uri = format!("/api/v1/rooms/{}/voices", host.code);
+    let (_, body) = post_bytes(&app, &uri, Some("audio/wav"), speech()).await;
+    let profile = json!({ "name": "Eve", "outputLanguage": "en", "voiceId": body["voiceId"] });
+    let (status, _) = support::host_join(&app, &host, profile).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
@@ -94,15 +105,15 @@ async fn joining_needs_a_recorded_voice_when_required() {
     let app = support::app_with_voices_required(true);
     let (_, capabilities) = send(&app, "GET", "/api/v1/capabilities", None, None).await;
     assert_eq!(capabilities["voiceRequired"], true);
-    let (id, host_key) = create_room(&app).await;
-    let uri = format!("/api/v1/rooms/{id}/host-session");
+    let host = support::open_room(&app, json!({})).await;
     let without = json!({ "name": "Ana", "outputLanguage": "pt-BR" });
-    let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(without)).await;
+    let (status, _) = support::host_join(&app, &host, without).await;
     assert_eq!(status, StatusCode::BAD_REQUEST);
-    let recorded = format!("/api/v1/rooms/{id}/voices");
-    let (_, body) = post_bytes(&app, &recorded, Some("audio/wav"), speech()).await;
+    let recorded = format!("/api/v1/rooms/{}/voices", host.code);
+    let (_, body) =
+        post_bytes_as(&app, &host.session, &recorded, Some("audio/wav"), speech()).await;
     let with = json!({ "name": "Ana", "outputLanguage": "pt-BR", "voiceId": body["voiceId"] });
-    let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(with)).await;
+    let (status, _) = support::host_join(&app, &host, with).await;
     assert_eq!(status, StatusCode::OK);
 }
 

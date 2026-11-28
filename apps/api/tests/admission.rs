@@ -9,7 +9,7 @@ mod support;
 
 use axum::http::StatusCode;
 use serde_json::json;
-use support::{app, create_room, exchange, headers, send, sign_up};
+use support::{app, create_room, exchange, headers, host_join, open_room, send, sign_up};
 
 /// A freshly signed-up guest asks to join room `id` (only accounts may).
 async fn ask_to_join(
@@ -42,17 +42,18 @@ fn name(value: &str) -> serde_json::Value {
 #[tokio::test]
 async fn host_joins_with_host_key_only() {
     let app = app(true);
-    let (id, host_key) = create_room(&app).await;
-    let uri = format!("/api/v1/rooms/{id}/host-session");
+    let host = open_room(&app, json!({})).await;
+    let uri = format!("/api/v1/rooms/{}/host-session", host.code);
 
-    let (status, body) = send(&app, "POST", &uri, Some(&host_key), Some(name("Ana"))).await;
+    let (status, body) = host_join(&app, &host, name("Ana")).await;
     assert_eq!(status, StatusCode::OK);
     assert!(body["token"].as_str().unwrap().contains("|Ana|Speaker|"));
 
     let (status, _) = send(&app, "POST", &uri, None, Some(name("Ana"))).await;
     assert_eq!(status, StatusCode::UNAUTHORIZED);
     let wrong = "aaaaaaaaaaaaaaaaaaaaaa";
-    let (status, _) = send(&app, "POST", &uri, Some(wrong), Some(name("Ana"))).await;
+    let with_wrong_key = headers(Some(wrong), Some(&host.session));
+    let (status, _, _) = exchange(&app, "POST", &uri, &with_wrong_key, Some(name("Ana"))).await;
     assert_eq!(status, StatusCode::FORBIDDEN);
 }
 
@@ -195,16 +196,16 @@ async fn monitor_session_requires_membership() {
 #[tokio::test]
 async fn joining_without_media_server_is_unavailable() {
     let app = app(false);
-    let (id, host_key) = create_room(&app).await;
-    let uri = format!("/api/v1/rooms/{id}/host-session");
-    let (status, _) = send(&app, "POST", &uri, Some(&host_key), Some(name("Ana"))).await;
+    let host = open_room(&app, json!({})).await;
+    let (status, _) = host_join(&app, &host, name("Ana")).await;
     assert_eq!(status, StatusCode::SERVICE_UNAVAILABLE);
 }
 
 #[tokio::test]
 async fn host_ends_the_meeting_and_nobody_can_join_after() {
     let app = app(true);
-    let (id, host_key) = create_room(&app).await;
+    let host = open_room(&app, json!({})).await;
+    let (id, host_key) = (host.code.clone(), host.key.clone());
     let end = format!("/api/v1/rooms/{id}/end");
 
     let (status, _) = send(&app, "POST", &end, None, None).await;
@@ -212,8 +213,7 @@ async fn host_ends_the_meeting_and_nobody_can_join_after() {
     let (status, _) = send(&app, "POST", &end, Some(&host_key), None).await;
     assert_eq!(status, StatusCode::NO_CONTENT);
 
-    let join = format!("/api/v1/rooms/{id}/host-session");
-    let (status, _) = send(&app, "POST", &join, Some(&host_key), Some(name("Ana"))).await;
+    let (status, _) = host_join(&app, &host, name("Ana")).await;
     assert_eq!(status, StatusCode::GONE);
     let (status, _) = ask_to_join(&app, &id, Some(name("Eve"))).await;
     assert_eq!(status, StatusCode::GONE);
