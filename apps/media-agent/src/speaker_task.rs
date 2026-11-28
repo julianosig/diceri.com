@@ -110,13 +110,16 @@ async fn transcribe(speaker: &Speaker, providers: &Providers, events: &Transcrip
     let mut quick_drops = 0;
     while let Some(stream) = open_speech_to_text(providers, speaker).await {
         let started = tokio::time::Instant::now();
-        // Stopped with this stream, a reconnect, or the whole speaker (it is dropped then).
-        let _pump = AbortOnDrop(pump_audio(
+        // Stopped as soon as this stream closes (or the whole speaker does): no audio is
+        // sent to a failed stream while reconnecting.
+        let pump = AbortOnDrop(pump_audio(
             &speaker.track,
             stream.audio,
             track_ended.clone(),
         ));
-        if !forward(stream.events, events).await {
+        let pipeline_open = forward(stream.events, events).await;
+        drop(pump);
+        if !pipeline_open {
             return;
         }
         // The stream closed: what it heard is one phrase, never spliced to the next stream's.
