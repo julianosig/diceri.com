@@ -1,14 +1,12 @@
 import {
 	createLocalAudioTrack,
 	DisconnectReason,
-	type ConnectionQuality,
 	LocalAudioTrack,
 	RemoteAudioTrack,
 	Room,
 	RoomEvent,
 	Track,
 	VideoPresets,
-	type VideoTrack,
 	type RemoteParticipant,
 	type RemoteTrack,
 	type RemoteTrackPublication
@@ -24,7 +22,7 @@ import {
 	type AudioSettings,
 	type EnhancedFilter
 } from './audio-settings.ts';
-import { cameraOf } from './camera-track.ts';
+import { participantsOf, type Participant } from './participant-view.ts';
 import { LiveLevel } from './level-meter.ts';
 import { CallMonitor, type MonitorMode } from './call-monitor.svelte.ts';
 import { applyEnhancedFilter, outgoingMediaTrack } from './noise-filter.ts';
@@ -32,7 +30,6 @@ import {
 	AGENT_IDENTITY,
 	CAPTIONS_TOPIC,
 	CaptionFeed,
-	OUTPUT_LANGUAGE_ATTRIBUTE,
 	originalVolume,
 	parseCaption,
 	parseTranslatedTrack,
@@ -46,18 +43,7 @@ export type CallStatus = 'idle' | 'connecting' | 'connected' | 'error';
 /** Hear yourself: off, local mic, through the server, or translated by the agent. */
 export type { MonitorMode } from './call-monitor.svelte.ts';
 
-export interface Participant {
-	identity: string;
-	name: string;
-	speaking: boolean;
-	muted: boolean;
-	quality: ConnectionQuality;
-	isLocal: boolean;
-	/** Language the participant hears everyone in (BCP 47). */
-	outputLanguage: string | undefined;
-	/** Their camera, while it is on (and, for others, received). */
-	video: VideoTrack | undefined;
-}
+export type { Participant } from './participant-view.ts';
 
 export interface CallSessionOptions {
 	credentials: MediaCredentials;
@@ -329,24 +315,10 @@ export class CallSession {
 	}
 
 	#refreshParticipants(): void {
-		const local = this.#room.localParticipant;
-		const humans = [...this.#room.remoteParticipants.values()].filter(
-			(participant) => participant.identity !== AGENT_IDENTITY
-		);
-		const all = [local, ...humans];
-		this.participants = all.map((participant) => ({
-			identity: participant.identity,
-			name: participant.name || 'Guest',
-			speaking: participant.isSpeaking,
-			muted: participant === local ? this.muted : !participant.isMicrophoneEnabled,
-			quality: participant.connectionQuality,
-			isLocal: participant === local,
-			outputLanguage:
-				participant === local
-					? this.options.outputLanguage
-					: participant.attributes[OUTPUT_LANGUAGE_ATTRIBUTE],
-			video: cameraOf(participant)
-		}));
+		this.participants = participantsOf(this.#room, {
+			muted: this.muted,
+			outputLanguage: this.options.outputLanguage
+		});
 	}
 
 	#bindRoomEvents(): void {
