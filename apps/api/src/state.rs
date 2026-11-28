@@ -114,14 +114,14 @@ impl AppState {
                 &livekit.url,
                 livekit.api_key.clone(),
                 livekit.api_secret.clone(),
-                reqwest::Client::new(),
+                http_client(MEDIA_SERVER_TIMEOUT),
             ));
             state.admission = state.admission.with_room_closer(room_closer.clone());
             let presence: Arc<dyn MediaPresence> = Arc::new(LiveKitPresence::new(
                 &livekit.url,
                 livekit.api_key.clone(),
                 livekit.api_secret.clone(),
-                reqwest::Client::new(),
+                http_client(MEDIA_SERVER_TIMEOUT),
             ));
             state.presence = state.presence.with_source(presence.clone());
             state.admission = state
@@ -134,7 +134,7 @@ impl AppState {
                 Arc::new(HttpTranslationDispatcher::new(
                     agent.url.clone(),
                     agent.key.clone(),
-                    reqwest::Client::new(),
+                    http_client(MEDIA_SERVER_TIMEOUT),
                 ));
             state.admission = state.admission.with_translation(dispatcher);
         }
@@ -204,7 +204,8 @@ fn keep_recordings(
 
 /// The configured provider's voice cloner, when its key is set.
 fn voice_cloner(config: &Config) -> Option<Arc<dyn VoiceCloner>> {
-    let http = reqwest::Client::new();
+    // A clone takes a few seconds; one that never answers must not hold an account's turn.
+    let http = http_client(std::time::Duration::from_secs(30));
     match config.tts_provider {
         TtsProvider::ElevenLabs => config
             .elevenlabs_api_key
@@ -215,4 +216,18 @@ fn voice_cloner(config: &Config) -> Option<Arc<dyn VoiceCloner>> {
             .clone()
             .map(|key| -> Arc<dyn VoiceCloner> { Arc::new(InworldVoiceCloner::new(key, http)) }),
     }
+}
+
+/// How long a request to the media server or the translation agent may take.
+const MEDIA_SERVER_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(10);
+
+/// An HTTP client whose requests give up after `timeout`.
+fn http_client(timeout: std::time::Duration) -> reqwest::Client {
+    reqwest::Client::builder()
+        .timeout(timeout)
+        .build()
+        .unwrap_or_else(|error| {
+            tracing::warn!(%error, "HTTP client without a timeout");
+            reqwest::Client::new()
+        })
 }
