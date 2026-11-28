@@ -213,7 +213,7 @@ impl AccountRepository for SqliteAccountRepository {
     }
 
     async fn count(&self) -> Result<u64, AccountRepositoryError> {
-        // A full count over the primary key: a few thousand rows during the private beta.
+        // A full count over the primary key: a few thousand rows during the public beta.
         let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM accounts")
             .fetch_one(&self.pool)
             .await

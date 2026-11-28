@@ -138,7 +138,7 @@ impl From<AccountError> for ApiError {
             AccountError::Taken => Self::Conflict(error.to_string()),
             AccountError::BetaFull => Self::Limit {
                 limit: "beta",
-                detail: "the private beta has no free spots right now",
+                detail: "the public beta has no free spots right now",
             },
             AccountError::NetworkUsed => Self::Limit {
                 limit: "network",

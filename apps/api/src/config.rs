@@ -71,7 +71,7 @@ pub struct Config {
     pub network_key: Option<SecretString>,
     /// Accounts one network may sign up when `network_key` is set.
     pub accounts_per_network: u32,
-    /// Private beta: at most this many accounts (`DICERI_MAX_ACCOUNTS`); `None`: open.
+    /// Public beta: at most this many accounts (`DICERI_MAX_ACCOUNTS`); `None`: open.
     pub max_accounts: Option<u64>,
     /// Recording your own voice for translations (`DICERI_VOICE_CLONING`).
     pub voice_cloning: bool,

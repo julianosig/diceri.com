@@ -21,7 +21,7 @@ pub(crate) struct CapabilitiesResponse {
     voice_required: bool,
     /// Every plan and its limits, free first (everyone's default).
     plans: Vec<PlanResponse>,
-    /// Private beta spots; absent when sign-up is open.
+    /// Public beta spots; absent when sign-up is open.
     #[serde(skip_serializing_if = "Option::is_none")]
     beta: Option<BetaResponse>,
 }

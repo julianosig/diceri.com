@@ -14,8 +14,8 @@ pub const SESSION_TTL_MS: u64 = 30 * 24 * 60 * 60 * 1000;
 pub enum AccountError {
     #[error("this username is taken")]
     Taken,
-    /// The private beta has all the accounts it takes.
-    #[error("the private beta is full")]
+    /// The public beta has all the accounts it takes.
+    #[error("the public beta is full")]
     BetaFull,
     #[error("an account was already signed up from this network")]
     NetworkUsed,
@@ -40,7 +40,7 @@ impl From<AccountRepositoryError> for AccountError {
     }
 }
 
-/// The private beta: how many accounts it takes, and how many spots are still free.
+/// The public beta: how many accounts it takes, and how many spots are still free.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct BetaSpots {
     pub total: u64,
@@ -74,7 +74,7 @@ pub struct AccountService {
     random: Arc<dyn RandomSource>,
     ids: Arc<dyn IdGenerator>,
     clock: Arc<dyn Clock>,
-    /// The private beta's account cap; `None`: open sign-up.
+    /// The public beta's account cap; `None`: open sign-up.
     max_accounts: Option<u64>,
 }
 
@@ -105,7 +105,7 @@ impl AccountService {
         }
     }
 
-    /// Caps how many accounts can be created (a private beta); sign-in is unaffected.
+    /// Caps how many accounts can be created (a public beta); sign-in is unaffected.
     #[must_use]
     pub fn with_max_accounts(mut self, max_accounts: Option<u64>) -> Self {
         self.max_accounts = max_accounts;
@@ -146,7 +146,7 @@ impl AccountService {
 
     /// Whether `username` is still free (usernames are public room addresses, so this
     /// reveals nothing a visit to `/@username` would not).
-    /// The private beta's size and its free spots, or `None` when sign-up is open.
+    /// The public beta's size and its free spots, or `None` when sign-up is open.
     pub async fn beta_spots(&self) -> Result<Option<BetaSpots>, AccountError> {
         let Some(total) = self.max_accounts else {
             return Ok(None);

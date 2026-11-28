@@ -48,7 +48,7 @@ in responses.
 | `DICERI_DEPLOYMENT` | `dev` | names voice clones `diceri-<deployment>-…`; API and agent must match |
 | `DICERI_DATABASE_URL` | `sqlite://diceri.db` | SQLite file for accounts (the only durable data) |
 | `DICERI_NETWORK_KEY` | unset | secret for hashing sign-up networks (IPv4 address or IPv6 /64) to limit room usernames per network (unset: not limited; needs `DICERI_CLIENT_IP_HEADER` behind a proxy) |
-| `DICERI_MAX_ACCOUNTS` | unset | private beta: at most this many accounts; sign-up answers 429 `limit: beta` when full, sign-in still works (unset: open) |
+| `DICERI_MAX_ACCOUNTS` | unset | public beta: at most this many accounts; sign-up answers 429 `limit: beta` when full, sign-in still works (unset: open) |
 | `DICERI_ACCOUNTS_PER_NETWORK` | `5` | room usernames one network may claim when `DICERI_NETWORK_KEY` is set |
 | `DICERI_SECURE_COOKIES` | `false` | `true` marks the session cookie `Secure` (HTTPS); on in production |
 | `DICERI_LIVEKIT_URL` | unset | LiveKit project URL (`wss://...`); unset disables joining (503) |
