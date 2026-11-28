@@ -180,7 +180,8 @@ export const pt: Messages = {
 		filterFailed: 'O filtro de ruído avançado falhou.',
 		micUnpublished: 'Não foi possível transmitir o microfone.',
 		micChangeFailed: 'Não foi possível usar esse microfone; você continua no anterior.',
-		micLost: 'Seu microfone parou de funcionar. Escolha um nas configurações de áudio.'
+		micLost: 'Seu microfone parou de funcionar. Escolha um nas configurações de áudio.',
+		monitorFailed: 'Não foi possível ouvir sua voz pelo servidor. Tente de novo em instantes.'
 	},
 	audio: {
 		microphone: 'Microfone',

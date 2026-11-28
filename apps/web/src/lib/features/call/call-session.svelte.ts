@@ -118,7 +118,8 @@ export class CallSession {
 		this.#monitor = new CallMonitor({
 			identity: options.credentials.identity,
 			credentials: options.monitorCredentials,
-			isClosing: () => this.#closing
+			isClosing: () => this.#closing,
+			onFailed: () => (this.error = 'monitorFailed' satisfies CallProblem)
 		});
 		this.captions = new CaptionFeed(
 			() => this.#listener(),

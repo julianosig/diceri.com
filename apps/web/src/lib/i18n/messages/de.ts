@@ -185,7 +185,9 @@ export const de: Messages = {
 		micUnpublished: 'Das Mikrofon konnte nicht übertragen werden.',
 		micChangeFailed:
 			'Dieses Mikrofon konnte nicht verwendet werden; du nutzt weiter das vorherige.',
-		micLost: 'Dein Mikrofon funktioniert nicht mehr. Wähle eines in den Audioeinstellungen.'
+		micLost: 'Dein Mikrofon funktioniert nicht mehr. Wähle eines in den Audioeinstellungen.',
+		monitorFailed:
+			'Dich über den Server zu hören, hat nicht geklappt. Versuch es gleich noch einmal.'
 	},
 	audio: {
 		microphone: 'Mikrofon',

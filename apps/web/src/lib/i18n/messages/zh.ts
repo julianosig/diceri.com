@@ -176,7 +176,8 @@ export const zh: Messages = {
 		filterFailed: '增强降噪出错。',
 		micUnpublished: '无法发布麦克风。',
 		micChangeFailed: '无法使用该麦克风，仍在使用之前的麦克风。',
-		micLost: '你的麦克风已停止工作。请在音频设置中选择一个麦克风。'
+		micLost: '你的麦克风已停止工作。请在音频设置中选择一个麦克风。',
+		monitorFailed: '无法通过服务器听到你自己的声音。请稍后再试。'
 	},
 	audio: {
 		microphone: '麦克风',

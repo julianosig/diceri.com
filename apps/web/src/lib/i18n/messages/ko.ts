@@ -178,7 +178,8 @@ export const ko: Messages = {
 		filterFailed: '고급 소음 필터에 문제가 발생했습니다.',
 		micUnpublished: '마이크를 송출할 수 없습니다.',
 		micChangeFailed: '그 마이크를 사용할 수 없어요. 이전 마이크를 계속 사용해요.',
-		micLost: '마이크가 작동하지 않아요. 오디오 설정에서 마이크를 선택해 주세요.'
+		micLost: '마이크가 작동하지 않아요. 오디오 설정에서 마이크를 선택해 주세요.',
+		monitorFailed: '서버를 통해 내 목소리를 들을 수 없었어요. 잠시 후 다시 시도해 주세요.'
 	},
 	audio: {
 		microphone: '마이크',

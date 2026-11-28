@@ -178,7 +178,8 @@ export const ja: Messages = {
 		filterFailed: '高度なノイズフィルタでエラーが発生しました。',
 		micUnpublished: 'マイクの音声を送信できませんでした。',
 		micChangeFailed: 'そのマイクは使えませんでした。前のマイクのままです。',
-		micLost: 'マイクが動作しなくなりました。音声設定でマイクを選んでください。'
+		micLost: 'マイクが動作しなくなりました。音声設定でマイクを選んでください。',
+		monitorFailed: 'サーバー経由で自分の声を聞けませんでした。少ししてからもう一度お試しください。'
 	},
 	audio: {
 		microphone: 'マイク',

@@ -184,7 +184,8 @@ export const it: Messages = {
 		micUnpublished: 'Impossibile trasmettere il microfono.',
 		micChangeFailed:
 			'Non è stato possibile usare quel microfono; stai ancora usando quello precedente.',
-		micLost: 'Il microfono ha smesso di funzionare. Scegline uno nelle impostazioni audio.'
+		micLost: 'Il microfono ha smesso di funzionare. Scegline uno nelle impostazioni audio.',
+		monitorFailed: 'Non è stato possibile ascoltarti tramite il server. Riprova tra poco.'
 	},
 	audio: {
 		microphone: 'Microfono',

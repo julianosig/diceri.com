@@ -3,7 +3,8 @@ const PROBLEMS = [
 	'filterFailed',
 	'micUnpublished',
 	'micChangeFailed',
-	'micLost'
+	'micLost',
+	'monitorFailed'
 ] as const;
 
 /** Problems the call itself detects; components word them in the visitor's language. */

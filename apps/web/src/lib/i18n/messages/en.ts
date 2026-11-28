@@ -183,7 +183,8 @@ export const en = {
 		filterFailed: 'Enhanced noise filter failed.',
 		micUnpublished: 'Microphone could not be published.',
 		micChangeFailed: 'That microphone could not be used; you are still on the previous one.',
-		micLost: 'Your microphone stopped working. Choose one in the audio settings.'
+		micLost: 'Your microphone stopped working. Choose one in the audio settings.',
+		monitorFailed: 'Hearing yourself through the server could not start. Try again in a moment.'
 	},
 	audio: {
 		microphone: 'Microphone',

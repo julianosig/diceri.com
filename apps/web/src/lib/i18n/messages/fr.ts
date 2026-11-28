@@ -183,7 +183,8 @@ export const fr: Messages = {
 		filterFailed: 'Le filtre anti-bruit avancé a échoué.',
 		micUnpublished: 'Impossible de diffuser le micro.',
 		micChangeFailed: 'Ce micro n’a pas pu être utilisé ; vous restez sur le précédent.',
-		micLost: 'Votre micro ne fonctionne plus. Choisissez-en un dans les réglages audio.'
+		micLost: 'Votre micro ne fonctionne plus. Choisissez-en un dans les réglages audio.',
+		monitorFailed: 'Impossible de vous entendre via le serveur. Réessayez dans un instant.'
 	},
 	audio: {
 		microphone: 'Micro',
