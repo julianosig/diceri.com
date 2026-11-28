@@ -310,5 +310,6 @@ fn warn_not_kept(error: &VoiceSampleStoreError, account: &AccountId) {
 }
 
 #[cfg(test)]
-#[path = "voices_tests.rs"]
+mod failure_tests;
+#[cfg(test)]
 mod tests;

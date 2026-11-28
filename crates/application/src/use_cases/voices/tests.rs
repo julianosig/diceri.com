@@ -8,7 +8,7 @@ use crate::use_cases::speech_check::fake::FakeRecognizer;
 use crate::use_cases::voice_sample::{tone, wav};
 
 #[derive(Default)]
-struct FakeCloner(Mutex<u32>);
+pub(super) struct FakeCloner(Mutex<u32>);
 
 #[async_trait]
 impl VoiceCloner for FakeCloner {
@@ -39,14 +39,14 @@ fn sample(len: usize) -> VoiceSample {
 }
 
 /// Three seconds of 16 kHz WAV, voiced or near silent.
-fn recording(loud: bool) -> VoiceSample {
+pub(super) fn recording(loud: bool) -> VoiceSample {
     VoiceSample {
         bytes: wav(&tone(3_000, loud)),
         content_type: "audio/wav".to_owned(),
     }
 }
 
-async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomCode) {
+pub(super) async fn setup() -> (VoiceService, Arc<InMemoryRooms>, RoomCode) {
     setup_hearing("The quick brown fox jumps").await
 }
 
@@ -171,7 +171,7 @@ async fn only_16khz_mono_wav_is_accepted() {
 
 /// Kept recordings in memory, for the tests of keeping and reusing a voice.
 #[derive(Default)]
-struct Samples(
+pub(super) struct Samples(
     Mutex<std::collections::HashMap<AccountId, VoiceSample>>,
     Mutex<std::collections::HashMap<AccountId, KeptClone>>,
 );
@@ -293,61 +293,4 @@ async fn an_accounts_clone_is_made_once_and_reused_in_every_call() {
         .unwrap();
     assert_ne!(again, recorded);
     assert_eq!(service.clone_saved(&room_id, &ana).await.unwrap(), again);
-}
-
-/// Ends every room while "cloning", like a host ending the call during the seconds a
-/// provider takes; records the clones it is asked to delete.
-struct EndingCloner {
-    rooms: Arc<InMemoryRooms>,
-    deleted: Mutex<Vec<String>>,
-}
-
-#[async_trait]
-impl VoiceCloner for EndingCloner {
-    fn provider(&self) -> &'static str {
-        "inworld"
-    }
-
-    async fn create(&self, _: &str, _: VoiceSample) -> Result<VoiceId, VoiceCloneError> {
-        for room in self.rooms.live_rooms().await.unwrap() {
-            let end = |room: &mut Room| {
-                room.end();
-                Ok(())
-            };
-            self.rooms.modify(&room.id, Box::new(end)).await.unwrap();
-        }
-        Ok(VoiceId("late".to_owned()))
-    }
-
-    async fn delete(&self, voice: &VoiceId) -> Result<(), VoiceCloneError> {
-        self.deleted.lock().unwrap().push(voice.0.clone());
-        Ok(())
-    }
-
-    async fn delete_all_named(&self, _: &str) -> Result<usize, VoiceCloneError> {
-        Ok(0)
-    }
-}
-
-#[tokio::test]
-async fn a_call_ended_while_cloning_stays_ended_and_the_clone_is_deleted() {
-    let (service, rooms, room_id) = setup().await;
-    let cloner = Arc::new(EndingCloner {
-        rooms: rooms.clone(),
-        deleted: Mutex::default(),
-    });
-    let service = VoiceService {
-        cloner: cloner.clone(),
-        ..service
-    };
-    let ana = AccountId::from_parts(1, [1; 10]);
-    let result = service.record_for(&room_id, &ana, recording(true)).await;
-    assert!(matches!(
-        result,
-        Err(VoiceError::Rule(RoomRuleError::Ended))
-    ));
-    // The stale copy read before cloning never reopens the call.
-    let room = rooms.find_by_code(&room_id).await.unwrap().unwrap();
-    assert!(room.is_ended());
-    assert_eq!(*cloner.deleted.lock().unwrap(), vec!["late".to_owned()]);
 }
