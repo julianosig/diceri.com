@@ -324,11 +324,14 @@ impl AdmissionService {
         let Some((presence, clock)) = &self.presence else {
             return (None, 0);
         };
+        // Read before asking: a seat whose time runs out while the answer is on its way was
+        // still held when the media server listed who is in.
+        let now_ms = clock.now_ms();
         match presence.identities_in(&room.id).await {
-            Ok(identities) => (Some(identities), clock.now_ms()),
+            Ok(identities) => (Some(identities), now_ms),
             Err(error) => {
                 tracing::warn!(%error, room_id = %room.id, "call size not checked");
-                (None, clock.now_ms())
+                (None, now_ms)
             }
         }
     }

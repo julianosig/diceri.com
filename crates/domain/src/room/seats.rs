@@ -4,11 +4,12 @@
 
 use crate::AccountId;
 
-/// A seat given credentials this recently still counts while its person connects: as long
-/// as those credentials (media tokens) can be used, so a late connection never finds its
+/// A seat given credentials this recently still counts while its person connects: longer
+/// than those credentials (2-minute media tokens) can be used, with a margin for the time
+/// between reserving the seat and signing the token, so a late connection never finds its
 /// place taken by someone else.
-pub(crate) const SEAT_GRACE_MS: u64 = 120_000;
-/// Seats remembered per room; the least recently used is forgotten.
+pub(crate) const SEAT_GRACE_MS: u64 = 150_000;
+/// Seats remembered per room; beyond it, the oldest seat nobody uses is forgotten.
 pub(crate) const MAX_SEATS: usize = 20;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -61,6 +62,27 @@ impl Seats {
         others + unseated < usize::from(size)
     }
 
+    /// Past `MAX_SEATS`, forgets the oldest seat that is neither connected nor about to be:
+    /// someone still in the call keeps theirs, so their reload is never taken for a newcomer.
+    fn forget_one_unused(&mut self, present: Option<&[String]>, now_ms: u64) {
+        if self.0.len() < MAX_SEATS {
+            return;
+        }
+        let unused = self
+            .0
+            .iter()
+            .enumerate()
+            .filter(|(_, seat)| {
+                !present.is_some_and(|present| present.contains(&seat.identity))
+                    && now_ms.saturating_sub(seat.issued_at_ms) >= SEAT_GRACE_MS
+            })
+            .min_by_key(|(_, seat)| seat.issued_at_ms)
+            .map(|(index, _)| index);
+        if let Some(index) = unused {
+            self.0.remove(index);
+        }
+    }
+
     /// `account`'s seat, refreshed (or a new one with `identity`), if the call has room.
     pub(crate) fn claim(
         &mut self,
@@ -77,15 +99,7 @@ impl Seats {
             seat.issued_at_ms = now_ms;
             return Some(seat.identity.clone());
         }
-        if self.0.len() >= MAX_SEATS
-            && let Some((oldest, _)) = self
-                .0
-                .iter()
-                .enumerate()
-                .min_by_key(|(_, seat)| seat.issued_at_ms)
-        {
-            self.0.remove(oldest);
-        }
+        self.forget_one_unused(present, now_ms);
         self.0.push(Seat {
             account,
             identity: identity.clone(),
@@ -157,6 +171,25 @@ mod tests {
                     .is_some()
             );
         }
+    }
+
+    #[test]
+    fn a_connected_seat_is_never_forgotten() {
+        let mut seats = Seats::default();
+        seats.claim(account(0), "p-host".to_owned(), 2, Some(&[]), 0);
+        // Twenty guests come and go through the other place while the host stays.
+        for n in 1..=MAX_SEATS {
+            let seed = u8::try_from(n).unwrap();
+            let at = u64::try_from(n).unwrap() * LATER;
+            seats.claim(
+                account(seed),
+                format!("p-{n}"),
+                2,
+                Some(&present(&["p-host"])),
+                at,
+            );
+        }
+        assert_eq!(seats.identity_of(&account(0)), Some("p-host"));
     }
 
     #[test]
