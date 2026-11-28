@@ -166,7 +166,8 @@ function-length limits but not from file limits.
   Ids are UUIDv7 and never grant access (§14); never expose sequential ids.
 - Passwords are hashed with Argon2id; sessions are random tokens stored hashed.
 - Media tokens (LiveKit JWTs) are minted only by `apps/api`, scoped to one
-  room, and short-lived: 2 min, enough to connect (LiveKit renews them inside the session).
+  room, and short-lived: 2 min, enough to connect (LiveKit renews them inside the session);
+  30 s for hidden listeners, which are removed once their person leaves.
   A call's seat is held for the same time, so an unused token never outlives its seat.
 - **Voice cloning requires explicit opt-in** from the speaker for that call, and joining
   requires it: translations are spoken only in the speaker's own recorded voice, never a
