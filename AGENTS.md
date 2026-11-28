@@ -90,6 +90,19 @@ when you touched a user journey or media code). Never
 disable a lint, skip a test or bypass a hook (`--no-verify`) to get green.
 If a rule is wrong, change the rule in its own commit and explain why.
 
+**Codex review, at the end of every implementation.** Once `just verify` passes, review the
+change with the Codex CLI (read-only, never with access to secrets):
+
+```sh
+codex exec -s read-only --ephemeral -o review.md "Review <the commits or files changed> for bugs,
+security/privacy issues (AGENTS.md sections 9 and 14) and performance problems; verify each
+finding in the code; never open .env files or anything holding keys"
+```
+
+Fix every relevant finding (real bugs, security, privacy, data loss, latency), run the gates
+again and review again, **until Codex reports nothing relevant**. Say which findings were
+dismissed and why. Commits reviewed this way carry Codex as a co-author (§11).
+
 ## 6. Size limits (enforced)
 
 Small units are the core organizing rule. When you approach a limit, split by
@@ -207,6 +220,8 @@ commitlint in the `commit-msg` hook.
 - Generated code is committed together with the change that produced it.
 - Breaking API/protocol changes between web and api: `feat(api)!:` plus a
   `BREAKING CHANGE:` footer.
+- Every commit ends with the co-author trailers of the agents that wrote and reviewed it:
+  `Co-Authored-By: Codex <noreply@openai.com>` for the Codex review (§5).
 - Do not commit or push unless asked. Never rewrite published history.
 
 ## 12. Architecture Decision Records
