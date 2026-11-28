@@ -8,7 +8,9 @@ use livekit_api::access_token::{AccessToken, VideoGrants};
 use secrecy::{ExposeSecret as _, SecretString};
 
 /// Join tokens are only needed to connect; LiveKit keeps the session alive after.
-const TOKEN_TTL: Duration = Duration::from_mins(10);
+/// Only to connect (LiveKit renews it inside the session); as long as a seat is held for
+/// someone connecting (`SEAT_GRACE_MS` in the domain), so an unused token never outlives it.
+const TOKEN_TTL: Duration = Duration::from_mins(2);
 
 /// Issues LiveKit JWTs scoped to a single room.
 #[derive(Debug, Clone)]

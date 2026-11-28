@@ -4,8 +4,10 @@
 
 use crate::AccountId;
 
-/// A seat given credentials this recently still counts while its person connects.
-pub(crate) const SEAT_GRACE_MS: u64 = 30_000;
+/// A seat given credentials this recently still counts while its person connects: as long
+/// as those credentials (media tokens) can be used, so a late connection never finds its
+/// place taken by someone else.
+pub(crate) const SEAT_GRACE_MS: u64 = 120_000;
 /// Seats remembered per room; the least recently used is forgotten.
 pub(crate) const MAX_SEATS: usize = 20;
 
