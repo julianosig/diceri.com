@@ -140,7 +140,10 @@ impl VoiceService {
         // Waiting for its turn and checking the recording can still be cut short; once the
         // provider is asked for a clone, it always finishes (kept or deleted, never lost).
         let turn = self.locks.lock(&account).await;
-        let room = self.checked_room(code, &sample).await?;
+        let checked = self.checked_room(code, &sample).await?;
+        // Checking speech takes a moment: the call may have ended or filled up meanwhile, and
+        // then the recording never reaches the provider.
+        let room = self.open_room_with_space(&checked.code).await?;
         to_completion(async move {
             let _turn = turn;
             this.record_in(room, &account, sample).await
@@ -277,6 +280,20 @@ impl VoiceService {
         Ok(samples.delete(account).await?)
     }
 
+    /// The room as it is now, if its call is open and has room for one more voice.
+    async fn open_room_with_space(&self, code: &RoomCode) -> Result<Room, VoiceError> {
+        let room = self
+            .rooms
+            .find_by_code(code)
+            .await?
+            .ok_or(VoiceError::NotFound)?;
+        room.ensure_open()?;
+        if !room.has_voice_capacity() {
+            return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
+        }
+        Ok(room)
+    }
+
     /// The room, once `sample` is known to be clear speech and the room has room for a voice.
     async fn checked_room(
         &self,
@@ -291,16 +308,8 @@ impl VoiceService {
         if voiced_ms(&samples) < MIN_VOICED_MS {
             return Err(VoiceError::NoSpeech);
         }
-        let room = self
-            .rooms
-            .find_by_code(code)
-            .await?
-            .ok_or(VoiceError::NotFound)?;
-        // Check before the paid provider call; registering re-checks afterwards.
-        room.ensure_open()?;
-        if !room.has_voice_capacity() {
-            return Err(VoiceError::Rule(RoomRuleError::TooManyVoices));
-        }
+        // Check before the paid recognizer and provider; both are checked again afterwards.
+        let room = self.open_room_with_space(code).await?;
         // The recognizer must hear words: noise or music that passed the loudness check
         // still never reaches the cloning provider.
         let started = std::time::Instant::now();
