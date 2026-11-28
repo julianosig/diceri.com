@@ -1,7 +1,10 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Mutex, PoisonError};
 
-use diceri_application::ports::{STT_SAMPLE_RATE, SpeechStream, SpeechToTextError, VoiceId};
+use diceri_application::ports::{
+    STT_SAMPLE_RATE, SpeechStream, SpeechToTextError, TranscriptEvent, VoiceId,
+};
 use diceri_domain::LanguageCode;
 use diceri_media::{Conversation, PipelineOutput, SpeakerConfig, SpeakerPipeline};
 use futures_util::StreamExt as _;
@@ -20,6 +23,10 @@ const REOPEN_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 const STABLE_STREAM: std::time::Duration = std::time::Duration::from_secs(30);
 /// Consecutive streams closing before `STABLE_STREAM` after which the speaker is given up.
 const MAX_QUICK_DROPS: u32 = 5;
+/// Transcript events waiting for the pipeline.
+const TRANSCRIPT_QUEUE: usize = 64;
+/// Phrase numbers set aside per track (far more than one track ever says).
+const PHRASES_PER_TRACK: u64 = 1_000_000;
 
 /// Who is speaking on a subscribed microphone track. Their spoken language is
 /// detected; `hints` are the languages present in the room when they joined.
@@ -58,9 +65,11 @@ fn warn_given_up(error: &SpeechToTextError, speaker: &str) {
     tracing::error!(%error, speaker, "could not open speech-to-text");
 }
 
-/// Transcribes one speaker and runs their translation pipeline until the track ends. A
-/// speech-to-text stream that drops mid-call (network, provider session limit) is reopened
-/// while the microphone is still live, so the speaker is never silently left untranslated.
+/// Transcribes one speaker and runs their translation pipeline until the track ends. One
+/// pipeline lives as long as the track; a speech-to-text stream that drops mid-call (network,
+/// provider session limit) is reopened and feeds the same pipeline, so the speaker is never
+/// silently left untranslated, reopening never waits for queued speech, and phrase numbers
+/// keep counting up.
 pub(crate) async fn run(
     speaker: Speaker,
     providers: Arc<Providers>,
@@ -68,27 +77,35 @@ pub(crate) async fn run(
     conversation: Arc<Conversation>,
     targets: watch::Receiver<Vec<LanguageCode>>,
 ) {
-    let track_ended = Arc::new(AtomicBool::new(false));
     let config = SpeakerConfig {
         voice: speaker.voice.clone(),
         speaker: speaker.identity.clone(),
         fallback_language: speaker.fallback_language.clone(),
     };
     log_start(&config);
+    let (events, transcript) = mpsc::channel(TRANSCRIPT_QUEUE);
+    let pipeline = SpeakerPipeline::new(
+        config,
+        providers.translator.clone(),
+        providers.tts.clone(),
+        output,
+        conversation,
+    );
+    let translating = tokio::spawn(pipeline.run(transcript, targets, first_phrase()));
+    transcribe(&speaker, &providers, &events).await;
+    // The pipeline finishes the phrases already queued, then ends.
+    drop(events);
+    let _ = translating.await;
+}
+
+/// Feeds `events` from speech-to-text until the track ends, reopening a stream that closes.
+async fn transcribe(speaker: &Speaker, providers: &Providers, events: &Transcript) {
+    let track_ended = Arc::new(AtomicBool::new(false));
     let mut quick_drops = 0;
-    while let Some(stream) = open_speech_to_text(&providers, &speaker).await {
+    while let Some(stream) = open_speech_to_text(providers, speaker).await {
         let started = tokio::time::Instant::now();
         pump_audio(&speaker.track, stream.audio, track_ended.clone());
-        SpeakerPipeline::new(
-            config.clone(),
-            providers.translator.clone(),
-            providers.tts.clone(),
-            output.clone(),
-            conversation.clone(),
-        )
-        .run(stream.events, targets.clone(), first_phrase())
-        .await;
-        if track_ended.load(Ordering::Relaxed) {
+        if !forward(stream.events, events).await || track_ended.load(Ordering::Relaxed) {
             return;
         }
         // A stream that keeps closing at once is broken, not dropped: stop retrying.
@@ -98,12 +115,35 @@ pub(crate) async fn run(
             0
         };
         if quick_drops >= MAX_QUICK_DROPS {
-            warn_given_up_reopening(&config.speaker);
+            warn_given_up_reopening(&speaker.identity);
             return;
         }
-        warn_reopening(&config.speaker);
+        warn_reopening(&speaker.identity);
         tokio::time::sleep(REOPEN_DELAY).await;
     }
+}
+
+type Transcript = mpsc::Sender<Result<TranscriptEvent, SpeechToTextError>>;
+
+/// Passes one stream's events on until it closes or fails; `false` once the pipeline is gone.
+async fn forward(
+    mut stream: mpsc::Receiver<Result<TranscriptEvent, SpeechToTextError>>,
+    events: &Transcript,
+) -> bool {
+    while let Some(event) = stream.recv().await {
+        match event {
+            Ok(event) => {
+                if events.send(Ok(event)).await.is_err() {
+                    return false;
+                }
+            }
+            Err(error) => {
+                tracing::warn!(%error, "transcription error");
+                return true;
+            }
+        }
+    }
+    true
 }
 
 /// Forwards 16 kHz mono frames from the track to speech-to-text, until either ends;
@@ -129,15 +169,20 @@ fn pump_audio(
     });
 }
 
-/// Numbers a new stream's phrases from the current time in milliseconds: always above the
-/// phrases of any earlier stream for the same speaker (a reconnect, or a new microphone after
-/// a reload), which go up by one per phrase.
+/// Phrases of one track are numbered from here, counting up by one. Seeded from the current
+/// time in milliseconds and never below an earlier track's range in this process, so a
+/// speaker who rejoins (same identity) never reuses a number, even if the clock steps back.
 fn first_phrase() -> u64 {
-    std::time::SystemTime::now()
+    static NEXT: Mutex<u64> = Mutex::new(0);
+    let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map_or(0, |since| {
             u64::try_from(since.as_millis()).unwrap_or(u64::MAX)
-        })
+        });
+    let mut next = NEXT.lock().unwrap_or_else(PoisonError::into_inner);
+    let first = now.max(*next);
+    *next = first.saturating_add(PHRASES_PER_TRACK);
+    first
 }
 
 fn warn_reopening(speaker: &str) {
@@ -153,4 +198,16 @@ fn warn_given_up_reopening(speaker: &str) {
 
 fn log_start(config: &SpeakerConfig) {
     tracing::info!(speaker = %config.speaker, "translating speaker");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::first_phrase;
+
+    #[test]
+    fn each_track_numbers_its_phrases_above_every_earlier_one() {
+        let first = first_phrase();
+        let second = first_phrase();
+        assert!(second >= first + super::PHRASES_PER_TRACK);
+    }
 }
