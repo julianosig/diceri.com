@@ -14,7 +14,7 @@ import {
 import type { CallProblem } from './call-problem.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
-	captureConstraints,
+	restartWith,
 	DEFAULT_AUDIO_SETTINGS,
 	settingKeys,
 	valuesOf,
@@ -473,11 +473,4 @@ export class CallSession {
 		document.body.append(element);
 		this.#remoteElements.set(track, element);
 	}
-}
-
-/** Reopens the microphone with `settings`; LiveKit opens the default device with no other
- * constraints, so they are applied to it after it opens. */
-async function restartWith(track: LocalAudioTrack, settings: AudioSettings): Promise<void> {
-	await track.restartTrack(toCaptureOptions(settings));
-	if (!settings.deviceId) await track.applyConstraints(captureConstraints(settings));
 }

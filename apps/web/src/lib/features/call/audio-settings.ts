@@ -1,4 +1,4 @@
-import type { AudioCaptureOptions } from 'livekit-client';
+import type { AudioCaptureOptions, LocalAudioTrack } from 'livekit-client';
 
 /** What can be changed on a microphone already open (everything but the device). */
 export type CaptureConstraints = Pick<
@@ -70,4 +70,11 @@ export function captureConstraints(settings: AudioSettings): CaptureConstraints 
 		autoGainControl: options.autoGainControl,
 		voiceIsolation: options.voiceIsolation
 	};
+}
+
+/** Reopens the microphone with `settings`; LiveKit opens the default device with no other
+ * constraints, so they are applied to it after it opens. */
+export async function restartWith(track: LocalAudioTrack, settings: AudioSettings): Promise<void> {
+	await track.restartTrack(toCaptureOptions(settings));
+	if (!settings.deviceId) await track.applyConstraints(captureConstraints(settings));
 }
