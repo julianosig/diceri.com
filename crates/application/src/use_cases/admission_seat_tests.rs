@@ -190,3 +190,34 @@ async fn a_call_ended_while_translation_starts_hands_out_no_credentials() {
         Err(AdmissionError::Rule(RoomRuleError::Ended))
     ));
 }
+
+/// A media server that accepts the request and never answers.
+struct Stalled;
+
+#[async_trait]
+impl MediaPresence for Stalled {
+    async fn live_rooms(&self) -> Result<Vec<LiveRoom>, MediaAccessError> {
+        Ok(Vec::new())
+    }
+
+    async fn open_rooms(&self) -> Result<Vec<RoomId>, MediaAccessError> {
+        Ok(Vec::new())
+    }
+
+    async fn identities_in(&self, _: &RoomId) -> Result<Vec<String>, MediaAccessError> {
+        std::future::pending().await
+    }
+}
+
+#[tokio::test]
+async fn a_stalled_media_server_does_not_hold_up_joining() {
+    let clock = Arc::new(FakeClock(std::sync::atomic::AtomicU64::new(1_000)));
+    let mut f = fixture(true);
+    f.admission = f.admission.clone().with_presence(Arc::new(Stalled), clock);
+    let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
+    let joined = f
+        .admission
+        .join_as_host(&room.code, room.host_key(), &owner().id, &name("Ana"))
+        .await;
+    assert!(joined.is_ok());
+}

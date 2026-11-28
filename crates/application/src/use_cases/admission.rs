@@ -11,6 +11,9 @@ use crate::ports::{
     RoomRepositoryError, TranslationDispatcher,
 };
 
+/// How long joining waits to learn who is in a call before counting it as unknown.
+const PRESENCE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3);
+
 #[derive(Debug, thiserror::Error)]
 pub enum AdmissionError {
     #[error("room or request not found")]
@@ -327,13 +330,14 @@ impl AdmissionService {
         // Read before asking: a seat whose time runs out while the answer is on its way was
         // still held when the media server listed who is in.
         let now_ms = clock.now_ms();
-        match presence.identities_in(&room.id).await {
-            Ok(identities) => (Some(identities), now_ms),
-            Err(error) => {
-                tracing::warn!(%error, room_id = %room.id, "call size not checked");
-                (None, now_ms)
-            }
-        }
+        // A slow media server must not hold up joining: then who is in counts as unknown.
+        let answer = tokio::time::timeout(PRESENCE_TIMEOUT, presence.identities_in(&room.id)).await;
+        let identities = match answer {
+            Ok(Ok(identities)) => Some(identities),
+            Ok(Err(error)) => warn_size_unchecked(&room.id, &error.to_string()),
+            Err(_) => warn_size_unchecked(&room.id, "media server too slow"),
+        };
+        (identities, now_ms)
     }
 
     fn grant(
@@ -357,6 +361,11 @@ impl AdmissionService {
         )?;
         Ok(JoinTicket { identity, grant })
     }
+}
+
+fn warn_size_unchecked(room: &RoomId, reason: &str) -> Option<Vec<String>> {
+    tracing::warn!(room_id = %room, reason, "call size not checked");
+    None
 }
 
 /// A participant may only speak in a voice clone they themselves recorded for this room.
