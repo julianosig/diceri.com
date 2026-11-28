@@ -23,11 +23,23 @@ struct Seat {
 /// A room's seats; `present` lists the identities connected to the media server now, or
 /// `None` when it cannot say (then size is not enforced: an outage must not lock people out).
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub(crate) struct Seats(Vec<Seat>);
+pub(crate) struct Seats {
+    seats: Vec<Seat>,
+    /// The room's owner always has a place: guests never fill their own call before them.
+    owner: Option<AccountId>,
+}
 
 impl Seats {
+    pub(crate) fn reserve_for_owner(&mut self, owner: AccountId) {
+        self.owner = Some(owner);
+    }
+
+    fn is_active(seat: &Seat, present: &[String], now_ms: u64) -> bool {
+        present.contains(&seat.identity) || now_ms.saturating_sub(seat.issued_at_ms) < SEAT_GRACE_MS
+    }
+
     pub(crate) fn identity_of(&self, account: &AccountId) -> Option<&str> {
-        self.0
+        self.seats
             .iter()
             .find(|seat| seat.account == *account)
             .map(|seat| seat.identity.as_str())
@@ -46,40 +58,45 @@ impl Seats {
             return true;
         };
         let others = self
-            .0
+            .seats
             .iter()
-            .filter(|seat| seat.account != *account)
-            .filter(|seat| {
-                present.contains(&seat.identity)
-                    || now_ms.saturating_sub(seat.issued_at_ms) < SEAT_GRACE_MS
-            })
+            .filter(|seat| seat.account != *account && Self::is_active(seat, present, now_ms))
             .count();
         // Someone connected whose seat was forgotten still takes a place.
         let unseated = present
             .iter()
-            .filter(|identity| !self.0.iter().any(|seat| &seat.identity == *identity))
+            .filter(|identity| !self.seats.iter().any(|seat| &seat.identity == *identity))
             .count();
-        others + unseated < usize::from(size)
+        // A guest leaves the owner's place free while the owner is not in.
+        let owner_away = self.owner.is_some_and(|owner| {
+            owner != *account
+                && !self
+                    .seats
+                    .iter()
+                    .any(|seat| seat.account == owner && Self::is_active(seat, present, now_ms))
+        });
+        others + unseated + usize::from(owner_away) < usize::from(size)
     }
 
     /// Past `MAX_SEATS`, forgets the oldest seat that is neither connected nor about to be:
     /// someone still in the call keeps theirs, so their reload is never taken for a newcomer.
+    /// Without knowing who is connected, nothing is forgotten.
     fn forget_one_unused(&mut self, present: Option<&[String]>, now_ms: u64) {
-        if self.0.len() < MAX_SEATS {
+        let Some(present) = present else {
+            return;
+        };
+        if self.seats.len() < MAX_SEATS {
             return;
         }
         let unused = self
-            .0
+            .seats
             .iter()
             .enumerate()
-            .filter(|(_, seat)| {
-                !present.is_some_and(|present| present.contains(&seat.identity))
-                    && now_ms.saturating_sub(seat.issued_at_ms) >= SEAT_GRACE_MS
-            })
+            .filter(|(_, seat)| !Self::is_active(seat, present, now_ms))
             .min_by_key(|(_, seat)| seat.issued_at_ms)
             .map(|(index, _)| index);
         if let Some(index) = unused {
-            self.0.remove(index);
+            self.seats.remove(index);
         }
     }
 
@@ -95,12 +112,12 @@ impl Seats {
         if !self.has_room_for(&account, size, present, now_ms) {
             return None;
         }
-        if let Some(seat) = self.0.iter_mut().find(|seat| seat.account == account) {
+        if let Some(seat) = self.seats.iter_mut().find(|seat| seat.account == account) {
             seat.issued_at_ms = now_ms;
             return Some(seat.identity.clone());
         }
         self.forget_one_unused(present, now_ms);
-        self.0.push(Seat {
+        self.seats.push(Seat {
             account,
             identity: identity.clone(),
             issued_at_ms: now_ms,
@@ -162,6 +179,22 @@ mod tests {
     }
 
     #[test]
+    fn guests_never_fill_the_call_before_its_owner_is_in() {
+        let mut seats = Seats::default();
+        seats.reserve_for_owner(account(0));
+        let first = seats.claim(account(1), "p-a".to_owned(), 2, Some(&[]), 0);
+        let second = seats.claim(account(2), "p-b".to_owned(), 2, Some(&[]), 0);
+        assert!(first.is_some());
+        assert_eq!(second, None);
+        // The owner still gets in.
+        assert!(
+            seats
+                .claim(account(0), "p-owner".to_owned(), 2, Some(&[]), 0)
+                .is_some()
+        );
+    }
+
+    #[test]
     fn without_presence_size_is_not_enforced() {
         let mut seats = Seats::default();
         for seed in 1..=5 {
@@ -193,14 +226,17 @@ mod tests {
     }
 
     #[test]
-    fn the_least_recently_used_seat_is_forgotten() {
+    fn the_least_recently_used_seat_is_forgotten_but_only_when_presence_is_known() {
         let mut seats = Seats::default();
         for n in 0..=MAX_SEATS {
             let seed = u8::try_from(n).unwrap();
             let at = u64::try_from(n).unwrap() * LATER;
-            seats.claim(account(seed), format!("p-{n}"), 2, None, at);
+            seats.claim(account(seed), format!("p-{n}"), 2, Some(&[]), at);
         }
         assert_eq!(seats.identity_of(&account(0)), None);
+        assert!(seats.identity_of(&account(1)).is_some());
+        // Without knowing who is connected, nothing more is forgotten.
+        seats.claim(account(99), "p-99".to_owned(), 2, None, LATER * 99);
         assert!(seats.identity_of(&account(1)).is_some());
     }
 }

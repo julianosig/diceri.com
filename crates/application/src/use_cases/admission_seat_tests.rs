@@ -3,7 +3,7 @@
 use std::sync::{Arc, Mutex};
 
 use async_trait::async_trait;
-use diceri_domain::{AccountId, RoomId, RoomRuleError};
+use diceri_domain::{RoomId, RoomRuleError};
 
 use super::tests::{Fixture, fixture, name, someone};
 use super::{AdmissionError, KnockOutcome};
@@ -54,7 +54,7 @@ fn with_people(identities: Option<&[&str]>) -> (Fixture, Arc<People>) {
 async fn rejoining_after_a_reload_keeps_the_same_seat_even_in_a_full_call() {
     let (f, people) = with_people(Some(&[]));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
-    let host = AccountId::from_parts(1, [1; 10]);
+    let host = owner().id;
     let first = f
         .admission
         .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
@@ -83,8 +83,14 @@ async fn a_newcomer_cannot_ask_to_join_a_full_call() {
 
 #[tokio::test]
 async fn a_guest_let_in_after_the_call_filled_up_is_refused() {
-    let (f, people) = with_people(Some(&["p-host"]));
+    let (f, people) = with_people(Some(&[]));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
+    let host = f
+        .admission
+        .join_as_host(&room.code, room.host_key(), &owner().id, &name("Ana"))
+        .await
+        .unwrap();
+    people.set(&[&host.identity]);
     let knock = f
         .admission
         .knock(&room.code, &someone(), name("Bruno"))
@@ -94,7 +100,7 @@ async fn a_guest_let_in_after_the_call_filled_up_is_refused() {
         .decide(&room.code, room.host_key(), &knock.request_id, true)
         .await
         .unwrap();
-    people.set(&["p-host", "p-carla"]);
+    people.set(&[&host.identity, "p-carla"]);
     let outcome = f
         .admission
         .outcome(&room.code, &knock.request_id, &knock.key)
@@ -109,7 +115,7 @@ async fn a_guest_let_in_after_the_call_filled_up_is_refused() {
 async fn an_ended_call_gives_no_credentials_even_to_someone_seated() {
     let (f, _) = with_people(Some(&[]));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
-    let host = AccountId::from_parts(1, [1; 10]);
+    let host = owner().id;
     f.admission
         .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))
         .await
@@ -174,7 +180,7 @@ async fn a_call_ended_while_translation_starts_hands_out_no_credentials() {
         .clone()
         .with_translation(Arc::new(EndingDispatcher(f.repo.clone())));
     let room = f.rooms.open(&owner(), private_room(), 2).await.unwrap();
-    let host = AccountId::from_parts(1, [1; 10]);
+    let host = owner().id;
     let joined = f
         .admission
         .join_as_host(&room.code, room.host_key(), &host, &name("Ana"))

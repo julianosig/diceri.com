@@ -166,6 +166,11 @@ impl Room {
             .any(|(owner, voice)| owner == account && voice == voice_id)
     }
 
+    /// Keeps a place for the owner's account: guests never fill the call before the owner.
+    pub fn reserve_owner_seat(&mut self, owner: AccountId) {
+        self.seats.reserve_for_owner(owner);
+    }
+
     /// The media identity of `account`'s seat, if it has joined this call before.
     #[must_use]
     pub fn seat_of(&self, account: &AccountId) -> Option<&str> {

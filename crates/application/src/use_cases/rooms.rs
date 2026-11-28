@@ -104,6 +104,7 @@ impl RoomService {
             settings,
         );
         room.max_participants = participants;
+        room.reserve_owner_seat(owner.id);
         room
     }
 
