@@ -25,7 +25,7 @@ import {
 	type EnhancedFilter
 } from './audio-settings.ts';
 import { cameraOf } from './camera-track.ts';
-import { LevelMeter } from './level-meter.ts';
+import { LiveLevel } from './level-meter.ts';
 import { CallMonitor, type MonitorMode } from './call-monitor.svelte.ts';
 import { applyEnhancedFilter, outgoingMediaTrack } from './noise-filter.ts';
 import {
@@ -95,8 +95,7 @@ export class CallSession {
 	// Bookkeeping only, never rendered, so it does not need to be reactive.
 	// eslint-disable-next-line svelte/prefer-svelte-reactivity
 	#remoteElements = new Map<RemoteTrack, HTMLMediaElement>();
-	#meter: LevelMeter | undefined;
-	#meterFrame = 0;
+	readonly #level = new LiveLevel((level) => (this.level = level));
 	readonly #monitor: CallMonitor;
 	/** Set as soon as the call is being left: nothing may capture audio after it. */
 	#closing = false;
@@ -301,24 +300,13 @@ export class CallSession {
 	}
 
 	async #startMeter(track: MediaStreamTrack): Promise<void> {
-		await this.#stopMeter();
+		await this.#level.stop();
 		if (this.#isClosing()) return;
-		const meter = new LevelMeter(track);
-		this.#meter = meter;
-		const tick = () => {
-			this.level = this.muted ? 0 : meter.read();
-			this.#meterFrame = requestAnimationFrame(tick);
-		};
-		tick();
+		this.#level.start(track, () => this.muted);
 	}
 
 	async #stopMeter(): Promise<void> {
-		cancelAnimationFrame(this.#meterFrame);
-		// Detached first, so two stops never close the same meter twice.
-		const meter = this.#meter;
-		this.#meter = undefined;
-		this.level = 0;
-		await meter?.close();
+		await this.#level.stop();
 	}
 
 	#micTrack(): LocalAudioTrack | undefined {

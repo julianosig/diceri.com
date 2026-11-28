@@ -26,3 +26,31 @@ export class LevelMeter {
 		await this.#context.close();
 	}
 }
+
+/** Reports a track's level every frame until stopped; a stop never closes a meter twice. */
+export class LiveLevel {
+	#meter: LevelMeter | undefined;
+	#frame = 0;
+
+	constructor(private readonly report: (level: number) => void) {}
+
+	/** Starts reading `track`; while `muted()` the level is 0. */
+	start(track: MediaStreamTrack, muted: () => boolean): void {
+		const meter = new LevelMeter(track);
+		this.#meter = meter;
+		const tick = () => {
+			this.report(muted() ? 0 : meter.read());
+			this.#frame = requestAnimationFrame(tick);
+		};
+		tick();
+	}
+
+	async stop(): Promise<void> {
+		cancelAnimationFrame(this.#frame);
+		// Detached first, so two stops never close the same meter twice.
+		const meter = this.#meter;
+		this.#meter = undefined;
+		this.report(0);
+		await meter?.close();
+	}
+}
