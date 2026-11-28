@@ -187,9 +187,7 @@ export class CallSession {
 		const target = { ...this.#applied, ...patch };
 		let problem: CallProblem | undefined;
 		try {
-			await track.restartTrack(toCaptureOptions(target));
-			// LiveKit opens the default microphone with no other constraints: apply them.
-			if (!target.deviceId) await track.applyConstraints(captureConstraints(target));
+			await restartWith(track, target);
 			this.#applied = target;
 		} catch {
 			// Left the call meanwhile: never open a microphone again.
@@ -198,7 +196,7 @@ export class CallSession {
 			const owned = settingKeys(patch).filter((key) => this.#owners[key] === revision);
 			this.settings = { ...this.settings, ...valuesOf(this.#applied, owned) };
 			// Browsers that stop the old microphone first leave nothing if both fail.
-			problem = await track.restartTrack(toCaptureOptions(this.#applied)).then(
+			problem = await restartWith(track, this.#applied).then(
 				() => 'micChangeFailed' as const,
 				() => 'micLost' as const
 			);
@@ -470,4 +468,11 @@ export class CallSession {
 		document.body.append(element);
 		this.#remoteElements.set(track, element);
 	}
+}
+
+/** Reopens the microphone with `settings`; LiveKit opens the default device with no other
+ * constraints, so they are applied to it after it opens. */
+async function restartWith(track: LocalAudioTrack, settings: AudioSettings): Promise<void> {
+	await track.restartTrack(toCaptureOptions(settings));
+	if (!settings.deviceId) await track.applyConstraints(captureConstraints(settings));
 }
