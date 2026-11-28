@@ -1,5 +1,11 @@
 import type { AudioCaptureOptions } from 'livekit-client';
 
+/** What can be changed on a microphone already open (everything but the device). */
+export type CaptureConstraints = Pick<
+	AudioCaptureOptions,
+	'echoCancellation' | 'noiseSuppression' | 'autoGainControl' | 'voiceIsolation'
+>;
+
 /**
  * Enhanced (ML) noise filtering, applied on top of browser processing:
  * - `off`: browser processing only.
@@ -53,4 +59,15 @@ export function valuesOf(
 	keys: (keyof AudioSettings)[]
 ): Partial<AudioSettings> {
 	return Object.fromEntries(keys.map((key) => [key, from[key]]));
+}
+
+/** The capture settings without the device, for a microphone already open. */
+export function captureConstraints(settings: AudioSettings): CaptureConstraints {
+	const options = toCaptureOptions(settings);
+	return {
+		echoCancellation: options.echoCancellation,
+		noiseSuppression: options.noiseSuppression,
+		autoGainControl: options.autoGainControl,
+		voiceIsolation: options.voiceIsolation
+	};
 }

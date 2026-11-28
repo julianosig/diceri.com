@@ -16,6 +16,7 @@ import {
 import type { CallProblem } from './call-problem.ts';
 import type { MediaCredentials } from '#lib/features/room/index.ts';
 import {
+	captureConstraints,
 	DEFAULT_AUDIO_SETTINGS,
 	settingKeys,
 	valuesOf,
@@ -187,6 +188,8 @@ export class CallSession {
 		let problem: CallProblem | undefined;
 		try {
 			await track.restartTrack(toCaptureOptions(target));
+			// LiveKit opens the default microphone with no other constraints: apply them.
+			if (!target.deviceId) await track.applyConstraints(captureConstraints(target));
 			this.#applied = target;
 		} catch {
 			// Left the call meanwhile: never open a microphone again.
