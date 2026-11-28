@@ -172,9 +172,12 @@ impl MeteringService {
         let Some((presence, closer)) = &self.media else {
             return;
         };
-        // First, so a call ended below at its limit is only swept if still open next minute.
-        self.close_ended_calls(presence.as_ref(), closer.as_ref())
-            .await;
+        // First, so a call ended below at its limit is only swept if still open next minute;
+        // with a time budget, so a slow media server never holds up charging live calls.
+        let sweep = self.close_ended_calls(presence.as_ref(), closer.as_ref());
+        if tokio::time::timeout(SWEEP_BUDGET, sweep).await.is_err() {
+            tracing::warn!("closing ended calls took too long; the rest wait for the next minute");
+        }
         let in_call = self
             .charge_live_calls(presence.as_ref(), closer.as_ref())
             .await;
@@ -287,6 +290,9 @@ async fn close_at_limit(closer: &dyn MediaRoomCloser, room: &RoomId) {
 fn warn_not_closed(error: &MediaAccessError, room: &RoomId) {
     tracing::warn!(%error, room_id = %room, "media room not closed");
 }
+
+/// How long the minute's sweep of ended calls may take before charging goes ahead.
+const SWEEP_BUDGET: std::time::Duration = std::time::Duration::from_secs(10);
 
 /// Days since the Unix epoch (UTC) of an instant in milliseconds.
 fn utc_day(ms: u64) -> u32 {
